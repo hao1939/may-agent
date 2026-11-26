@@ -608,14 +608,14 @@ type RawScorecardFact = {
 };
 
 export type AgentGymSummary = {
-  status: "pass_hat_3" | "sub_3_trials" | "not_run";
+  status: "pass_hat_3" | "pass_hat_k" | "sub_3_trials" | "not_run";
   benchmark: string | null;
   candidate: string | null;
   model: string | null;
   trialsPerScenario: number | null;
   scenarioCount: number | null;
   passedScenariosHatK: number | null;
-  /** Strict multi-trial consistency ratio [0..1]; populated only when trialsPerScenario >= 3. */
+  /** Strict three-trial consistency ratio [0..1]; populated only when trialsPerScenario === 3. */
   passHat3Ratio: number | null;
   /** Observed scenario pass^k ratio [0..1] for the run's trialsPerScenario. */
   passHatKRatio: number | null;
@@ -670,10 +670,13 @@ function readGymComparisonByAgent(db: SqliteDb, start: number, end: number): Map
       const p = JSON.parse(row.fact.slice("gym-comparison:".length)) as Record<string, unknown>;
       if (!p || typeof p !== "object" || Array.isArray(p) || p.version !== 1) continue;
       const agent = typeof p.agent === "string" && p.agent.trim() ? p.agent.trim() : null;
-      const k = Number(p.trialsPerScenario);
-      const scenarioCount = Number(p.scenarioCount);
-      const passHatKRatio = Number(p.candidatePassHatKRatio);
-      const trialPassRatio = p.trialPassRatio === undefined ? passHatKRatio : Number(p.trialPassRatio);
+      const k = typeof p.trialsPerScenario === "number" ? p.trialsPerScenario : Number.NaN;
+      const scenarioCount = typeof p.scenarioCount === "number" ? p.scenarioCount : Number.NaN;
+      const passHatKRatio = typeof p.candidatePassHatKRatio === "number" ? p.candidatePassHatKRatio : Number.NaN;
+      const hasTrialPassRatio = p.trialPassRatio !== undefined;
+      const rawTrialPassRatio = typeof p.trialPassRatio === "number" ? p.trialPassRatio : Number.NaN;
+      const hasPassedScenarios = p.passedScenariosHatK !== undefined;
+      const rawPassedScenarios = typeof p.passedScenariosHatK === "number" ? p.passedScenariosHatK : Number.NaN;
       if (
         !agent ||
         !Number.isInteger(k) ||
@@ -683,29 +686,28 @@ function readGymComparisonByAgent(db: SqliteDb, start: number, end: number): Map
         !Number.isFinite(passHatKRatio) ||
         passHatKRatio < 0 ||
         passHatKRatio > 1 ||
-        !Number.isFinite(trialPassRatio) ||
-        trialPassRatio < 0 ||
-        trialPassRatio > 1
+        (hasTrialPassRatio && (!Number.isFinite(rawTrialPassRatio) || rawTrialPassRatio < 0 || rawTrialPassRatio > 1)) ||
+        (hasPassedScenarios && (!Number.isInteger(rawPassedScenarios) || rawPassedScenarios < 0 || rawPassedScenarios > scenarioCount))
       ) {
         continue;
       }
-      const passedScenarios =
-        Number.isInteger(Number(p.passedScenariosHatK)) && Number(p.passedScenariosHatK) >= 0
-          ? Number(p.passedScenariosHatK)
-          : Math.round(passHatKRatio * scenarioCount);
+      const trialPassRatio = hasTrialPassRatio ? rawTrialPassRatio : null;
+      const passedScenarios = hasPassedScenarios ? rawPassedScenarios : Math.round(passHatKRatio * scenarioCount);
+      const status: AgentGymSummary["status"] =
+        k === 3 ? "pass_hat_3" : k > 3 ? "pass_hat_k" : "sub_3_trials";
       parsed.push({
         attemptId: row.attemptId,
         timestamp: row.timestamp,
         agent,
         summary: {
-          status: k >= 3 ? "pass_hat_3" : "sub_3_trials",
+          status,
           benchmark: typeof p.benchmark === "string" && p.benchmark.trim() ? p.benchmark.trim() : null,
           candidate: typeof p.candidate === "string" && p.candidate.trim() ? p.candidate.trim() : null,
           model: typeof p.model === "string" && p.model.trim() ? p.model.trim() : null,
           trialsPerScenario: k,
           scenarioCount,
           passedScenariosHatK: passedScenarios,
-          passHat3Ratio: k >= 3 ? passHatKRatio : null,
+          passHat3Ratio: k === 3 ? passHatKRatio : null,
           passHatKRatio,
           trialPassRatio,
           verdict: typeof p.verdict === "string" && p.verdict.trim() ? p.verdict.trim() : null,

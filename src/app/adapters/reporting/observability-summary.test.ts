@@ -1572,7 +1572,7 @@ describe("top-down Host vs. Apps observability summary", () => {
       } finally {
         recOnlyDb.close();
       }
-      // 7. Wave 4: Agent Live Scorecard (app-rubric-v1) + Gym pass^3 vs sub-3-trial rollups via idx_gym_comparison_attempts.
+      // 7. Wave 4: Agent Live Scorecard (app-rubric-v1) + Gym pass^3 vs pass^k vs sub-3-trial rollups via idx_gym_comparison_attempts.
       const gymDb = openDatabase(":memory:");
       applyDbSchema(gymDb);
       try {
@@ -1581,7 +1581,10 @@ describe("top-down Host vs. Apps observability summary", () => {
             `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
              VALUES
                ('alex', 'gym-pass3', 'comparison/may-v2', 1, 'completed', ?, ?),
+               ('alex', 'gym-null-newer', 'comparison/may-bad', 1, 'completed', ?, ?),
                ('alex', 'gym-k1', 'comparison/scout-v1', 1, 'completed', ?, ?),
+               ('alex', 'gym-k2-no-trial', 'comparison/alex-v1', 1, 'completed', ?, ?),
+               ('alex', 'gym-k4', 'comparison/tech-lead-v1', 1, 'completed', ?, ?),
                ('alex', 'gym-unaccepted', 'comparison/draft', 1, 'failed', ?, ?),
                ('alex', 'eval-may', 'review/may-1', 1, 'completed', ?, ?)`,
           )
@@ -1609,6 +1612,35 @@ describe("top-down Host vs. Apps observability summary", () => {
                 ],
               },
             }),
+            // Newer malformed fact with JSON null/boolean numeric fields must be ignored rather than coerced to 0% over may-cand-v2!
+            liveNow - 5_000,
+            JSON.stringify({
+              finishedAt: new Date(liveNow - 2_000).toISOString(),
+              acceptedResult: {
+                state: "converged",
+                facts: [
+                  `gym-comparison:${JSON.stringify({
+                    version: 1,
+                    agent: "may",
+                    candidate: "may-cand-null",
+                    benchmark: "outcome-coordination",
+                    trialsPerScenario: 3,
+                    scenarioCount: 4,
+                    candidatePassHatKRatio: null,
+                  })}`,
+                  `gym-comparison:${JSON.stringify({
+                    version: 1,
+                    agent: "may",
+                    candidate: "may-cand-null-trial",
+                    benchmark: "outcome-coordination",
+                    trialsPerScenario: 3,
+                    scenarioCount: 4,
+                    candidatePassHatKRatio: 0.5,
+                    trialPassRatio: null,
+                  })}`,
+                ],
+              },
+            }),
             liveNow - 30_000,
             JSON.stringify({
               finishedAt: new Date(liveNow - 25_000).toISOString(),
@@ -1627,6 +1659,49 @@ describe("top-down Host vs. Apps observability summary", () => {
                     baselinePassHatKRatio: 0.75,
                     candidatePassHatKRatio: 1,
                     trialPassRatio: 1,
+                    verdict: "candidate-supported",
+                  })}`,
+                ],
+              },
+            }),
+            // Two-trial run omitting trialPassRatio preserves trialPassRatio: null rather than substituting scenario pass^2.
+            liveNow - 18_000,
+            JSON.stringify({
+              finishedAt: new Date(liveNow - 14_000).toISOString(),
+              acceptedResult: {
+                state: "converged",
+                facts: [
+                  `gym-comparison:${JSON.stringify({
+                    version: 1,
+                    agent: "alex",
+                    candidate: "alex-dev-k2",
+                    benchmark: "outcome-completion",
+                    trialsPerScenario: 2,
+                    scenarioCount: 4,
+                    passedScenariosHatK: 2,
+                    candidatePassHatKRatio: 0.5,
+                    verdict: "hold",
+                  })}`,
+                ],
+              },
+            }),
+            // Four-trial run stays status='pass_hat_k' with passHat3Ratio: null (never presented as pass^3).
+            liveNow - 17_000,
+            JSON.stringify({
+              finishedAt: new Date(liveNow - 13_000).toISOString(),
+              acceptedResult: {
+                state: "converged",
+                facts: [
+                  `gym-comparison:${JSON.stringify({
+                    version: 1,
+                    agent: "tech-lead",
+                    candidate: "tl-k4",
+                    benchmark: "repair-and-verification",
+                    trialsPerScenario: 4,
+                    scenarioCount: 4,
+                    passedScenariosHatK: 3,
+                    candidatePassHatKRatio: 0.75,
+                    trialPassRatio: 0.875,
                     verdict: "candidate-supported",
                   })}`,
                 ],
@@ -1687,6 +1762,7 @@ describe("top-down Host vs. Apps observability summary", () => {
         expect(mayCap.scorecard7d).toMatchObject({ status: "scored", sampleSize: 1, gated: false });
         expect(mayCap.gym).toMatchObject({
           status: "pass_hat_3",
+          candidate: "may-cand-v2",
           benchmark: "outcome-coordination",
           trialsPerScenario: 3,
           scenarioCount: 4,
@@ -1695,13 +1771,28 @@ describe("top-down Host vs. Apps observability summary", () => {
           passHatKRatio: 0.75,
           verdict: "candidate-supported",
         });
-        const scoutCap = agentCaps("scout");
-        expect(scoutCap.gym).toMatchObject({
+        expect(agentCaps("scout").gym).toMatchObject({
           status: "sub_3_trials",
           trialsPerScenario: 1,
           passHat3Ratio: null,
           passHatKRatio: 1,
           trialPassRatio: 1,
+        });
+        expect(agentCaps("alex").gym).toMatchObject({
+          status: "sub_3_trials",
+          trialsPerScenario: 2,
+          passedScenariosHatK: 2,
+          passHat3Ratio: null,
+          passHatKRatio: 0.5,
+          trialPassRatio: null,
+        });
+        expect(agentCaps("tech-lead").gym).toMatchObject({
+          status: "pass_hat_k",
+          trialsPerScenario: 4,
+          passedScenariosHatK: 3,
+          passHat3Ratio: null,
+          passHatKRatio: 0.75,
+          trialPassRatio: 0.875,
         });
         expect(agentCaps("bob").gym).toMatchObject({ status: "not_run", passHat3Ratio: null });
       } finally {

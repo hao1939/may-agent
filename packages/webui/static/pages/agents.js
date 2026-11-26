@@ -31,17 +31,29 @@ function renderGymPill(gym, showEmpty = false) {
   if (!gym || gym.status === 'not_run') {
     return showEmpty ? `<span class="td-score-pill" title="No retained Gym comparison fact in last 30 days">· No Gym run</span>` : '';
   }
+  const k = gym.trialsPerScenario || 1;
   if (gym.status === 'pass_hat_3' && gym.passHat3Ratio != null) {
     const pct = Math.round(Number(gym.passHat3Ratio) * 100);
     const cls = pct >= 80 ? 'good' : pct >= 50 ? 'warn' : 'gated';
     const icon = pct >= 80 ? '✓' : pct >= 50 ? '▲' : '✕';
-    const tip = `Gym pass^${gym.trialsPerScenario || 3} (${gym.benchmark || 'suite'}): ${gym.passedScenariosHatK ?? 0}/${gym.scenarioCount ?? 0} scenarios passed all ${gym.trialsPerScenario || 3} trials`;
+    const tip = `Gym pass^3 (${gym.benchmark || 'suite'}): ${gym.passedScenariosHatK ?? 0}/${gym.scenarioCount ?? 0} scenarios passed all 3 trials`;
     return `<span class="td-score-pill ${cls}" title="${attrEsc(tip)}">${icon} Gym pass³ ${pct}%</span>`;
   }
-  const k = gym.trialsPerScenario || 1;
-  const pct = Math.round(Number(gym.trialPassRatio ?? gym.passHatKRatio ?? 0) * 100);
-  const tip = `Gym k=${k} (${gym.benchmark || 'suite'}): ${pct}% trial pass — run k=3 for pass^3 consistency`;
-  return `<span class="td-score-pill" title="${attrEsc(tip)}">Gym k=${esc(String(k))} · ${pct}%</span>`;
+  if (gym.status === 'pass_hat_k' && gym.passHatKRatio != null) {
+    const pct = Math.round(Number(gym.passHatKRatio) * 100);
+    const cls = pct >= 80 ? 'good' : pct >= 50 ? 'warn' : 'gated';
+    const icon = pct >= 80 ? '✓' : pct >= 50 ? '▲' : '✕';
+    const tip = `Gym pass^${k} (${gym.benchmark || 'suite'}): ${gym.passedScenariosHatK ?? 0}/${gym.scenarioCount ?? 0} scenarios passed all ${k} trials`;
+    return `<span class="td-score-pill ${cls}" title="${attrEsc(tip)}">${icon} Gym pass^${esc(String(k))} ${pct}%</span>`;
+  }
+  if (gym.trialPassRatio != null) {
+    const pct = Math.round(Number(gym.trialPassRatio) * 100);
+    const tip = `Gym k=${k} (${gym.benchmark || 'suite'}): ${pct}% trial pass — run k=3 for pass^3 consistency`;
+    return `<span class="td-score-pill" title="${attrEsc(tip)}">Gym k=${esc(String(k))} · ${pct}%</span>`;
+  }
+  const pct = Math.round(Number(gym.passHatKRatio ?? 0) * 100);
+  const tip = `Gym pass^${k} (${gym.benchmark || 'suite'}): ${gym.passedScenariosHatK ?? 0}/${gym.scenarioCount ?? 0} scenarios passed all ${k} trials (trial pass rate unknown) — run k=3 for pass^3 consistency`;
+  return `<span class="td-score-pill" title="${attrEsc(tip)}">Gym pass^${esc(String(k))} · ${pct}%</span>`;
 }
 
 function renderAgentEvaluationCompareCard(scorecard, gym) {
@@ -79,7 +91,7 @@ function renderAgentEvaluationCompareCard(scorecard, gym) {
         <div class="agent-eval-dims">${dimRows}</div>
       </div>
       <div class="agent-eval-col">
-        <div class="agent-eval-col-head"><span>Gym (30d · pass³)</span>${gymPill}</div>
+        <div class="agent-eval-col-head"><span>Gym (30d · ${gym && gym.status === 'pass_hat_k' ? `pass^${esc(String(gym.trialsPerScenario))}` : 'pass³'})</span>${gymPill}</div>
         <div class="agent-eval-sub">${gymMeta}</div>
         ${gym && gym.status === 'sub_3_trials'
           ? `<div class="agent-eval-note">Latest run used k=${esc(String(gym.trialsPerScenario))}; promotion requires pass^3 (3/3 trials).</div>`
