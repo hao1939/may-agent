@@ -371,6 +371,10 @@ bare cancel performs no action, and disconnected Console controls are not queued
 A successful admission is neither completion nor an amendment of creator scope.
 Console's bounded offline text queue is volatile and lost on exit; uncertain HTTP
 input acknowledgment retains the original event identity for reconnect retry.
+A recorded HTTP receipt is not admission; missing or invalid receipts leave
+acceptance unknown. Console retains both for replay once per reconnect, without
+spinning. An accepted receipt reports admission only; Esc is offered only after
+the Console observes an active Conversation turn in a canonical read.
 
 WebUI's May entry uses the configured interface agent's existing route, leaving
 Overview, metrics, domain and operator routes intact. Its human-action view reads

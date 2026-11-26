@@ -311,6 +311,12 @@ async function httpJson(pathname, options = {}) {
   return body;
 }
 
+function retainUnconfirmedInput(frame, notice = "[unconfirmed] Input may be accepted.") {
+  if (!pendingInputFrames.some((saved) => saved.event.idempotencyKey === frame.event.idempotencyKey))
+    pendingInputFrames.push(frame);
+  printNotice(`${notice} Retained only in this Console; reconnect retries the same identity, not new work.`);
+}
+
 function sendFrame(frame, opts = {}) {
   if (frame?.type === "subscribe") {
     if (!connected || !socket || socket.readyState !== WebSocket.OPEN) return false;
@@ -320,12 +326,22 @@ function sendFrame(frame, opts = {}) {
   if (frame?.type === "publish" && frame.event) {
     if (opts.receiptKind === "human-turn") pendingHumanWrites.add(frame);
     void httpJson("/api/events", { method: "POST", body: JSON.stringify(frame.event) })
-      .then((result) => handleEvent({ type: "ok", command: "publish", ...result, __receiptKind: opts.receiptKind }))
+      .then((result) => {
+        if (opts.receiptKind === "human-turn") {
+          const validReceipt = Number.isSafeInteger(result?.eventId) && result.eventId > 0;
+          if (!validReceipt || result.delivery !== "accepted") {
+            if (validReceipt && result.delivery === "recorded") {
+              retainUnconfirmedInput(frame, "[recorded] Input recorded, but not yet admitted.");
+              return;
+            }
+            throw new Error("Input acknowledgment is missing or invalid; acceptance is unknown");
+          }
+        }
+        handleEvent({ type: "ok", command: "publish", ...result, __receiptKind: opts.receiptKind });
+      })
       .catch((error) => {
         if (opts.receiptKind === "human-turn" && (!error.status || error.status >= 500)) {
-          if (!pendingInputFrames.some((saved) => saved.event.idempotencyKey === frame.event.idempotencyKey))
-            pendingInputFrames.push(frame);
-          printNotice("[unconfirmed] Input may be accepted. Retained only in this Console; reconnect retries the same identity, not new work.");
+          retainUnconfirmedInput(frame);
         }
         handleEvent({ type: "error", command: "publish", message: error.message, __receiptKind: opts.receiptKind });
       }).finally(() => pendingHumanWrites.delete(frame));
@@ -1218,7 +1234,8 @@ function handleEvent(event) {
         rememberRenderedConversationMessage(`event:${event.eventId}`);
       }
       if (receiptKind === "human-turn") {
-        printNotice(`[${daemonAgent}] Working on your request… Esc stops this turn.`);
+        printNotice(`[${daemonAgent}] Input admitted. This is not completion.`);
+        requestConversation("sync");
       }
       if (receiptKind === "stop-turn") {
         printNotice(event.delivery === "accepted" ? `[${daemonAgent}] Stop request accepted. Background Tasks continue.` : `[${daemonAgent}] Stop was not accepted; refresh and try again.`);

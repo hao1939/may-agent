@@ -772,7 +772,7 @@ describe("May Console", () => {
 
     child.stdin.write("please keep the compatibility alias\n");
     await waitFor(() => humanFrames().length === 1);
-    await waitFor(() => output.includes("[may] Working on your request…"));
+    await waitFor(() => output.includes("[may] Input admitted. This is not completion."));
     const input = humanFrames()[0];
     expect(input.event.data.replyTo).toBeUndefined();
     expect(input).toMatchObject({
@@ -1955,7 +1955,7 @@ test("Console keeps a chosen watch and uncertain input identity; bare cancellati
           socket.write(JSON.stringify({ type: "error", command: "publish", message: "fixture lost acknowledgment" }) + "\n");
           continue;
         }
-        if (frame.type === "publish") response.delivery = "accepted";
+        if (frame.type === "publish") Object.assign(response, { delivery: "accepted", eventId: frames.length });
         socket.write(JSON.stringify(response) + "\n");
       }
     });
@@ -1995,3 +1995,79 @@ test("Console keeps a chosen watch and uncertain input identity; bare cancellati
   await once(child, "exit");
   expect(frames.some(frame => frame.event?.type === "app.task.cancel.requested")).toBe(false);
 });
+
+test.each(["truncated", "recorded", "missing-id", "503"])(
+  "Console retains %s HTTP input receipts and replays byte-identically only on reconnect",
+  async (kind) => {
+    const writes: string[] = [];
+    const sockets = new Set<{ send(data: string): void; close(): void }>();
+    let subscriptions = 0;
+    let activeTurn: { id: string; revision: number } | null = null;
+    const server = Bun.serve({
+      hostname: "127.0.0.1", port: 0,
+      async fetch(req, server) {
+        const path = new URL(req.url).pathname;
+        if (path === "/ws" && server.upgrade(req)) return;
+        if (path === "/api/conversation") return Response.json({ messages: [], activeTurn });
+        if (path === "/api/tasks") return Response.json({ items: [], total: 0 });
+        if (path === "/api/events") {
+          const body = await req.text();
+          const event = JSON.parse(body);
+          if (event.data?.author?.kind === "human") {
+            writes.push(body);
+            if (writes.length <= 2) {
+              if (kind === "truncated") return new Response('{"ok":true,', { status: 201 });
+              if (kind === "503") return Response.json({ error: "uncertain acknowledgment" }, { status: 503 });
+              if (kind === "missing-id") return Response.json({ delivery: "accepted" }, { status: 201 });
+              return Response.json({ ok: true, triggered: true, eventType: event.type,
+                eventId: 41, delivery: "recorded", links: [], reason: null, projectId: null }, { status: 202 });
+            }
+          }
+          return Response.json({ ok: true, triggered: true, eventId: 41, delivery: "accepted" }, { status: 201 });
+        }
+        return new Response("not found", { status: 404 });
+      },
+      websocket: {
+        open(ws) { sockets.add(ws); },
+        close(ws) { sockets.delete(ws); },
+        message(ws, data) {
+          if (JSON.parse(String(data)).type === "subscribe") {
+            subscriptions += 1;
+            ws.send(JSON.stringify({ type: "subscribed" }));
+          }
+        },
+      },
+    });
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: { ...process.env, CONVERSATION_APP: "support", CONVERSATION_ID: "primary",
+        MAY_ENDPOINT: `http://127.0.0.1:${server.port}` }, stdio: "pipe",
+    });
+    let output = "";
+    child.stdout.on("data", chunk => { output += chunk; });
+    child.stderr.on("data", chunk => { output += chunk; });
+    cleanups.push(() => child.kill("SIGKILL"), () => server.stop(true));
+    await waitFor(() => subscriptions === 1 && output.includes("you>"));
+    child.stdin.write("please discuss this\n");
+    const notice = kind === "recorded" ? "[recorded] Input recorded, but not yet admitted." : "[unconfirmed]";
+    await waitFor(() => output.includes(notice));
+    expect(output).not.toContain("Working on your request");
+    expect(output).not.toContain("Input admitted");
+    expect(output).not.toContain("Esc stops this turn");
+    for (const ws of sockets) ws.close();
+    await waitFor(() => subscriptions === 2 && output.split(notice).length === 3);
+    expect(writes).toHaveLength(2);
+    expect(writes[1]).toBe(writes[0]);
+    // Another recorded/unknown receipt must wait for another reconnect, not spin.
+    expect(output).not.toContain("Input admitted");
+    for (const ws of sockets) ws.close();
+    await waitFor(() => writes.length === 3 && output.includes("Input admitted"));
+    expect(writes[2]).toBe(writes[0]);
+    expect(output).not.toContain("Esc: stop this turn");
+    activeTurn = { id: "observed-turn", revision: 1 };
+    for (const ws of sockets) ws.send(JSON.stringify({ type: "conversation.updated",
+      data: { appId: "support", conversationId: "primary" } }));
+    await waitFor(() => output.includes("Esc: stop this turn"));
+    child.stdin.write("/exit\n");
+    await once(child, "exit");
+  },
+);
