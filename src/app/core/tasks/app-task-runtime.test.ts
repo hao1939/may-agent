@@ -7344,6 +7344,7 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     const interruptions: string[] = [];
+    const workflowHelperProcessed = Promise.withResolvers<void>();
     await installCoreTaskRuntimes(
       {
         ...options(f, bus),
@@ -7351,7 +7352,10 @@ describe("canonical App task runtime", () => {
           isLive: () => false,
           lastActivityAt: () => null,
           workflowInterrupted: () => false,
-          read: () => null,
+          read: (id) => {
+            if (id === "workflow-helper-checkpoint") workflowHelperProcessed.resolve();
+            return null;
+          },
           interrupt: (sessionId, _reason, taskId) => {
             interruptions.push(`${sessionId}:${taskId}`);
             return true;
@@ -7385,7 +7389,7 @@ describe("canonical App task runtime", () => {
     expect(recordAppTaskAttemptSession(config, claim, "owner-session")).toBeTrue();
     const before = config.resourceStore.readAttempt(claim.attemptId);
 
-    const emitStart = (sessionId: string, attemptId: unknown, parentSessionId?: string) =>
+    const emitStart = (sessionId: string, attemptId: unknown, parentSessionId?: string, workflowRunId?: string) =>
       bus.emit({
         type: "session.start",
         owner: "agent:sample-owner",
@@ -7396,6 +7400,7 @@ describe("canonical App task runtime", () => {
           trigger: "test",
           firedAt: Date.now(),
           ...(parentSessionId ? { parentSessionId } : {}),
+          ...(workflowRunId ? { workflowRunId } : {}),
           taskBinding: {
             appId: "sample",
             taskId: claim.taskId,
@@ -7410,6 +7415,18 @@ describe("canonical App task runtime", () => {
     const afterHelper = config.resourceStore.readAttempt(claim.attemptId);
     expect(afterHelper?.sessionId).toBe("owner-session");
     expect(afterHelper?.lease).toEqual(before?.lease);
+
+    // A code workflow has no parent agent session. Its first prompt helper is
+    // still a contribution to that workflow, not the owning Task execution.
+    emitStart("workflow-helper-without-agent-parent", claim.attemptId, undefined, "wr_current");
+    // Both notices go through the same App listener's FIFO. Wait for its
+    // following read rather than checking before async session routing runs.
+    bus.emit({ type: "session.end", owner: "agent:sample-owner", data: {
+      sessionId: "workflow-helper-checkpoint", agent: "sample-owner", status: "done",
+      outcome: "done", summary: "Session routing checkpoint", durationMs: 0,
+    } });
+    await workflowHelperProcessed.promise;
+    expect(config.resourceStore.readAttempt(claim.attemptId)).toEqual(afterHelper);
 
     emitStart("next-workflow-session", claim.attemptId);
     await Bun.sleep(10);

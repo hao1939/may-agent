@@ -224,6 +224,17 @@ async function executeTaskAgent(
     validateAction: input.descriptor.app.tasks?.validateAction,
     validateCondition: input.descriptor.app.tasks?.validateCondition,
   };
+  const finish = createManagedTaskFinish(input);
+  const reconcile: AgentTool = {
+    ...finish,
+    name: "reconcile",
+    label: "Reconcile Turn",
+    description: "Return this owning Task attempt's reconciliation decision and end the current turn.",
+    parameters: Type.Unsafe({
+      ...structuredClone(appTaskAgentResultSchema),
+      description: "Flat Task attempt reconciliation result, validated by the owning Task adapter.",
+    }),
+  };
   const agentOptions = {
     taskContext,
     contextPrompt: "Pursue the assignment in the current Task decision brief and return the result required by finish().",
@@ -235,7 +246,8 @@ async function executeTaskAgent(
     recoveryOwner: APP_TASK_RECOVERY_OWNER,
     trace,
     requireFinish: true,
-    createFinish: () => createManagedTaskFinish(input),
+    createFinish: () => finish,
+    toolBindings: [reconcile],
     toolPolicy: "full" as const,
     timeout: input.executionTimeoutMs,
     executionRoot: input.executionPaths.workspaceDir,

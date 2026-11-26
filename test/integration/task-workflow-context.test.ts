@@ -95,6 +95,7 @@ export async function execute(ctx) { return ctx.call("global/delegate", ctx.inpu
             const all = JSON.stringify(context.messages);
             const marker = all.includes("alpha") ? "alpha" : "beta";
             if (!owner) {
+              expect(config.initialState!.tools!.map(tool => tool.name)).not.toContain("owner_only");
               helperPrompts.set(marker, config.initialState!.systemPrompt!);
               helperModelContexts.set(marker, all);
             }
@@ -304,6 +305,7 @@ export async function execute(ctx) { return ctx.call("global/delegate", ctx.inpu
         },
       } as TaskExecutionContext;
       const running = manager.callAgent("owner", marker, {
+        toolBindings: [{ ...createFinishTool({ projectRoot: root }), name: "owner_only" }],
         taskContext: context,
         taskBinding: context.taskBinding,
         executionRoot: root,

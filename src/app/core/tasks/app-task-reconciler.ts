@@ -3364,7 +3364,9 @@ function refreshAttemptLease(attempt: AppTaskAttempt, sessionId?: string, nowMs 
     version: (existing?.version ?? 0) + 1,
     ...times,
     runtimeId: attempt.runtimeId,
-    ownerProcess: currentProcessInstance(),
+    // Observers may refresh a session association from another process. The
+    // executing process recorded by the claim remains the recovery authority.
+    ownerProcess: existing?.ownerProcess ?? currentProcessInstance(),
     ...(sessionId ? { sessionId } : {}),
   };
 }
@@ -3420,8 +3422,9 @@ export function recordAppTaskAttemptSession(config: AppTaskContext, claim: AppTa
 }
 
 /**
- * Associate a session launched inside a task workflow with the exact current
- * reconciliation attempt. Legacy persisted bindings may omit attemptId for
+ * Associate an owning agent session with the exact current reconciliation
+ * attempt. The caller separates workflow/helper lineage before this mutation.
+ * Legacy persisted bindings may omit attemptId for
  * historical reads, but they cannot authorize a current session/lease mutation.
  */
 export function associateAppTaskSession(
