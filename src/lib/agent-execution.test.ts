@@ -189,6 +189,7 @@ describe("environment-agnostic SDK execution preparation", () => {
       sessionId: "readonly-boundary",
       task: "Inspect without mutation",
       toolPolicy: "readonly" as const,
+      toolBindings: [{ ...tool("read"), description: "Caller-bound scoped read" }, tool("write")],
     };
 
     const sdkPrepared = prepareSdkAgentExecution(options);
@@ -210,6 +211,10 @@ describe("environment-agnostic SDK execution preparation", () => {
       "query_db",
       "read",
     ]);
+    expect(hostPrepared.tools.find(candidate => candidate.name === "read")?.description)
+      .toBe("Caller-bound scoped read");
+    expect(options.definition.tools.find(candidate => candidate.name === "read")?.description)
+      .not.toBe("Caller-bound scoped read");
     expect(mutations).toBe(0);
   });
 

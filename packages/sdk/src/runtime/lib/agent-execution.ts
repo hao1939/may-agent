@@ -1298,32 +1298,7 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   }
   const finish = createWorkflowFinishTool(baseFinish, options.outputSchema, options.validateOutput);
   const index = tools.findIndex((tool) => tool.name === "finish");
-  let finalTools = index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool));
-  const reconcileIndex = finalTools.findIndex((tool) => tool.name === "reconcile");
-  if (reconcileIndex >= 0) {
-    finalTools = finalTools.map((tool, offset) =>
-      offset === reconcileIndex
-        ? {
-            ...finish,
-            name: "reconcile",
-            label: "Reconcile Turn",
-            description:
-              "Commit this Task attempt's reconciliation decision ({ state: 'waiting' | 'converged' | 'incomplete', summary, facts, and optional continue, inputKeys, requests, conditions, actions, communication }) and end the current turn.",
-            parameters: Type.Unsafe({
-              ...structuredClone(
-                ((finish.parameters as any)?.properties?.output?.anyOf?.[0] as Record<string, unknown> | undefined) ??
-                  finish.parameters,
-              ),
-              description:
-                "Flat Task attempt reconciliation result (state: 'waiting' | 'converged' | 'incomplete', summary, facts, optional continue, inputKeys, requests, conditions, actions, communication).",
-            }),
-            prepareArguments: undefined,
-            execute: async (toolCallId, params, signal, onUpdate) =>
-              finish.execute(toolCallId, params, signal, onUpdate),
-          }
-        : tool,
-    );
-  }
+  const finalTools = index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool));
   assertUniqueToolNames(
     finalTools.map((tool, offset) => ({
       tool,
