@@ -54,6 +54,7 @@ export type DaemonHttpServices = {
   getStatus(): ExecutionStatus;
   getAppConversation(appId: string, conversationId: string, options?: { limit?: number }): AppConversationResource;
   listApps(appId?: string): unknown[];
+  listAppDirMap?(): ReadonlyMap<string, string>;
   listTasks(options?: Record<string, unknown>): HumanTaskPage;
   getTask(input: Record<string, unknown>): HumanTaskView | null;
 };
@@ -465,6 +466,14 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     }
   }
 
+  function listAppDirMapSafe(): ReadonlyMap<string, string> | null {
+    try {
+      return services.listAppDirMap?.() ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   const { handleAgents, handleAgentAbout } = createAgentRouteHandlers({
     stateDir: STATE_DIR,
     agentsRoot: AGENTS_ROOT,
@@ -472,6 +481,7 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     projectsRoot: PROJECTS_ROOT,
     getDb: _db,
     listLoadedApps: listLoadedAppsSafe,
+    listAppDirMap: listAppDirMapSafe,
     json,
     readProjects,
   });

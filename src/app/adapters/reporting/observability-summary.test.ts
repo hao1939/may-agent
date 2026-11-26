@@ -1213,6 +1213,44 @@ describe("top-down Host vs. Apps observability summary", () => {
         state: "refreshable",
         expiresAt: null,
       });
+
+      // Explicit expired account with no refresh or access token records a 0-second validity sample (not a collection failure).
+      const expiredNullDir = join(root, "expired-null-azure");
+      const expiredNullState = join(root, "expired-null-state");
+      mkdirSync(expiredNullDir, { recursive: true });
+      mkdirSync(expiredNullState, { recursive: true });
+      writeFileSync(
+        join(expiredNullDir, "msal_token_cache.json"),
+        JSON.stringify({ AccessToken: {}, RefreshToken: {}, Account: { a1: {} } }),
+      );
+      expect(probeAzureCliAuthHeadroom(now, expiredNullDir)).toMatchObject({
+        provider: "azure-cli",
+        state: "expired",
+        expiresAt: null,
+      });
+      const prevAz = process.env.AZURE_CONFIG_DIR;
+      process.env.AZURE_CONFIG_DIR = expiredNullDir;
+      try {
+        const expBus = new EventBus();
+        const expCollector = attachMetricSourceMeasurement({ bus: expBus, persistDir: expiredNullState });
+        await expCollector.idle();
+        const expRes = await measureSourceMetrics({
+          bus: expBus,
+          persistDir: expiredNullState,
+          measuredAt: now,
+          isDue: (m) => m.id === HOST_AUTH_REMAINING_METRIC_ID,
+        });
+        expect(expRes.failures).toEqual([]);
+        expect(expRes.measured).toEqual([HOST_AUTH_REMAINING_METRIC_ID]);
+        const expDb = getDb(expiredNullState);
+        expect(expDb.prepare("SELECT current FROM metrics WHERE id = ?").get(HOST_AUTH_REMAINING_METRIC_ID)).toEqual({
+          current: 0,
+        });
+      } finally {
+        if (prevAz === undefined) delete process.env.AZURE_CONFIG_DIR;
+        else process.env.AZURE_CONFIG_DIR = prevAz;
+        closeDb(expiredNullState);
+      }
     } finally {
       r4Db.close();
     }

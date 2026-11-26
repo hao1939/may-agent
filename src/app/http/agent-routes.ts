@@ -1,8 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { existsSync, readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { metricThresholdBreached } from "../../lib/metrics.js";
-import { readAgentCapabilityRollups, resolveObservabilityCatalog } from "../adapters/reporting/observability-summary.js";
+import {
+  readAgentCapabilityRollups,
+  readDeclaredAppIdFromDir,
+  resolveObservabilityCatalog,
+} from "../adapters/reporting/observability-summary.js";
 import { taskViewPhaseSql } from "../core/state/task-view-phase.js";
 import { listRuntimeAgentDirectories, resolveRuntimeAgentDirectory } from "@may-agent/sdk/runtime";
 import type { SqliteDb } from "./read-model/state-db.js";
@@ -25,6 +29,7 @@ export function createAgentRouteHandlers(options: {
   projectsRoot: string;
   getDb: () => SqliteDb;
   listLoadedApps?: () => ReadonlyArray<Record<string, unknown>> | null;
+  listAppDirMap?: () => ReadonlyMap<string, string> | null;
   json: (data: unknown, status?: number) => Response;
   readProjects: () => Array<{ project: { owner: string; field: (key: string) => string | null | undefined } }>;
 }) {
@@ -38,11 +43,17 @@ export function createAgentRouteHandlers(options: {
     readProjects,
   } = options;
 
-  function detectRegistrationApp(agentDir: string): string | null {
+  function detectRegistrationApp(agentDir: string, appDirMap?: ReadonlyMap<string, string> | null): string | null {
     const rel = relative(PROJECTS_ROOT, agentDir).replace(/\\/g, "/");
     if (rel.startsWith("..") || rel.startsWith("/")) return null;
     const first = rel.split("/")[0] ?? "";
-    return first.endsWith(".app") ? first.slice(0, -".app".length) : null;
+    if (!first.endsWith(".app")) return null;
+    const appDir = resolve(PROJECTS_ROOT, first);
+    const fromRegistry = appDirMap?.get(appDir);
+    if (fromRegistry) return fromRegistry;
+    const fromFile = readDeclaredAppIdFromDir(appDir);
+    if (fromFile) return fromFile;
+    return first.slice(0, -".app".length);
   }
 
   /**
@@ -68,6 +79,7 @@ export function createAgentRouteHandlers(options: {
         ownedAppsByAgent.set(owner, list);
       }
 
+      const appDirMap = options.listAppDirMap?.() ?? null;
       // 1. Discover agents from agents/ filesystem AND project-local agents (source of truth: agent.json).
       const agents: Array<Record<string, unknown>> = [];
       const seenAgentNames = new Set<string>();
@@ -83,7 +95,7 @@ export function createAgentRouteHandlers(options: {
         const name = cfg.name || entry.name;
         if (seenAgentNames.has(name)) continue;
         seenAgentNames.add(name);
-        const localApp = detectRegistrationApp(entry.dir);
+        const localApp = detectRegistrationApp(entry.dir, appDirMap);
         const ownedApps = (ownedAppsByAgent.get(name) ?? []).sort();
         agents.push({
           name,
@@ -162,22 +174,28 @@ export function createAgentRouteHandlers(options: {
       }
 
       // Canonical 24h & 4h Task attempts by resolved attempt owner (includes codex-goal & workflows).
+      const resolvedAttemptOwnerExpr = `COALESCE(
+        NULLIF(trim(json_extract(a.attempt_json, '$.owner')), ''),
+        NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
+        NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
+      )`;
       const attemptRollupRows = db
         .prepare(
           `SELECT
-             COALESCE(
-               NULLIF(trim(json_extract(a.attempt_json, '$.owner')), ''),
-               NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
-               NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
-             ) AS agent,
-             COUNT(*) AS attempts24h,
+             ${resolvedAttemptOwnerExpr} AS agent,
+             COUNT(CASE WHEN a.started_at >= ? THEN 1 END) AS attempts24h,
              COUNT(CASE WHEN a.started_at >= ? THEN 1 END) AS attempts4h,
-             COUNT(CASE WHEN a.state = 'running' THEN 1 END) AS runningAttempts,
+             COUNT(CASE WHEN a.state = 'running' AND NOT EXISTS (
+               SELECT 1 FROM sessions s
+               WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
+                 AND s.agent = ${resolvedAttemptOwnerExpr}
+                 AND s.status = 'running'
+             ) THEN 1 END) AS disjointRunningAttempts,
              COUNT(CASE WHEN a.state = 'failed' AND a.started_at >= ? AND NOT EXISTS (
                SELECT 1 FROM sessions s
                WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '') AND s.status = 'error'
              ) THEN 1 END) AS disjointErrors4h,
-             COUNT(CASE WHEN NOT EXISTS (
+             COUNT(CASE WHEN a.started_at >= ? AND NOT EXISTS (
                SELECT 1 FROM sessions s
                WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
              ) THEN 1 END) AS disjointAttempts24h,
@@ -188,14 +206,14 @@ export function createAgentRouteHandlers(options: {
              MAX(a.started_at) AS lastAttemptAt
            FROM app_task_attempts a
            LEFT JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
-           WHERE a.started_at >= ?
+           WHERE (a.started_at >= ? OR a.state = 'running')
            GROUP BY 1`,
         )
-        .all(fourHourAgo, fourHourAgo, fourHourAgo, dayAgo) as Array<{
+        .all(dayAgo, fourHourAgo, fourHourAgo, dayAgo, fourHourAgo, dayAgo) as Array<{
         agent: string | null;
         attempts24h: number;
         attempts4h: number;
-        runningAttempts: number;
+        disjointRunningAttempts: number;
         disjointErrors4h: number;
         disjointAttempts24h: number;
         disjointAttempts4h: number;
@@ -210,16 +228,16 @@ export function createAgentRouteHandlers(options: {
         const name = a.name as string;
         const att = attemptsByAgent.get(name);
 
-        // Sessions in 4h.
+        // Sessions in 4h (persisted 'idle' chats have no live process; only 'running' counts as active).
         const sess4h = db
           .prepare(
             `
           SELECT
             COUNT(*) as total,
-            COUNT(CASE WHEN status IN ('running', 'idle') THEN 1 END) as runningSess,
+            COUNT(CASE WHEN status = 'running' THEN 1 END) as runningSess,
             MAX(startedAt) as lastStart,
             SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors
-          FROM sessions WHERE agent = ? AND (startedAt >= ? OR status IN ('running', 'idle'))
+          FROM sessions WHERE agent = ? AND (startedAt >= ? OR status = 'running')
         `,
           )
           .get(name, fourHourAgo) as any;
@@ -247,7 +265,7 @@ export function createAgentRouteHandlers(options: {
           openTotal: 0,
         };
         a.tasksSummary = taskSummary;
-        a.runningNow = Math.max(taskSummary.running, (sess4h?.runningSess ?? 0) + (att?.runningAttempts ?? 0));
+        a.runningNow = Math.max(taskSummary.running, (sess4h?.runningSess ?? 0) + (att?.disjointRunningAttempts ?? 0));
         a.lastActivityAt =
           Math.max(Number(a.lastSessionAt ?? 0), Number(att?.lastAttemptAt ?? 0)) || null;
 
@@ -397,7 +415,16 @@ export function createAgentRouteHandlers(options: {
       const defaultOwnedApps = [...catalog.ownerByAppId.entries()]
         .filter(([, owner]) => owner === agentName)
         .map(([appId]) => appId);
+      const disabledApps = [...catalog.disabledSet];
       const taskPhaseExpr = taskViewPhaseSql("t");
+      const specAgentExpr = `COALESCE(
+        NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
+        NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
+      )`;
+      const disabledSql = disabledApps.length ? `AND t.app_id NOT IN (${disabledApps.map(() => "?").join(",")})` : "";
+      const ownedFallbackSql = defaultOwnedApps.length
+        ? `OR (${specAgentExpr} IS NULL AND t.app_id IN (${defaultOwnedApps.map(() => "?").join(",")}))`
+        : "";
       const rawTasks = db
         .prepare(
           `SELECT
@@ -405,10 +432,6 @@ export function createAgentRouteHandlers(options: {
              t.task_id AS taskId,
              ${taskPhaseExpr} AS phase,
              t.updated_at AS updatedAt,
-             COALESCE(
-               NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
-               NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
-             ) AS specAgent,
              substr(
                COALESCE(
                  NULLIF(trim(json_extract(t.resource_json, '$.spec.outcome')), ''),
@@ -423,33 +446,27 @@ export function createAgentRouteHandlers(options: {
            LEFT JOIN app_task_cancellations c ON c.app_id = t.app_id AND c.task_id = t.task_id
            WHERE c.task_id IS NULL
              AND json_extract(t.resource_json, '$.status.closure.state') IS NULL
+             ${disabledSql}
+             AND (${specAgentExpr} = ? ${ownedFallbackSql})
            ORDER BY
              CASE WHEN ${taskPhaseExpr} IN ('running', 'attention', 'waiting', 'pending') THEN 0 ELSE 1 END,
              t.updated_at DESC
-           LIMIT 80`,
+           LIMIT 15`,
         )
-        .all() as Array<{
+        .all(...disabledApps, agentName, ...defaultOwnedApps) as Array<{
         appId: string;
         taskId: string;
         phase: string;
         updatedAt: number;
-        specAgent: string | null;
         outcome: string;
       }>;
-      assignedTasks = rawTasks
-        .filter((r) => {
-          if (catalog.disabledSet.has(r.appId)) return false;
-          const resolved = r.specAgent || (defaultOwnedApps.includes(r.appId) ? agentName : null);
-          return resolved === agentName;
-        })
-        .slice(0, 15)
-        .map((r) => ({
-          appId: r.appId,
-          taskId: r.taskId,
-          status: r.phase === "converged" ? "idle" : r.phase,
-          updatedAt: r.updatedAt,
-          outcome: r.outcome,
-        }));
+      assignedTasks = rawTasks.map((r) => ({
+        appId: r.appId,
+        taskId: r.taskId,
+        status: r.phase === "converged" ? "idle" : r.phase,
+        updatedAt: r.updatedAt,
+        outcome: r.outcome,
+      }));
 
       const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
       recentAttempts = db

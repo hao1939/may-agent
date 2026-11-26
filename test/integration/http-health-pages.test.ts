@@ -1158,4 +1158,93 @@ describe("served workflow and metric health pages", () => {
     },
     30000,
   );
+
+  test("agent and liveness routes resolve non-stem App IDs, deduplicate linked running sessions, filter assigned Tasks pre-limit, and exclude retained idle chats", async () => {
+    const db = getDb(root);
+    const appDir = join(root, "projects", "canary-dir.app");
+    const specDir = join(appDir, "agents", "canary-spec");
+    const idleDir = join(appDir, "agents", "idle-chat-agent");
+    mkdirSync(specDir, { recursive: true });
+    mkdirSync(idleDir, { recursive: true });
+    writeFileSync(join(appDir, "app.ts"), 'export default { id: "canary-domain", agent: "worker" };\n');
+    writeFileSync(
+      join(specDir, "agent.json"),
+      JSON.stringify({ name: "canary-spec", description: "Specialist in non-stem App dir", model: "gpt-5" }),
+    );
+    writeFileSync(
+      join(idleDir, "agent.json"),
+      JSON.stringify({ name: "idle-chat-agent", description: "Idle chat holder", model: "gpt-5" }),
+    );
+
+    try {
+      // 1. Persisted idle chat session from 10h ago has no live process after restart -> excluded from running counts & 4h window.
+      db.prepare(
+        `INSERT INTO sessions(sessionId, agent, task, kind, status, startedAt)
+         VALUES ('retained-idle-chat', 'idle-chat-agent', 'Old chat', 'chat', 'idle', ?)`,
+      ).run(now - 10 * 3_600_000);
+
+      // 2. Running Task + running Attempt + linked running Session for canary-spec -> runningNow === 1 (not 2).
+      db.prepare(
+        `INSERT INTO app_tasks(app_id, task_id, generation, resource_version, observed_generation, phase, lane, changed, ready, updated_at, resource_json)
+         VALUES ('canary-domain', 'spec-task-1', 1, 1, 1, 'running', 'normal', 0, 1, ?, ?)`,
+      ).run(now - 5_000, JSON.stringify({ spec: { agent: "canary-spec", outcome: "Run canary check" }, status: {} }));
+      db.prepare(
+        `INSERT INTO sessions(sessionId, agent, task, app_id, task_id, attempt_id, status, startedAt)
+         VALUES ('spec-running-sess', 'canary-spec', 'Run canary check', 'canary-domain', 'spec-task-1', 'spec-att-1', 'running', ?)`,
+      ).run(now - 5_000);
+      db.prepare(
+        `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+         VALUES ('canary-domain', 'spec-att-1', 'spec-task-1', 1, 'running', ?, ?)`,
+      ).run(now - 5_000, JSON.stringify({ owner: "canary-spec", sessionId: "spec-running-sess" }));
+
+      // 3. Occupy 85 newer open Tasks under 'worker' so global LIMIT 80 would evict 'spec-task-1' if filtered post-limit.
+      stateTransaction(db, () => {
+        const ins = db.prepare(
+          `INSERT INTO app_tasks(app_id, task_id, generation, resource_version, observed_generation, phase, lane, changed, ready, updated_at, resource_json)
+           VALUES ('canary-domain', ?, 1, 1, 1, 'pending', 'normal', 1, 1, ?, ?)`,
+        );
+        for (let i = 0; i < 85; i++) {
+          ins.run(`worker-flood-${i}`, now - 100 + i, JSON.stringify({ spec: { agent: "worker", outcome: "Flood" }, status: {} }));
+        }
+      });
+
+      const agentsRes = await fetch(`${base}/api/agents`);
+      expect(agentsRes.status).toBe(200);
+      const agentsBody = (await agentsRes.json()) as Array<Record<string, unknown>>;
+      const specCard = agentsBody.find((a) => a.name === "canary-spec");
+      expect(specCard).toMatchObject({
+        localApp: "canary-domain",
+        runningNow: 1,
+      });
+      const idleCard = agentsBody.find((a) => a.name === "idle-chat-agent");
+      expect(idleCard).toMatchObject({
+        localApp: "canary-domain",
+        runningNow: 0,
+      });
+
+      const aboutRes = await fetch(`${base}/api/agents/canary-spec/about`);
+      expect(aboutRes.status).toBe(200);
+      const aboutBody = (await aboutRes.json()) as { assignedTasks: Array<{ appId: string; taskId: string }> };
+      expect(aboutBody.assignedTasks).toEqual([
+        expect.objectContaining({ appId: "canary-domain", taskId: "spec-task-1" }),
+      ]);
+
+      const livenessRes = await fetch(`${base}/api/liveness?hours=4`);
+      expect(livenessRes.status).toBe(200);
+      const livenessBody = (await livenessRes.json()) as {
+        summary: { activeSessions: number; activeRunning: number };
+        timeline: { agentLanes: Array<{ id: string; runningCount: number; totalCount: number }> };
+      };
+      // Only spec-running-sess is running; retained-idle-chat is NOT counted in activeSessions or activeRunning or 4h lane!
+      expect(livenessBody.summary.activeSessions).toBe(1);
+      expect(livenessBody.summary.activeRunning).toBe(1);
+      const idleLane = livenessBody.timeline.agentLanes.find((l) => l.id === "idle-chat-agent");
+      expect(idleLane).toMatchObject({ runningCount: 0, totalCount: 0 });
+    } finally {
+      db.prepare("DELETE FROM app_task_attempts WHERE app_id = 'canary-domain'").run();
+      db.prepare("DELETE FROM app_tasks WHERE app_id = 'canary-domain'").run();
+      db.prepare("DELETE FROM sessions WHERE sessionId IN ('retained-idle-chat', 'spec-running-sess')").run();
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
 });

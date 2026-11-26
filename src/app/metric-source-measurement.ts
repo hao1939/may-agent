@@ -310,6 +310,18 @@ export async function measureSourceMetrics(options: {
             sampleSize: 1,
             note: JSON.stringify({ provider: auth.provider, state: auth.state, expiresAt: auth.expiresAt }),
           };
+        } else if (auth.state === "expired") {
+          sample = {
+            kind: "sample",
+            value: 0,
+            sampleSize: 1,
+            note: JSON.stringify({
+              provider: auth.provider,
+              state: auth.state,
+              expiresAt: null,
+              reason: auth.reason ?? null,
+            }),
+          };
         } else {
           throw new Error(auth.reason ?? "Configured Azure CLI credentials could not be inspected");
         }

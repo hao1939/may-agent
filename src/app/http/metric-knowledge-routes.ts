@@ -92,14 +92,14 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
     }>;
     const summaryByAgent = new Map(agentLatestRows.map((row) => [row.agent, row]));
 
-    // All sessions in the selected window. Each session is classified into a
-    // 'category' bucket which maps to a color in the frontend.
+    // All sessions in the selected window. Persisted 'idle' chats can have no
+    // live process after restart, so treat them as historical window-bounded rows.
     const allCandidates = db
       .prepare(
         `SELECT sessionId, agent, status, kind, source, app_id, projectId, parentSessionId,
               startedAt, endedAt
        FROM sessions
-       WHERE (startedAt > ? OR status IN ('running', 'idle') OR (endedAt IS NOT NULL AND endedAt > ?))
+       WHERE (startedAt > ? OR status = 'running' OR (endedAt IS NOT NULL AND endedAt > ?))
          AND agent IS NOT NULL AND agent != ''
        ORDER BY startedAt DESC
        LIMIT ?`,
@@ -382,7 +382,7 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       const status: UnifiedTimelineItem["status"] =
         s.status === "error"
           ? "error"
-          : s.status === "running" || s.status === "idle"
+          : s.status === "running"
             ? "running"
             : s.status === "interrupted"
               ? "interrupted"
@@ -603,7 +603,7 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
     const timelineTruncated = truncatedSources.length > 0;
 
     const activeSessions =
-      (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle')").get() as any)?.c ?? 0;
+      (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status = 'running'").get() as any)?.c ?? 0;
     const activeRunningItems = timelineItems.filter((i) => i.status === "running").length;
     const openAlertCandidates = enrichOpenAlerts(
       db,

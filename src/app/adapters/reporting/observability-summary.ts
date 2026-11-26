@@ -63,7 +63,7 @@ function normalizeAppKey(raw: string | null | undefined): string {
     .replace(/\.app$/i, "");
 }
 
-function readDisabledAppIdFromFile(dir: string): string | null {
+export function readDeclaredAppIdFromDir(dir: string): string | null {
   for (const file of ["app.ts", "app.js"]) {
     const candidate = join(dir, file);
     if (!existsSync(candidate)) continue;
@@ -119,7 +119,7 @@ export function resolveAppCatalog(options: {
           if (!statSync(dir).isDirectory()) continue;
           if (existsSync(join(dir, ".disabled"))) {
             disabledSet.add(stem);
-            const declaredId = readDisabledAppIdFromFile(dir);
+            const declaredId = readDeclaredAppIdFromDir(dir);
             if (declaredId) disabledSet.add(declaredId);
           }
         } catch {
