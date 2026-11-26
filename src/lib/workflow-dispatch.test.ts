@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import type { SubagentManager } from "./manager.js";
 import { closeDb } from "./db/connection.js";
 import { getWorkflowRun } from "./db/workflows.js";
@@ -335,14 +336,22 @@ export async function execute(ctx) {
       const { root, opts } = setup();
       const body = join(root, "body-start");
       const finished = join(root, "body-finished");
+      const clockUrl = pathToFileURL(join(root, "clock.mjs")).href;
+      writeFileSync(join(root, "clock.mjs"), `
+let current = ${Date.now()};
+export const now = () => current;
+export const consumePreparation = () => { current += 9900; };
+`);
+      const clock = await import(clockUrl) as { now(): number };
       writeFileSync(
         join(opts.workflowDir!, "root.ts"),
         `
 import { writeFileSync } from "node:fs";
-await new Promise(resolve => setTimeout(resolve, 180));
+import { consumePreparation } from ${JSON.stringify(clockUrl)};
+consumePreparation();
 export const name = "slow-import";
 export const description = "Preparation and body each fit, their total does not";
-${adapter === "standalone" ? "" : "export const executionTimeoutMs = 1000;"}
+${adapter === "standalone" ? "" : "export const executionTimeoutMs = 20000;"}
 export async function execute(ctx) {
   writeFileSync(${JSON.stringify(body)}, "body");
   await new Promise((resolve, reject) => {
@@ -355,13 +364,21 @@ export async function execute(ctx) {
 }
 `,
       );
-      opts.executionTimeoutMs = 280;
-      if (adapter !== "standalone") opts.executionTimeoutLimitMs = 280;
-      const stopped = await invoke(opts);
-      expect(stopped.type).toBe("error");
-      expect(stopped.error).toContain("timed out");
-      expect(existsSync(body)).toBe(true);
-      expect(existsSync(finished)).toBe(false);
+      opts.executionTimeoutMs = 10_000;
+      if (adapter !== "standalone") opts.executionTimeoutLimitMs = 10_000;
+      // Charge known preparation time without racing a native import or DB setup
+      // against a short deadline. The real remaining-budget timer still aborts
+      // the body before its longer work timer, even if the event loop is delayed.
+      const now = spyOn(Date, "now").mockImplementation(clock.now);
+      try {
+        const stopped = await invoke(opts);
+        expect(stopped.type).toBe("error");
+        expect(stopped.error).toContain("timed out");
+        expect(existsSync(body)).toBe(true);
+        expect(existsSync(finished)).toBe(false);
+      } finally {
+        now.mockRestore();
+      }
     });
 
     if (adapter !== "standalone") {
