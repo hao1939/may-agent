@@ -275,6 +275,14 @@ export function validateCallableInput(schema: TSchema, input: unknown): asserts 
   }
 }
 
+/** Prepare the canonical assignment for a prompt callable in either runtime. */
+export function formatExecutionInput(input: unknown): string {
+  validateCallableInput(ExecutionInputSchema, input);
+  return input.data === undefined
+    ? input.prompt
+    : `${input.prompt}\n\nInput data:\n${JSON.stringify(input.data, null, 2)}`;
+}
+
 export function validateCallableOptions(options: CallableOptions | undefined): void {
   if (options === undefined) return;
   if (!options || typeof options !== "object" || Array.isArray(options)) {

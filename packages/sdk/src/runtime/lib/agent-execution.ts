@@ -495,7 +495,8 @@ export async function recoverCapturedWorkflowFinish(options: {
   if (existing) return existing;
 
   const recovery = (async (): Promise<CapturedFinishRecovery> => {
-    const finish = options.tools.find((tool) => tool.name === call.name || tool.name === "finish");
+    const finish = options.tools.find((tool) => tool.name === call.name)
+      ?? options.tools.find((tool) => tool.name === "finish");
     if (!finish) return { disposition: "rejected", toolCallId: call.id, error: "finish tool unavailable" };
     let result: Awaited<ReturnType<AgentTool["execute"]>>;
     try {
@@ -509,7 +510,7 @@ export async function recoverCapturedWorkflowFinish(options: {
       options.messages.push({
         role: "toolResult",
         toolCallId: call.id,
-        toolName: "finish",
+        toolName: call.name,
         content: [{ type: "text", text: error }],
         isError: true,
         timestamp: Date.now(),
@@ -527,7 +528,7 @@ export async function recoverCapturedWorkflowFinish(options: {
     options.messages.push({
       role: "toolResult",
       toolCallId: call.id,
-      toolName: "finish",
+      toolName: call.name,
       content: result.content,
       isError: Boolean(semanticError),
       timestamp: Date.now(),
@@ -1145,6 +1146,8 @@ export type AgentPreparationOptions = {
   /** Pure caller admission check; rejection keeps this invocation open for correction. */
   validateOutput?: (result: unknown) => string | null;
   toolPolicy?: ToolPolicy;
+  /** Trusted bindings for this invocation; applied after rebasing, before policy and finish validation. */
+  toolBindings?: readonly AgentTool[];
   /** Override the registered agent's filesystem tools for this execution only. */
   executionRoot?: string;
   promptTimestamp?: string;
@@ -1275,7 +1278,9 @@ function runtimeEnvironment(
 
 function resolveTools(options: AgentPreparationOptions, requireFinish: boolean): AgentTool[] {
   const { definition } = options;
-  let tools = definition.tools;
+  const bindings = options.toolBindings ?? [];
+  const boundNames = new Set(bindings.map(tool => tool.name));
+  let tools = [...definition.tools.filter(tool => !boundNames.has(tool.name)), ...bindings];
   if (options.toolPolicy === "readonly") {
     tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
   }
@@ -1289,6 +1294,7 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
 
   const scopedFinish = options.executionRoot ? options.createFinish?.() : undefined;
   const baseFinish =
+    bindings.find(tool => tool.name === "finish") ??
     scopedFinish ??
     tools.find((tool) => tool.name === "finish") ??
     definition.tools.find((tool) => tool.name === "finish") ??
@@ -1298,32 +1304,7 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   }
   const finish = createWorkflowFinishTool(baseFinish, options.outputSchema, options.validateOutput);
   const index = tools.findIndex((tool) => tool.name === "finish");
-  let finalTools = index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool));
-  const reconcileIndex = finalTools.findIndex((tool) => tool.name === "reconcile");
-  if (reconcileIndex >= 0) {
-    finalTools = finalTools.map((tool, offset) =>
-      offset === reconcileIndex
-        ? {
-            ...finish,
-            name: "reconcile",
-            label: "Reconcile Turn",
-            description:
-              "Commit this Task attempt's reconciliation decision ({ state: 'waiting' | 'converged' | 'incomplete', summary, facts, and optional continue, inputKeys, requests, conditions, actions, communication }) and end the current turn.",
-            parameters: Type.Unsafe({
-              ...structuredClone(
-                ((finish.parameters as any)?.properties?.output?.anyOf?.[0] as Record<string, unknown> | undefined) ??
-                  finish.parameters,
-              ),
-              description:
-                "Flat Task attempt reconciliation result (state: 'waiting' | 'converged' | 'incomplete', summary, facts, optional continue, inputKeys, requests, conditions, actions, communication).",
-            }),
-            prepareArguments: undefined,
-            execute: async (toolCallId, params, signal, onUpdate) =>
-              finish.execute(toolCallId, params, signal, onUpdate),
-          }
-        : tool,
-    );
-  }
+  const finalTools = index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool));
   assertUniqueToolNames(
     finalTools.map((tool, offset) => ({
       tool,

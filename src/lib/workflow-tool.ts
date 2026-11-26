@@ -8,6 +8,7 @@ import {
   WorkflowUnconfirmedCleanupError,
   canonicalCallableName,
   createWorkflowAllowance,
+  formatExecutionInput,
   resolveCallable,
   runWorkflowInvocation,
   type CallableDescriptor,
@@ -1044,10 +1045,7 @@ function createPreparedWorkflowRunner(
             invoke: async (callOptions, stepControl) => {
               const steering = steeringQueue.shift();
               if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
-              const prompt = envelope.data === undefined
-                ? envelope.prompt
-                : `${envelope.prompt}\n\nAssignment data:\n${JSON.stringify(envelope.data, null, 2)}`;
-              return executePromptStep(resolved.name, prompt, callOptions, stepControl);
+              return executePromptStep(resolved.name, formatExecutionInput(envelope), callOptions, stepControl);
             },
           };
         },
