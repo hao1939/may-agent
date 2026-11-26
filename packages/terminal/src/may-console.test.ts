@@ -1382,7 +1382,9 @@ describe("May Console", () => {
       appId, taskId, ref, status: terminal ? "done" : "running", outcome: `Work ${ref}`, summary,
       updatedAt: Date.now(), terminal, cancellable: !terminal,
     });
-    await waitFor(() => output.includes("you>"));
+    await waitFor(
+      () => output.includes("you>") && pending.some(({ frame }) => frame.type === "tasks.list" && frame.allApps),
+    );
 
     child.stdin.write("/watch aaaaaaaa\n");
     await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "aaaaaaaa"));
