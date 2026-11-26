@@ -227,8 +227,21 @@ export class AppInboxHost {
     return [...this.#apps.keys()].sort();
   }
 
+  hasExactApp(appId: string): boolean {
+    return this.#apps.has(appId.trim());
+  }
+
+  resolveAppId(appId: string): string | undefined {
+    const raw = appId.trim();
+    if (!raw) return undefined;
+    if (this.#apps.has(raw)) return raw;
+    if (!raw.endsWith(".app")) return undefined;
+    const alias = raw.slice(0, -".app".length);
+    return alias && this.#apps.has(alias) ? alias : undefined;
+  }
+
   hasApp(appId: string): boolean {
-    return this.#apps.has(appId.trim().replace(/\.app$/, ""));
+    return this.resolveAppId(appId) !== undefined;
   }
 
   /** Atomically replace the live App definitions after a validated reload. */
@@ -410,7 +423,8 @@ export class AppInboxHost {
 
   #requiredApp(appId: string): RegisteredApp {
     const normalized = requiredText(appId, "App id");
-    const app = this.#apps.get(normalized);
+    const resolved = this.resolveAppId(normalized);
+    const app = resolved ? this.#apps.get(resolved) : undefined;
     if (!app) throw new Error(`Unknown App: ${normalized}`);
     return app;
   }

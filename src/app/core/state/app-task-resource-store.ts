@@ -198,6 +198,23 @@ export type AppTaskResourceMutation = {
   controlReceipts?: AppTaskControlReceipt[];
 };
 
+function resolveExistingStoreAppId(db: SqliteDb, appId: string): string {
+  const raw = appId.trim();
+  if (!raw || !raw.endsWith(".app")) return raw;
+  const hasExact = Boolean(
+    db
+      .prepare(
+        `SELECT 1 FROM app_task_store_meta WHERE app_id = ?
+         UNION ALL SELECT 1 FROM app_tasks WHERE app_id = ?
+         UNION ALL SELECT 1 FROM app_task_cancellations WHERE app_id = ?
+         LIMIT 1`,
+      )
+      .get(raw, raw, raw),
+  );
+  if (hasExact) return raw;
+  return raw.slice(0, -".app".length) || raw;
+}
+
 export class AppTaskResourceStore {
   private constructor(
     readonly db: SqliteDb,
@@ -206,7 +223,7 @@ export class AppTaskResourceStore {
   ) {}
 
   static fromDb(db: SqliteDb, appId: string): AppTaskResourceStore {
-    const normalized = appId.trim().replace(/\.app$/, "");
+    const normalized = appId.trim();
     if (!normalized) throw new Error("Task resource store requires an App id");
     ensureTaskResourceSchema(db);
     assertSupportedTaskResourceSchemaVersion(db, normalized);
@@ -221,7 +238,7 @@ export class AppTaskResourceStore {
 
   /** Inspect an installed Host database without creating App metadata or activating its seed. */
   static inspectFromDb(db: SqliteDb, appId: string): AppTaskResourceStore {
-    const normalized = appId.trim().replace(/\.app$/, "");
+    const normalized = resolveExistingStoreAppId(db, appId);
     if (!normalized) throw new Error("Task resource store requires an App id");
     assertSupportedTaskResourceSchemaVersion(db, normalized);
     return new AppTaskResourceStore(db, normalized, false);
@@ -229,14 +246,20 @@ export class AppTaskResourceStore {
 
   /** Discover an active App without creating or activating state. */
   static activeFromDb(db: SqliteDb, appId: string): AppTaskResourceStore | null {
-    const normalized = appId.trim().replace(/\.app$/, "");
-    if (!normalized) return null;
-    const row = db
-      .prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'")
-      .get(normalized) as { value?: string } | null;
-    if (row?.value !== "resources") return null;
-    assertSupportedTaskResourceSchemaVersion(db, normalized, true);
-    return new AppTaskResourceStore(db, normalized, false);
+    const raw = appId.trim();
+    if (!raw) return null;
+    const candidates = raw.endsWith(".app") ? [raw, raw.slice(0, -".app".length)] : [raw];
+    for (const normalized of candidates) {
+      if (!normalized) continue;
+      const row = db
+        .prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'")
+        .get(normalized) as { value?: string } | null;
+      if (row?.value === "resources") {
+        assertSupportedTaskResourceSchemaVersion(db, normalized, true);
+        return new AppTaskResourceStore(db, normalized, false);
+      }
+    }
+    return null;
   }
 
   static openStandalone(path: string, appId = "test"): AppTaskResourceStore {
@@ -420,7 +443,7 @@ export class AppTaskResourceStore {
         if (condition.spec.owner?.trim() === "Hao") condition.spec.owner = "human:Hao";
       }
     }
-    if (tree.project && tree.project.replace(/\.app$/, "") !== this.appId) {
+    if (tree.project && tree.project !== this.appId && tree.project.replace(/\.app$/, "") !== this.appId) {
       throw new Error(`Task snapshot project ${tree.project} does not match App ${this.appId}`);
     }
     const ready = new Set(readyTaskIds);

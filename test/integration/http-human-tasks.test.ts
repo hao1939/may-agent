@@ -850,15 +850,16 @@ describe("HTTP human Task reads and board", () => {
       expect(published).toHaveLength(0);
       // A stalled action read cannot undo later explicit navigation or take the composer.
       await page.setRequestInterception(true);
-      let held: import("puppeteer-core").HTTPRequest | undefined;
+      const intercepted = Promise.withResolvers<import("puppeteer-core").HTTPRequest>();
       page.on("request", request => {
-        if (request.url().includes("/api/tasks?") && request.url().includes("humanActionOnly")) held = request;
+        if (request.url().includes("/api/tasks?") && request.url().includes("humanActionOnly")) intercepted.resolve(request);
         else void request.continue();
       });
       await page.evaluate("void loadMayHumanActions()");
       await page.waitForFunction(() => document.querySelector("#human-action-list")!.textContent!.includes("Reading"));
+      const held = await intercepted.promise;
       await page.evaluate("routeTo('/metrics')");
-      await held!.continue();
+      await held.continue();
       await page.waitForNetworkIdle({ idleTime: 50 });
       expect(new URL(page.url()).pathname).toBe("/metrics");
       expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Keep this discussion draft");

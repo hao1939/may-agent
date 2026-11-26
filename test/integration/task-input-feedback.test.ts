@@ -604,3 +604,335 @@ for (const ownerApp of ["interface", "worker", "restrictive"]) {
     }
   }, 15_000);
 }
+
+test("resolves literal .app App IDs before suffix aliases across replies and approvals, and rejects stale cards on deferred admission", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-reply-collision-deferred-"));
+  const persistDir = join(root, "state");
+  const writeApp = (dirName: string, appId: string) => {
+    mkdirSync(join(root, dirName, "tasks"), { recursive: true });
+    writeFileSync(
+      join(root, dirName, "tasks", "seed.json"),
+      JSON.stringify({
+        root_task_id: "root",
+        groups: { root: { id: "root", parent_id: null } },
+        resources: {
+          question: {
+            metadata: { id: "question", generation: 1, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: `Deliver ${appId}`, acceptance: ["Verified"] },
+            status: { phase: "waiting", observedGeneration: 1, conditionIds: ["ask"], updatedAt: new Date().toISOString() },
+          },
+          proposal_task: {
+            metadata: { id: "proposal_task", generation: 1, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: `Approve ${appId}`, acceptance: ["Approved"] },
+            status: { phase: "waiting", observedGeneration: 1, conditionIds: ["release"], updatedAt: new Date().toISOString() },
+          },
+        },
+        conditions: {
+          ask: {
+            metadata: { id: "ask", generation: 1, resourceVersion: 1 },
+            spec: {
+              type: "human.question",
+              subject: `${appId}:env`,
+              owner: "human",
+              requestedAction: `Select environment for ${appId}`,
+            },
+            status: { state: "unknown", observedGeneration: 0 },
+          },
+          release: {
+            metadata: { id: "release", generation: 1, resourceVersion: 1 },
+            spec: {
+              type: "project.approval.submitted",
+              subject: `${appId}:release`,
+              owner: "human",
+              requestedAction: `Approve release for ${appId}`,
+              expected: { allowedDecisions: ["approve", "reject"] },
+            },
+            status: { state: "unknown", observedGeneration: 0 },
+          },
+        },
+      }),
+    );
+    writeFileSync(
+      join(root, dirName, "app.js"),
+      `export default {
+        id: ${JSON.stringify(appId)}, version: 1, agent: "owner", tasks: {},
+        inputSchema: { type: "object", required: ["kind", "data"], properties: {
+          kind: { const: "message" }, data: { type: "object" }
+        } },
+        ${appId === "interface" ? 'conversation: { mode: "task", inputKinds: ["message"], conversationId: "primary" },' : ""}
+        task() { return { kind: "existing", taskId: "question" }; }
+      };`,
+    );
+  };
+  writeApp("interface.app", "interface");
+  writeApp("worker.app", "worker");
+  writeApp("worker-dot.app", "worker.app");
+
+  const bus = new EventBus();
+  const db = getDb(persistDir);
+  const writer = new DbWriter(persistDir);
+  bus.setPersistenceSubscriber(writer.handler);
+  bus.setDeliveryRecorder(writer.recordDelivery);
+  const registry = new AppRegistry(discoverAppDefinitions(root));
+  await registry.reload();
+  const gate = Promise.withResolvers<void>();
+  await installAppTaskRuntimes(
+    {
+      projectRoot: root,
+      projectsRoot: root,
+      persistDir,
+      bus,
+      appRegistrySnapshot: registry.snapshot(),
+      startAfter: gate.promise,
+    },
+    { deferRecovery: true },
+  );
+  const capability = createAppTaskCapability({ bus, db });
+  let deferAttach = false;
+  const runtime = await startAppInboxRuntime({
+    registry,
+    db,
+    bus,
+    scanIntervalMs: 60_000,
+    attachTask: (input) => {
+      if (deferAttach) throw new Error("transient task attachment deferral");
+      return capability.attach(input);
+    },
+    admitConversation: capability.admitConversation,
+    admitTaskEvent: capability.admitEvent,
+    hasTaskTarget: capability.has,
+    previewTaskEvent: capability.previewEvent,
+    previewTaskEventRoutes: capability.previewEventRoutes,
+  });
+  const events = createEventInterface({
+    bus,
+    db,
+    hasApp: (id) => runtime.host.hasApp(id),
+    validateAppInput: (id, input) => runtime.host.assertAcceptsInput(id, input),
+  });
+  const service = new HumanTaskService(db, registry);
+  const receipts: AgentEvent[] = [];
+  const unlisten = bus.listen((event) => {
+    if (event.type === "app.task.requested") receipts.push(event);
+  });
+
+  const waitFor = async (count: number) => {
+    const deadline = Date.now() + 2_000;
+    while (receipts.length < count && Date.now() < deadline) await Bun.sleep(5);
+    expect(receipts).toHaveLength(count);
+  };
+
+  try {
+    // 1. Literal App ID "worker.app" routes to "worker.app" (never rewritten to "worker").
+    const dotQuestionReply = {
+      replyTo: "dot-question-card",
+      taskReply: {
+        target: { appId: "worker.app", taskId: "question" },
+        taskGeneration: 1,
+        condition: { taskGeneration: 1, conditionId: "ask", conditionGeneration: 1 },
+      },
+    };
+    events.publish(
+      {
+        type: "conversation.message.created",
+        target: { appId: "interface" },
+        idempotencyKey: "dot-question-1",
+        data: {
+          conversationId: "primary",
+          author: { kind: "human", id: "dot-human" },
+          text: "Use staging on worker.app",
+          ...dotQuestionReply,
+        },
+      },
+      { source: "control-socket" },
+    );
+    await waitFor(1);
+    expect(receipts[0]!.target).toEqual({ project: "worker.app", taskId: "question" });
+    const plainStore = AppTaskResourceStore.activeFromDb(db, "worker")!;
+    const dotStore = AppTaskResourceStore.activeFromDb(db, "worker.app")!;
+    expect(Object.keys(plainStore.readSnapshot().appTaskAdmissions ?? {})).toHaveLength(0);
+    expect(Object.keys(dotStore.readSnapshot().appTaskAdmissions ?? {})).toHaveLength(1);
+
+    // Mismatched approvalReply ("worker") vs taskReply ("worker.app") is rejected, while exact "worker.app" approves only "worker.app".
+    const dotProposal = service.getTask({ appId: "worker.app", taskId: "proposal_task" })!.approvalProposal!;
+    const plainProposal = service.getTask({ appId: "worker", taskId: "proposal_task" })!.approvalProposal!;
+    const auth = {
+      actor: { kind: "operator" as const, id: "op" },
+      reference: "fixture:dot-approval",
+      evidence: { decisionText: "approve" },
+    };
+    const collisionAttempt = events.publish(
+      {
+        type: "conversation.message.created",
+        target: { appId: "interface" },
+        idempotencyKey: "collision-approve",
+        data: {
+          conversationId: "primary",
+          author: { kind: "human", id: "op" },
+          text: "approve",
+          replyTo: "collision-card",
+          taskReply: { target: { appId: "worker.app", taskId: "proposal_task" }, taskGeneration: 1 },
+          approvalReply: { target: { appId: "worker", taskId: "proposal_task" }, proposal: plainProposal },
+        },
+      },
+      { source: "control-socket", approvalAuthorization: auth },
+    );
+    expect(collisionAttempt.approval).toHaveProperty("reason");
+    expect(
+      db.prepare("SELECT target_task_id FROM app_inbox_items WHERE source_id = 'op'").get(),
+    ).toEqual({ target_task_id: null });
+
+    const exactDotApprove = events.publish(
+      {
+        type: "conversation.message.created",
+        target: { appId: "interface" },
+        idempotencyKey: "exact-dot-approve",
+        data: {
+          conversationId: "primary",
+          author: { kind: "human", id: "dot-approver" },
+          text: "approve",
+          replyTo: "dot-proposal-card",
+          taskReply: { target: { appId: "worker.app", taskId: "proposal_task" }, taskGeneration: 1 },
+          approvalReply: { target: { appId: "worker.app", taskId: "proposal_task" }, proposal: dotProposal },
+        },
+      },
+      { source: "control-socket", approvalAuthorization: auth },
+    );
+    expect(exactDotApprove.approval).toMatchObject({ decision: "approve", eventId: expect.any(Number) });
+    await waitFor(2);
+
+    // Legacy ".app" suffix alias ("interface.app" -> "interface") still resolves when no literal "interface.app" App exists.
+    const countBeforeAlias = receipts.length;
+    events.publish(
+      {
+        type: "conversation.message.created",
+        target: { appId: "interface" },
+        idempotencyKey: "legacy-alias-question",
+        data: {
+          conversationId: "primary",
+          author: { kind: "human", id: "alias-human" },
+          text: "Alias reply",
+          replyTo: "alias-card",
+          taskReply: {
+            target: { appId: "interface.app", taskId: "question" },
+            taskGeneration: 1,
+            condition: { taskGeneration: 1, conditionId: "ask", conditionGeneration: 1 },
+          },
+        },
+      },
+      { source: "control-socket" },
+    );
+    await waitFor(countBeforeAlias + 1);
+    expect(receipts.at(-1)!.target).toEqual({ project: "interface", taskId: "question" });
+
+    // 2. Deferred admission: both stale question cards and stale proposal-only cards reject with AppTaskAdmissionError
+    // without emitting app.task.requested, while already-committed admissions replay cleanly after Condition changes.
+    const receiptsBeforeDeferred = receipts.length;
+    deferAttach = true;
+    events.publish(
+      {
+        type: "conversation.message.created",
+        target: { appId: "interface" },
+        idempotencyKey: "deferred-question",
+        data: {
+          conversationId: "primary",
+          author: { kind: "human", id: "deferred-q-user" },
+          text: "Deferred answer",
+          replyTo: "plain-q-card",
+          taskReply: {
+            target: { appId: "worker", taskId: "question" },
+            taskGeneration: 1,
+            condition: { taskGeneration: 1, conditionId: "ask", conditionGeneration: 1 },
+          },
+        },
+      },
+      { source: "control-socket" },
+    );
+    events.publish(
+      {
+        type: "conversation.message.created",
+        target: { appId: "interface" },
+        idempotencyKey: "deferred-proposal",
+        data: {
+          conversationId: "primary",
+          author: { kind: "human", id: "deferred-p-user" },
+          text: "Deferred proposal feedback",
+          replyTo: "plain-p-card",
+          taskReply: { target: { appId: "worker", taskId: "proposal_task" }, taskGeneration: 1 },
+          approvalReply: { target: { appId: "worker", taskId: "proposal_task" }, proposal: plainProposal },
+        },
+      },
+      { source: "control-socket" },
+    );
+    expect(receipts).toHaveLength(receiptsBeforeDeferred);
+
+    // Replace both the displayed question and the displayed proposal at the SAME Task generation (1) before recovery.
+    const plainQTask = plainStore.readTask("question")!;
+    const plainAsk = plainStore.readTaskContext({ taskIds: ["question"] }).conditions!.ask!;
+    expect(
+      plainStore.commit({
+        fences: [{ taskId: "question", resourceVersion: plainQTask.metadata.resourceVersion }],
+        conditions: [{ ...plainAsk, metadata: { ...plainAsk.metadata, generation: 2, resourceVersion: 2 } }],
+      }),
+    ).toBe(true);
+
+    const plainPTask = plainStore.readTask("proposal_task")!;
+    const plainRelease = plainStore.readTaskContext({ taskIds: ["proposal_task"] }).conditions!.release!;
+    expect(
+      plainStore.commit({
+        fences: [{ taskId: "proposal_task", resourceVersion: plainPTask.metadata.resourceVersion }],
+        conditions: [
+          {
+            ...plainRelease,
+            metadata: { ...plainRelease.metadata, generation: 2, resourceVersion: 2 },
+            spec: { ...plainRelease.spec, requestedAction: "Approve replacement release" },
+          },
+        ],
+      }),
+    ).toBe(true);
+
+    deferAttach = false;
+    for (const sourceId of ["deferred-q-user", "deferred-p-user"]) {
+      const row = db.prepare("SELECT id FROM app_inbox_items WHERE source_id = ?").get(sourceId) as { id: string };
+      db.run("UPDATE app_inbox_items SET available_at = NULL WHERE id = ?", [row.id]);
+      runtime.host.recoverAdmission(row.id);
+      const updated = runtime.host.get(row.id)!;
+      expect(updated.status).toBe("done");
+      expect(updated.handling).toMatchObject({ phase: "failed" });
+    }
+    expect(receipts).toHaveLength(receiptsBeforeDeferred);
+    expect(Object.keys(plainStore.readSnapshot().appTaskAdmissions ?? {})).toHaveLength(0);
+
+    // Meanwhile, the already-committed admission on worker.app replays idempotently even after its question changes!
+    const committedRow = db
+      .prepare("SELECT id, task_admission_key FROM app_inbox_items WHERE source_id = 'dot-human'")
+      .get() as { id: string; task_admission_key: string };
+    const dotQTask = dotStore.readTask("question")!;
+    const dotAsk = dotStore.readTaskContext({ taskIds: ["question"] }).conditions!.ask!;
+    expect(
+      dotStore.commit({
+        fences: [{ taskId: "question", resourceVersion: dotQTask.metadata.resourceVersion }],
+        conditions: [{ ...dotAsk, metadata: { ...dotAsk.metadata, generation: 2, resourceVersion: 2 } }],
+      }),
+    ).toBe(true);
+    const committedItem = runtime.host.get(committedRow.id)!;
+    const replay = capability.attach({
+      appDir: join(root, "worker-dot.app"),
+      appId: "worker.app",
+      attachment: { kind: "existing", taskId: "question" },
+      idempotencyKey: committedRow.task_admission_key,
+      inboxInputId: committedItem.id,
+      inputContext: { id: committedItem.id, source: committedItem.source, input: committedItem.input },
+    });
+    expect(replay).toEqual({ taskId: "question" });
+    expect(receipts).toHaveLength(receiptsBeforeDeferred);
+  } finally {
+    unlisten();
+    runtime.close();
+    const drained = closeInstalledAppTaskRuntimes(bus);
+    gate.resolve();
+    await drained;
+    closeDb(persistDir);
+    rmSync(root, { recursive: true, force: true });
+  }
+}, 15_000);

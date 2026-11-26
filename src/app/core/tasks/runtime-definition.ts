@@ -127,7 +127,9 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
     throw new Error('Executor name "conversation" is retired and reserved; rename the adapter');
   const descriptors: AppTaskRuntimeDescriptor[] = [];
   const ids = new Set<string>();
-  const selectedIds = opts.taskAppIds ? new Set(opts.taskAppIds.map((id) => id.trim().replace(/\.app$/, ""))) : null;
+  const selectedIds = opts.taskAppIds
+    ? new Set(opts.taskAppIds.flatMap((id) => [id.trim(), id.trim().replace(/\.app$/, "")]))
+    : null;
   const entries = opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
   for (const { appDir, definition: app } of entries) {
     if (!app.tasks && !app.conversation) continue;

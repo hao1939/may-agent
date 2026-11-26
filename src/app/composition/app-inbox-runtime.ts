@@ -874,7 +874,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
               ? (data.metadata as Record<string, unknown>)
               : {};
-          const approval = deliverConversationApproval(event, options.db, options.bus);
+          const approval = deliverConversationApproval(event, options.db, options.bus, (id) => host.hasExactApp(id));
           const persistedEventId = eventRowId(event);
           const fallbackSequence =
             typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
@@ -900,9 +900,17 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             notifyConversationUpdated(inputConversationAppId(options.db, item), item.conversationId);
             return { accepted: true, by: `conversation:${conversationId}:app-inbox:${item.appId}` };
           }
-          const suppliedReply = readHumanTaskReply(data, event.source === "telegram");
-          let reply = suppliedReply && host.hasApp(suppliedReply.target.appId) &&
-            currentHumanTaskReply(options.db, suppliedReply) ? suppliedReply : null;
+          const suppliedReply = readHumanTaskReply(data, {
+            trustedTelegram: event.source === "telegram",
+            hasExactApp: (id) => host.hasExactApp(id),
+            db: options.db,
+          });
+          const resolvedReplyAppId = suppliedReply ? host.resolveAppId(suppliedReply.target.appId) : undefined;
+          const resolvedReply =
+            suppliedReply && resolvedReplyAppId
+              ? { ...suppliedReply, target: { ...suppliedReply.target, appId: resolvedReplyAppId } }
+              : null;
+          let reply = resolvedReply && currentHumanTaskReply(options.db, resolvedReply) ? resolvedReply : null;
           let unsupportedReply = false;
           if (reply) {
             // Preflight only the declared input contract. Persistence/admission

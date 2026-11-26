@@ -19,7 +19,7 @@ import {
 } from "./approval.js";
 import { isLiveOnlyEventType } from "./persistence-policy.js";
 import { readEventTaskTarget } from "./task-target.js";
-import { readHumanTaskReply } from "./task-reply.js";
+import { readHumanTaskReply, resolveHumanTaskReplyAppId } from "./task-reply.js";
 import { readPersistedEventEnvelope } from "./persisted.js";
 import { getAppEventAdmissionPlan } from "../state/app-event-admission-store.js";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -707,6 +707,7 @@ export function deliverConversationApproval(
   event: AgentEvent & { [EVENT_ROW_ID]?: number },
   db: SqliteDb,
   bus: EventBus,
+  hasExactApp?: (appId: string) => boolean,
 ): EventReceipt["approval"] {
   const data = eventData(event);
   if (!data.approvalReply || !approvalDecision(data.text)) return undefined;
@@ -714,7 +715,14 @@ export function deliverConversationApproval(
   if (!reply.hostApproval)
     return { reason: "No valid, authorized proposal reply was supplied. Your text remains conversation." };
   const { target, ...decision } = reply;
-  const input: EventInput = { type: "project.approval.submitted", target: target as EventTarget, data: decision };
+  const rawTarget = target && typeof target === "object" && !Array.isArray(target) ? (target as EventTarget) : {};
+  const resolvedTarget: EventTarget = {
+    ...rawTarget,
+    ...(typeof rawTarget.appId === "string"
+      ? { appId: resolveHumanTaskReplyAppId(rawTarget.appId, { db, hasExactApp }) }
+      : {}),
+  };
+  const input: EventInput = { type: "project.approval.submitted", target: resolvedTarget, data: decision };
   const source = requiredText((event as { source?: string }).source, "Saved input source");
   if (!readVerifiedApprovalDecision({ ...input, source }))
     throw new Error("Saved input has invalid approval attribution");
@@ -729,7 +737,7 @@ export function deliverConversationApproval(
   // A saved decision remains the receipt even after its Condition has resolved.
   const prior = findPersistedEventId(db, canonical);
   if (!prior) {
-    if (data.taskReply !== undefined && !readHumanTaskReply(data))
+    if (data.taskReply !== undefined && !readHumanTaskReply(data, { db, hasExactApp }))
       return { reason: "The displayed reply bindings disagree. No approval was recorded; your text remains conversation." };
     try {
       validateCurrentApproval(bound, db);

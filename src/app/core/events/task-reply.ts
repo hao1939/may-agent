@@ -15,8 +15,45 @@ export type HumanTaskReply = {
   condition?: { taskGeneration: number; conditionId: string; conditionGeneration: number };
 };
 
+export type HumanTaskReplyOptions = {
+  trustedTelegram?: boolean;
+  hasExactApp?: (appId: string) => boolean;
+  db?: SqliteDb;
+};
+
+/** Resolve exact installed or retained App IDs (such as `worker.app`) before legacy `.app` suffix aliases. */
+export function resolveHumanTaskReplyAppId(
+  value: string,
+  options?: Pick<HumanTaskReplyOptions, "hasExactApp" | "db">,
+): string {
+  const raw = value.trim();
+  if (!raw || !raw.endsWith(".app")) return raw;
+  if (options?.hasExactApp?.(raw)) return raw;
+  if (options?.db) {
+    const hasExact = Boolean(
+      options.db
+        .prepare(
+          `SELECT 1 FROM app_task_store_meta WHERE app_id = ?
+           UNION ALL SELECT 1 FROM app_tasks WHERE app_id = ?
+           UNION ALL SELECT 1 FROM app_task_cancellations WHERE app_id = ?
+           LIMIT 1`,
+        )
+        .get(raw, raw, raw),
+    );
+    if (hasExact) return raw;
+  }
+  if (!options?.hasExactApp && !options?.db) return raw;
+  return raw.slice(0, -".app".length) || raw;
+}
+
 /** An explicit gesture, not a watch, quote, list or inferred intention. */
-export function readHumanTaskReply(data: Record<string, unknown>, trustedTelegram = false): HumanTaskReply | null {
+export function readHumanTaskReply(
+  data: Record<string, unknown>,
+  trustedOrOptions: boolean | HumanTaskReplyOptions = false,
+): HumanTaskReply | null {
+  const options: HumanTaskReplyOptions =
+    typeof trustedOrOptions === "boolean" ? { trustedTelegram: trustedOrOptions } : trustedOrOptions;
+  const trustedTelegram = options.trustedTelegram === true;
   const context = record(data.context);
   let reply = record(data.taskReply);
   // Older Telegram cards already retained a complete ordinary-question anchor.
@@ -54,6 +91,7 @@ export function readHumanTaskReply(data: Record<string, unknown>, trustedTelegra
     Number(reply.taskGeneration) < 1
   )
     return null;
+  const targetAppId = resolveHumanTaskReplyAppId(target.appId, options);
   // Console sends both bindings for a displayed proposal. The weaker feedback
   // binding must not bypass that card's identity, even for non-decision text.
   if (data.approvalReply !== undefined) {
@@ -63,7 +101,8 @@ export function readHumanTaskReply(data: Record<string, unknown>, trustedTelegra
     if (
       !data.replyTo ||
       typeof approvalTarget.appId !== "string" ||
-      approvalTarget.appId.trim().replace(/\.app$/, "") !== target.appId.trim().replace(/\.app$/, "") ||
+      !approvalTarget.appId.trim() ||
+      resolveHumanTaskReplyAppId(approvalTarget.appId, options) !== targetAppId ||
       typeof approvalTarget.taskId !== "string" ||
       approvalTarget.taskId.trim() !== target.taskId.trim() ||
       proposal.taskGeneration !== reply.taskGeneration ||
@@ -83,7 +122,7 @@ export function readHumanTaskReply(data: Record<string, unknown>, trustedTelegra
   )
     return null;
   return {
-    target: { appId: target.appId.trim().replace(/\.app$/, ""), taskId: target.taskId.trim() },
+    target: { appId: targetAppId, taskId: target.taskId.trim() },
     taskGeneration: Number(reply.taskGeneration),
     ...(reply.proposal ? { proposal: reply.proposal } : {}),
     ...(reply.condition === undefined

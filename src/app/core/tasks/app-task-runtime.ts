@@ -208,8 +208,13 @@ const appRouterDescriptorsByBus = new WeakMap<EventBus, AppTaskRuntimeDescriptor
 const appRouterOptionsByBus = new WeakMap<EventBus, AppTaskRuntimeOptions>();
 
 function loadedAppTaskRuntimeDescriptor(bus: EventBus, projectId: string): AppTaskRuntimeDescriptor | undefined {
-  const normalized = projectId.trim().replace(/\.app$/, "");
-  return (appRouterDescriptorsByBus.get(bus) ?? []).find((descriptor) => descriptor.id === normalized);
+  const raw = projectId.trim();
+  if (!raw) return undefined;
+  const list = appRouterDescriptorsByBus.get(bus) ?? [];
+  return (
+    list.find((descriptor) => descriptor.id === raw) ??
+    (raw.endsWith(".app") ? list.find((descriptor) => descriptor.id === raw.slice(0, -".app".length)) : undefined)
+  );
 }
 
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, AppTaskController>>();
@@ -416,9 +421,8 @@ export function admitStandaloneCanonicalAppTaskEvent(input: {
 
 /** Wake already-admitted Task identities without repeating their mutation. */
 export function wakeLoadedAppTasks(input: { bus: EventBus; appId: string; taskIds: string[] }): void {
-  const appId = input.appId.trim().replace(/\.app$/, "");
-  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
-  const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
+  const controller = descriptor ? appTaskControllersByBus.get(input.bus)?.get(descriptor.id) : undefined;
   if (!descriptor || !controller) return;
   const config = appTaskConfig(descriptor);
   for (const taskId of new Set(input.taskIds.map((value) => value.trim()).filter(Boolean))) {
@@ -509,7 +513,7 @@ export function stopLoadedConversationTurn(input: { bus: EventBus; target: AppTu
 
 /** Bounded exact-identity check used before asynchronously admitting feedback. */
 export function hasLoadedAppTask(input: { bus: EventBus; appId: string; taskId: string }): boolean {
-  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId.trim().replace(/\.app$/, ""));
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
   return Boolean(descriptor?.resourceStore.readTask(input.taskId.trim()));
 }
 
@@ -1011,13 +1015,18 @@ function readableAppTaskContext(bus: EventBus, appDir: string): AppTaskContext |
 }
 
 function readableAppTaskContextById(bus: EventBus, appId: string): AppTaskContext | null {
-  const normalizedAppId = appId.trim().replace(/\.app$/, "");
-  const descriptor = (appRouterDescriptorsByBus.get(bus) ?? []).find((candidate) => candidate.id === normalizedAppId);
+  const descriptor = loadedAppTaskRuntimeDescriptor(bus, appId);
   if (descriptor) return appTaskConfig(descriptor);
+  const raw = appId.trim();
   const opts = appRouterOptionsByBus.get(bus);
-  const entry = opts && configuredRegistryEntries(opts).find(
-    (candidate) => candidate.definition.id === normalizedAppId && candidate.definition.tasks,
-  );
+  const entries = opts ? configuredRegistryEntries(opts) : [];
+  const entry =
+    entries.find((candidate) => candidate.definition.id === raw && candidate.definition.tasks) ??
+    (raw.endsWith(".app")
+      ? entries.find(
+          (candidate) => candidate.definition.id === raw.slice(0, -".app".length) && candidate.definition.tasks,
+        )
+      : undefined);
   return entry ? readableAppTaskContext(bus, entry.appDir) : null;
 }
 
