@@ -1,5 +1,6 @@
 import type { SqliteDb } from "../../../lib/db.js";
 import { metricThresholdBreached } from "../../../lib/metrics.js";
+import { classifyMetricScope, resolveObservabilityCatalog, type AppCatalog } from "./observability-summary.js";
 import { WORKFLOW_OUTCOME_METRICS, WORKFLOW_OUTCOMES, WORKFLOW_OUTCOME_WINDOW_MS } from "./workflow-metrics.js";
 
 export const METRIC_LIST_LIMIT = 500;
@@ -8,7 +9,38 @@ export const METRIC_HISTORY_LIMIT = 2_000;
 // A cadence-free or future-dated observation has unknown freshness, never healthy.
 const STALE_INTERVALS = 2;
 
-export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: string[]) {
+export function readMetricObservations(
+  db: SqliteDb,
+  now = Date.now(),
+  ids?: string[],
+  appCatalog?: AppCatalog,
+  options?: { scopeAppId?: string | null; limit?: number; projectsRoot?: string },
+) {
+  const scopeAppId = options?.scopeAppId?.trim() || null;
+  const catalog =
+    appCatalog ?? resolveObservabilityCatalog(db, { projectsRoot: options?.projectsRoot, filterAppId: scopeAppId });
+  const rowLimit = options?.limit ?? METRIC_LIST_LIMIT;
+
+  let effectiveIds = ids;
+  let prefilteredTruncated = false;
+  if (scopeAppId && !ids) {
+    const candidates = db
+      .prepare("SELECT id, owner, project, config FROM metrics WHERE status = 'active' ORDER BY owner, priority, id")
+      .all() as Array<{ id: string; owner: string | null; project: string | null; config: string | null }>;
+    const matching: string[] = [];
+    for (const c of candidates) {
+      const sc = classifyMetricScope(c, catalog);
+      if (sc.kind === "app" && sc.appId === scopeAppId) {
+        matching.push(c.id);
+      }
+    }
+    prefilteredTruncated = matching.length > rowLimit;
+    effectiveIds = matching.slice(0, rowLimit);
+    if (effectiveIds.length === 0) {
+      return { metrics: [], truncated: false, generatedAt: now };
+    }
+  }
+
   const rows = db
     .prepare(
       `SELECT m.id, m.name, m.type, m.owner, m.project, m.target, m.threshold,
@@ -21,10 +53,10 @@ export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: str
     LEFT JOIN events e ON e.id = (
       SELECT id FROM events WHERE metric_id = m.id AND event_type = 'metric.measurement.failed'
       ORDER BY timestamp DESC, id DESC LIMIT 1)
-    WHERE m.status = 'active' ${ids ? `AND m.id IN (${ids.map(() => "?").join(",") || "NULL"})` : ""}
+    WHERE m.status = 'active' ${effectiveIds ? `AND m.id IN (${effectiveIds.map(() => "?").join(",") || "NULL"})` : ""}
     ORDER BY m.owner, m.priority, m.id LIMIT ?`,
     )
-    .all(...(ids ?? []), METRIC_LIST_LIMIT + 1) as Array<{
+    .all(...(effectiveIds ?? []), rowLimit + 1) as Array<{
     id: string;
     name: string | null;
     owner: string | null;
@@ -51,7 +83,7 @@ export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: str
     failedAt: number | null;
     failureData: string | null;
   }>;
-  const metrics = rows.slice(0, METRIC_LIST_LIMIT).map(({ failureData, config, source_query, ...row }) => {
+  const metrics = rows.slice(0, rowLimit).map(({ failureData, config, source_query, ...row }) => {
     let reason = "Source measurement failed; explanation unavailable";
     try {
       const data = JSON.parse(failureData ?? "null");
@@ -60,23 +92,44 @@ export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: str
       /* Retain the failure identity even with unreadable detail. */
     }
     let alertsDisabled = false;
+    let parsedConfig: Record<string, unknown> | null = null;
     try {
-      const alert = JSON.parse(config ?? "null")?.alert;
-      alertsDisabled = alert?.disabled === true || alert?.mode === "disabled";
+      const cfg = JSON.parse(config ?? "null");
+      if (cfg && typeof cfg === "object" && !Array.isArray(cfg)) {
+        parsedConfig = cfg as Record<string, unknown>;
+        const alert = parsedConfig.alert as Record<string, unknown> | undefined;
+        alertsDisabled = alert?.disabled === true || alert?.mode === "disabled";
+      }
     } catch {
       /* No invented policy. */
     }
-    const observed =
+    const lastNoExposureAt =
+      typeof parsedConfig?.lastNoExposureAt === "number" &&
+      Number.isSafeInteger(parsedConfig.lastNoExposureAt) &&
+      parsedConfig.lastNoExposureAt > 0
+        ? parsedConfig.lastNoExposureAt
+        : null;
+    const hasSnapshot =
       row.sampleId !== null && row.value !== null && Number.isFinite(row.value) && row.measured_at !== null;
+    const supersededByNoExposure =
+      lastNoExposureAt !== null && (!hasSnapshot || lastNoExposureAt > row.measured_at!);
+    const observed = hasSnapshot && !supersededByNoExposure;
     const staleAfterMs =
       row.measure_interval && row.measure_interval > 0 ? row.measure_interval * STALE_INTERVALS : null;
-    const freshness = !observed
-      ? "missing"
-      : row.measured_at! > now || staleAfterMs === null
-        ? "unknown"
-        : now - row.measured_at! > staleAfterMs
-          ? "stale"
-          : "fresh";
+    const lastCheckedAt =
+      hasSnapshot && lastNoExposureAt !== null
+        ? Math.max(row.measured_at!, lastNoExposureAt)
+        : hasSnapshot
+          ? row.measured_at!
+          : lastNoExposureAt;
+    const freshness =
+      lastCheckedAt === null
+        ? "missing"
+        : lastCheckedAt > now || staleAfterMs === null
+          ? "unknown"
+          : now - lastCheckedAt > staleAfterMs
+            ? "stale"
+            : "fresh";
     const thresholdBreached =
       observed && row.threshold !== null
         ? metricThresholdBreached({ current: row.value!, threshold: row.threshold, alert_op: row.alert_op })
@@ -101,6 +154,8 @@ export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: str
         : null;
     return {
       ...row,
+      scope: classifyMetricScope({ ...row, config: parsedConfig }, catalog),
+      noExposure: supersededByNoExposure,
       current: observed ? row.value : null,
       updated_at: observed ? row.measured_at : null,
       observation: observed
@@ -123,12 +178,12 @@ export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: str
               eventId: row.failureId,
               at: row.failedAt!,
               reason,
-              afterLastSample: !observed || row.failedAt! >= row.measured_at!,
+              afterLastSample: lastCheckedAt === null || row.failedAt! >= lastCheckedAt,
             }
           : null,
     };
   });
-  return { metrics, truncated: rows.length > METRIC_LIST_LIMIT, generatedAt: now };
+  return { metrics, truncated: prefilteredTruncated || rows.length > rowLimit, generatedAt: now };
 }
 
 export function readMetricHistory(db: SqliteDb, metricId: string, window: { start: number; end: number }) {

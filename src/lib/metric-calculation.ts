@@ -31,6 +31,12 @@ export function metricMaxAgeMs(
     (measureInterval && measureInterval > 0 ? measureInterval * 2 : options.windowMs);
 }
 
+function readLastNoExposureAt(config: unknown): number | null {
+  if (!config || typeof config !== "object" || Array.isArray(config)) return null;
+  const raw = (config as { lastNoExposureAt?: unknown }).lastNoExposureAt;
+  return typeof raw === "number" && Number.isSafeInteger(raw) && raw > 0 ? raw : null;
+}
+
 /** Pure observation: callers own scheduling and any alert transition. */
 export function calculateMetric(
   db: SqliteDb,
@@ -38,12 +44,24 @@ export function calculateMetric(
   now: number,
 ): MetricCalculation {
   const options = metricCalculationOptions(metric.config);
+  const lastNoExposureAt = readLastNoExposureAt(metric.config);
   const latest = db
     .prepare(
       `SELECT value, measured_at FROM metric_snapshots
     WHERE metric_id = ? AND measured_at <= ? ORDER BY measured_at DESC, id DESC LIMIT 1`,
     )
     .get(metric.id, now) as { value: number; measured_at: number } | null;
+  if (lastNoExposureAt !== null && lastNoExposureAt <= now && (!latest || lastNoExposureAt > latest.measured_at)) {
+    return {
+      method: options.method,
+      value: null,
+      calculatedAt: now,
+      measuredAt: null,
+      sampleCount: 0,
+      ...(options.windowMs === undefined ? {} : { windowMs: options.windowMs }),
+      reason: "Latest check had no exposure",
+    };
+  }
   const result: MetricCalculation = {
     method: options.method,
     value: null,

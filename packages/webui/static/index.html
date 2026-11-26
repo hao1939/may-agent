@@ -30,9 +30,12 @@
 <div class="main">
   <!-- Dashboard -->
   <div id="dashboard">
-    <section id="workflow-overview" class="health-section" aria-live="polite"></section>
-    <section id="overview-tasks" class="health-section" aria-live="polite"></section>
     <div id="liveness-panel" class="liveness"></div>
+    <section id="top-down-overview" class="health-section" aria-live="polite"></section>
+    <div class="overview-bottom-grid">
+      <section id="overview-tasks" class="health-section" aria-live="polite"></section>
+      <section id="workflow-overview" class="health-section" aria-live="polite"></section>
+    </div>
   </div>
   <div id="agents" class="hidden">
     <div id="agents-content"></div>
@@ -79,11 +82,20 @@
 
   <!-- Metrics -->
   <div id="metrics" class="hidden">
-    <section id="metrics-context" class="health-section" aria-live="polite"></section>
-    <section id="metrics-workflows" class="health-section" aria-live="polite"></section>
-    <div id="metrics-alerts" style="margin-bottom:16px"></div>
-    <div id="metrics-by-owner"></div>
-    <div id="metrics-recent" style="margin-top:20px"></div>
+    <nav id="metrics-subnav" class="metrics-subnav" aria-label="Metrics sections">
+      <button type="button" class="td-window-btn" onclick="scrollMetricsSection('metrics-top-down')">Trends &amp; Scorecards</button>
+      <button type="button" class="td-window-btn" onclick="scrollMetricsSection('metrics-catalog-card')">Catalog &amp; Alerts</button>
+      <button type="button" class="td-window-btn" onclick="scrollMetricsSection('metrics-workflows')">Workflows</button>
+      <button type="button" class="td-window-btn" onclick="scrollMetricsSection('metrics-context')">Context &amp; Cost</button>
+    </nav>
+    <section id="metrics-top-down" class="health-section" aria-live="polite"></section>
+    <section id="metrics-catalog-card" class="metrics-surface-card">
+      <div id="metrics-alerts" style="margin-bottom:12px"></div>
+      <div id="metrics-by-owner"></div>
+    </section>
+    <section id="metrics-workflows" class="health-section metrics-surface-card" aria-live="polite"></section>
+    <section id="metrics-context" class="health-section metrics-surface-card" aria-live="polite"></section>
+    <div id="metrics-recent" class="metrics-surface-card hidden"></div>
   </div>
 
   <div id="terminal" class="hidden">

@@ -1007,4 +1007,281 @@ describe("served workflow and metric health pages", () => {
     },
     30000,
   );
+
+  test.skipIf(skipBrowser)(
+    "Overview and Metrics render top-down Host pillars, App cards, and escaped scorecards",
+    async () => {
+      expect((await fetch(`${base}/api/observability`, { method: "POST" })).status).toBe(405);
+      expect((await fetch(`${base}/api/observability?days=91`)).status).toBe(400);
+
+      const db = getDb(root);
+      const scorecard = {
+        version: 1,
+        targetKind: "app",
+        appId: "research",
+        taskId: `report ${markup}`,
+        agent: "worker",
+        cohort: `cohort ${markup}`,
+        rubricVersion: "app-rubric-v1",
+        dimensions: {
+          outcomeValue: 4,
+          correctnessAndEvidence: 3,
+          autonomyAndRecovery: 3,
+          efficiency: 4,
+          humanCoordination: "not_applicable",
+        },
+      };
+      db.prepare(
+        `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+         VALUES ('research', 'scored-attempt', 'report', 1, 'completed', ?, ?)`,
+      ).run(
+        now - 400,
+        JSON.stringify({
+          finishedAt: new Date(now - 200).toISOString(),
+          acceptedResult: { state: "converged", facts: [`scorecard:${JSON.stringify(scorecard)}`] },
+        }),
+      );
+
+      const metricsSvc = createMetricService({ getDb: () => db });
+      metricsSvc.define({ id: "quality.success", owner: "research", measureInterval: 300_000 });
+      metricsSvc.record("quality.success", 0.98, { measuredAt: now - 300 });
+
+      const summaryRes = await fetch(`${base}/api/observability?days=1`);
+      expect(summaryRes.status).toBe(200);
+      const summary = await summaryRes.json();
+      expect(summary.host.improvementWorkflow).toBeNull();
+      const researchSummary = summary.apps.find((a: { appId: string }) => a.appId === "research");
+      expect(researchSummary?.improvementWorkflow).toBeNull();
+      expect(researchSummary?.metrics.defined).toBe(1);
+      expect(researchSummary?.scorecard).toMatchObject({
+        status: "scored",
+        sampleSize: 1,
+        confidence: "low-sample",
+      });
+      const metricsListRes = await fetch(`${base}/api/metrics?id=quality.success`);
+      expect(metricsListRes.status).toBe(200);
+      expect((await metricsListRes.json()).metrics[0]?.scope).toEqual({
+        kind: "app",
+        appId: "research",
+      });
+
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      db.prepare(
+        "INSERT INTO metric_alerts(id, metric_id, alert_type, message, created_at) VALUES (901, 'workflow.error-count-24h', 'threshold', 'Host invariant breach', ?)",
+      ).run(now - 500);
+      db.prepare(
+        `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+         VALUES
+           ('research', 'codex-run-1', 'report-codex', 1, 'running', ?, ?),
+           ('research', 'wf-blocked-att', 'report-wf-gate', 1, 'completed', ?, ?)`,
+      ).run(
+        now - 1_800_000,
+        JSON.stringify({ owner: "worker", handler: "executor:codex-goal" }),
+        now - 1_200_000,
+        JSON.stringify({
+          owner: "worker",
+          handler: "workflow:research/gate",
+          finishedAt: new Date(now - 1_100_000).toISOString(),
+        }),
+      );
+      db.prepare(
+        `INSERT INTO workflow_runs(runId, workflow, task, status, app_id, attempt_id, startedAt, endedAt)
+         VALUES ('wr-blocked-1', 'research/gate', 'gate check', 'blocked', 'research', 'wf-blocked-att', ?, ?)`,
+      ).run(now - 1_200_000, now - 1_100_000);
+      db.prepare(
+        `INSERT INTO app_inbox_items(id, app_id, source_kind, source_id, input_kind, input_data, status, created_at, updated_at)
+         VALUES ('hum-steer-1', 'research', 'human', 'web-ui', 'steer', '{}', 'done', ?, ?)`,
+      ).run(now - 900_000, now - 900_000);
+      try {
+        const page = await browser.newPage();
+        const errors: string[] = [];
+        const metricsRequests: string[] = [];
+        page.on("pageerror", (error) => errors.push(String(error)));
+        await page.setRequestInterception(true);
+        page.on("request", (request) => {
+          if (!request.url().startsWith(base)) return void request.abort();
+          metricsRequests.push(new URL(request.url()).pathname + new URL(request.url()).search);
+          void request.continue();
+        });
+
+        await page.goto(base, { waitUntil: "domcontentloaded" });
+        await page.waitForSelector("#liveness-panel .timeline-ruler");
+        await page.waitForSelector('#top-down-overview [data-host-summary]');
+        await page.waitForSelector('#top-down-overview [data-app-card="research"]');
+        const overviewText = await page.$eval("#top-down-overview", (el) => el.textContent || "");
+        expect(overviewText).toContain("Host Platform (Agent Harness)");
+        expect(overviewText).not.toContain("alex/develop-host-change");
+        expect(await page.$$eval('#top-down-overview svg[data-trend-spark]', (svgs) => svgs.length)).toBeGreaterThanOrEqual(10);
+        expect(await page.$eval('#top-down-overview [data-app-card="research"]', (el) => el.textContent || "")).toContain(
+          "low-sample (n=1)",
+        );
+        // Unified Activity Timeline renders native Codex duration bar, blocked workflow bar, human ◆ pin, and alert rail at top of Overview.
+        expect(await page.$("#liveness-panel .timeline-bar.kind-codex.running")).not.toBeNull();
+        expect(await page.$("#liveness-panel .timeline-bar.kind-workflow.blocked")).not.toBeNull();
+        expect(await page.$("#liveness-panel .timeline-pin.kind-human")).not.toBeNull();
+        expect(await page.$("#liveness-panel .timeline-alert-rail")).not.toBeNull();
+        // R-01 & unified alert strip: rendered once on Overview (in #liveness-panel, not duplicated in #top-down-overview).
+        expect(
+          await page.$eval('#top-down-overview [data-host-summary] a.breach-badge', (el) => el.getAttribute("href")),
+        ).toBe("/metrics");
+        expect(await page.$("#top-down-overview [data-active-alerts]")).toBeNull();
+        const stripText = await page.$eval("#liveness-panel [data-active-alerts]", (el) => el.textContent || "");
+        expect(stripText).toContain("Host · Owner: system:host");
+        expect(stripText).toContain("No recorded handling");
+        expect(stripText).not.toContain("Routed to");
+
+        metricsRequests.length = 0;
+        await page.goto(base + "/metrics", { waitUntil: "domcontentloaded" });
+        await page.waitForSelector('#metrics-top-down [data-app-card="research"]');
+        expect(await page.$eval("#metrics-top-down [data-active-alerts]", (el) => el.textContent || "")).toContain(
+          "Host · Owner: system:host",
+        );
+        await page.waitForSelector("#metrics-workflows [data-workflow-outcomes]");
+        await page.waitForSelector("#metrics-context");
+        // R-02: /metrics aligns all three panels on the shared default window (days=1) and exact end boundary.
+        const panelEnds = new Set<string | null>();
+        for (const pathname of ["/api/observability", "/api/context-usage", "/api/workflow-health"]) {
+          const matched = metricsRequests.find((req) => req.startsWith(pathname + "?"));
+          expect(matched).toBeTruthy();
+          const params = new URL("http://x" + matched!).searchParams;
+          expect(params.get("days")).toBe("1");
+          panelEnds.add(params.get("end"));
+        }
+        expect(panelEnds.size).toBe(1);
+        const metricsTopText = await page.$eval('#metrics-top-down [data-app-card="research"]', (el) => el.textContent || "");
+        expect(metricsTopText).toContain("Outcome value (35%)");
+        expect(metricsTopText).toContain("4.0/4");
+        expect(await page.$eval("#metrics-alerts", (el) => el.textContent || "")).toContain(
+          "[Host · Owner: system:host · No recorded handling]",
+        );
+        await page.click('#metrics-top-down [data-drilldown-link="research"]');
+        await page.waitForSelector('#metrics-top-down [data-app-drilldown="research"]');
+        const drillParams = new URL(page.url()).searchParams;
+        expect(drillParams.get("start")).toBeTruthy();
+        expect(drillParams.get("end")).toBeTruthy();
+        expect(metricsRequests.some((req) => req === "/api/metrics?appId=research")).toBe(true);
+        const showAllHref = await page.$eval(
+          '#metrics-top-down [data-app-drilldown="research"] a.td-window-btn',
+          (el) => el.getAttribute("href") || "",
+        );
+        expect(new URL("http://x" + showAllHref).searchParams.get("start")).toBe(drillParams.get("start"));
+        expect(new URL("http://x" + showAllHref).searchParams.get("end")).toBe(drillParams.get("end"));
+        const drillText = await page.$eval('#metrics-top-down [data-app-drilldown="research"]', (el) => el.textContent || "");
+        expect(drillText).toContain("1. Contributing Tasks");
+        expect(drillText).toContain("worker");
+        // quality.success (different ID prefix from owner 'research') remains visible under research drill-down!
+        await page.waitForSelector("#metrics-by-owner [data-metric-search]");
+        expect(await page.$$eval("#metrics-by-owner [data-metric-search]:not([hidden])", (rows) => rows.map((r) => r.textContent || "").join("\n"))).toContain(
+          "quality.success",
+        );
+        expect(await page.$("#metrics-top-down img")).toBeNull();
+        expect(
+          await page.evaluate(() => (window as unknown as { healthInjected?: boolean }).healthInjected),
+        ).toBeUndefined();
+        expect(errors).toEqual([]);
+      } finally {
+        db.prepare("DELETE FROM metric_alerts WHERE id = 901").run();
+        db.prepare("DELETE FROM workflow_runs WHERE runId = 'wr-blocked-1'").run();
+        db.prepare("DELETE FROM app_task_attempts WHERE attempt_id IN ('codex-run-1', 'wf-blocked-att')").run();
+        db.prepare("DELETE FROM app_inbox_items WHERE id = 'hum-steer-1'").run();
+        db.prepare("DELETE FROM metric_snapshots WHERE metric_id = 'quality.success'").run();
+        db.prepare("DELETE FROM metrics WHERE id = 'quality.success'").run();
+        await browser.close();
+      }
+    },
+    30000,
+  );
+
+  test("agent and liveness routes resolve non-stem App IDs, deduplicate linked running sessions, filter assigned Tasks pre-limit, and exclude retained idle chats", async () => {
+    const db = getDb(root);
+    const appDir = join(root, "projects", "canary-dir.app");
+    const specDir = join(appDir, "agents", "canary-spec");
+    const idleDir = join(appDir, "agents", "idle-chat-agent");
+    mkdirSync(specDir, { recursive: true });
+    mkdirSync(idleDir, { recursive: true });
+    writeFileSync(join(appDir, "app.ts"), 'export default { id: "canary-domain", agent: "worker" };\n');
+    writeFileSync(
+      join(specDir, "agent.json"),
+      JSON.stringify({ name: "canary-spec", description: "Specialist in non-stem App dir", model: "gpt-5" }),
+    );
+    writeFileSync(
+      join(idleDir, "agent.json"),
+      JSON.stringify({ name: "idle-chat-agent", description: "Idle chat holder", model: "gpt-5" }),
+    );
+
+    try {
+      // 1. Persisted idle chat session from 10h ago has no live process after restart -> excluded from running counts & 4h window.
+      db.prepare(
+        `INSERT INTO sessions(sessionId, agent, task, kind, status, startedAt)
+         VALUES ('retained-idle-chat', 'idle-chat-agent', 'Old chat', 'chat', 'idle', ?)`,
+      ).run(now - 10 * 3_600_000);
+
+      // 2. Running Task + running Attempt + linked running Session for canary-spec -> runningNow === 1 (not 2).
+      db.prepare(
+        `INSERT INTO app_tasks(app_id, task_id, generation, resource_version, observed_generation, phase, lane, changed, ready, updated_at, resource_json)
+         VALUES ('canary-domain', 'spec-task-1', 1, 1, 1, 'running', 'normal', 0, 1, ?, ?)`,
+      ).run(now - 5_000, JSON.stringify({ spec: { agent: "canary-spec", outcome: "Run canary check" }, status: {} }));
+      db.prepare(
+        `INSERT INTO sessions(sessionId, agent, task, app_id, task_id, attempt_id, status, startedAt)
+         VALUES ('spec-running-sess', 'canary-spec', 'Run canary check', 'canary-domain', 'spec-task-1', 'spec-att-1', 'running', ?)`,
+      ).run(now - 5_000);
+      db.prepare(
+        `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+         VALUES ('canary-domain', 'spec-att-1', 'spec-task-1', 1, 'running', ?, ?)`,
+      ).run(now - 5_000, JSON.stringify({ owner: "canary-spec", sessionId: "spec-running-sess" }));
+
+      // 3. Occupy 85 newer open Tasks under 'worker' so global LIMIT 80 would evict 'spec-task-1' if filtered post-limit.
+      stateTransaction(db, () => {
+        const ins = db.prepare(
+          `INSERT INTO app_tasks(app_id, task_id, generation, resource_version, observed_generation, phase, lane, changed, ready, updated_at, resource_json)
+           VALUES ('canary-domain', ?, 1, 1, 1, 'pending', 'normal', 1, 1, ?, ?)`,
+        );
+        for (let i = 0; i < 85; i++) {
+          ins.run(`worker-flood-${i}`, now - 100 + i, JSON.stringify({ spec: { agent: "worker", outcome: "Flood" }, status: {} }));
+        }
+      });
+
+      const agentsRes = await fetch(`${base}/api/agents`);
+      expect(agentsRes.status).toBe(200);
+      const agentsBody = (await agentsRes.json()) as Array<Record<string, unknown>>;
+      const specCard = agentsBody.find((a) => a.name === "canary-spec");
+      expect(specCard).toMatchObject({
+        localApp: "canary-domain",
+        runningNow: 1,
+      });
+      const idleCard = agentsBody.find((a) => a.name === "idle-chat-agent");
+      expect(idleCard).toMatchObject({
+        localApp: "canary-domain",
+        runningNow: 0,
+      });
+
+      const aboutRes = await fetch(`${base}/api/agents/canary-spec/about`);
+      expect(aboutRes.status).toBe(200);
+      const aboutBody = (await aboutRes.json()) as { assignedTasks: Array<{ appId: string; taskId: string }> };
+      expect(aboutBody.assignedTasks).toEqual([
+        expect.objectContaining({ appId: "canary-domain", taskId: "spec-task-1" }),
+      ]);
+
+      const livenessRes = await fetch(`${base}/api/liveness?hours=4`);
+      expect(livenessRes.status).toBe(200);
+      const livenessBody = (await livenessRes.json()) as {
+        summary: { activeSessions: number; activeRunning: number };
+        timeline: { agentLanes: Array<{ id: string; runningCount: number; totalCount: number }> };
+      };
+      // Only spec-running-sess is running; retained-idle-chat is NOT counted in activeSessions or activeRunning or 4h lane!
+      expect(livenessBody.summary.activeSessions).toBe(1);
+      expect(livenessBody.summary.activeRunning).toBe(1);
+      const idleLane = livenessBody.timeline.agentLanes.find((l) => l.id === "idle-chat-agent");
+      expect(idleLane).toMatchObject({ runningCount: 0, totalCount: 0 });
+    } finally {
+      db.prepare("DELETE FROM app_task_attempts WHERE app_id = 'canary-domain'").run();
+      db.prepare("DELETE FROM app_tasks WHERE app_id = 'canary-domain'").run();
+      db.prepare("DELETE FROM sessions WHERE sessionId IN ('retained-idle-chat', 'spec-running-sess')").run();
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
 });
