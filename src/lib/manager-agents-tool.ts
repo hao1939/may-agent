@@ -13,6 +13,7 @@ import {
   buildWorkflowCatalog,
   canonicalCallableName,
   deferredExecutionResult,
+  formatExecutionInput,
   workflowExecutionResult,
   type CallableDefinition,
   type CallableInvocationContext,
@@ -109,12 +110,6 @@ const CanonicalAgentsToolParams = Type.Union([
 
 type CanonicalAgentsToolParamsType = Static<typeof CanonicalAgentsToolParams>;
 
-function callablePrompt(input: ExecutionInput): string {
-  return input.data === undefined
-    ? input.prompt
-    : `${input.prompt}\n\nAssignment data (JSON):\n${JSON.stringify(input.data, null, 2)}`;
-}
-
 function callableReport(
   result: ReturnType<typeof agentExecutionResult> | NonNullable<ReturnType<typeof workflowExecutionResult>>,
 ) {
@@ -182,7 +177,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     }
     const parent = lineage(parentSessionId);
     const session = manager.activeSessions.get(parentSessionId);
-    const result = await manager.callAgentDefinition(definition, callablePrompt(input), {
+    const result = await manager.callAgentDefinition(definition, formatExecutionInput(input), {
       parentSessionId,
       workflowRunId: parent.workflowRunId,
       projectId: parent.projectId,
