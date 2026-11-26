@@ -41,7 +41,12 @@ import {
   type AppTaskClaim,
 } from "./app-task-reconciler.js";
 import { pendingTaskWorkspaceConstraint } from "./app-task-state.js";
-import { ResourceTaskMutationStaleError, appTaskReadinessById, type AppTaskContext } from "./app-task-store.js";
+import {
+  ResourceTaskMutationStaleError,
+  appTaskReadinessById,
+  isHostSettlementFailure,
+  type AppTaskContext,
+} from "./app-task-store.js";
 import {
   hasLiveAppTaskSession,
   interruptSupersededAgentSession,
@@ -364,14 +369,28 @@ async function runClaimedTask(
     const result = report.handlerResult;
     const rejectResult = (
       summary: string,
-      diagnostics: Pick<TaskCapabilityRun, "handlerBlocked" | "workspaceFinalizationFailed"> = {},
+      diagnostics: Pick<TaskCapabilityRun, "handlerBlocked" | "workspaceFinalizationFailed" | "settlementFailed"> & {
+        resultRejected?: true;
+      } = {},
       facts = result.facts,
-    ) =>
-      finishUnsuccessfulAttempt({
-        ...report,
-        ...diagnostics,
-        handlerResult: { ...result, state: "error", summary, facts },
-      });
+      unaccepted?: NonNullable<TaskAttempt["previousAttempt"]>["unacceptedResult"],
+    ) => {
+      const { resultRejected, ...runDiagnostics } = diagnostics;
+      return finishUnsuccessfulAttempt(
+        {
+          ...report,
+          ...runDiagnostics,
+          handlerResult: {
+            ...result,
+            ...(resultRejected ? { resultRejected: true } : {}),
+            state: "error",
+            summary,
+            facts,
+          },
+        },
+        unaccepted,
+      );
+    };
 
     if (report.unavailable) {
       emit("project.task.handler.unavailable", {
@@ -409,9 +428,11 @@ async function runClaimedTask(
       } catch (error) {
         const staleResult = rejectStaleEffect(error, report);
         if (staleResult) return staleResult.reconcileTaskIds;
+        const hostFailed = isHostSettlementFailure(error);
+        const errText = error instanceof Error ? error.message : String(error);
         return await rejectResult(
-          `Incomplete report was rejected: ${error instanceof Error ? error.message : String(error)}`,
-          { handlerBlocked: true },
+          hostFailed ? `Task result settlement failed: ${errText}` : `Incomplete report was rejected: ${errText}`,
+          hostFailed ? { settlementFailed: true } : { handlerBlocked: true },
         );
       }
     }
@@ -530,19 +551,25 @@ async function runClaimedTask(
           });
           return stale.reconcileTaskIds;
         }
+        const hostFailed = isHostSettlementFailure(error);
+        const errText = error instanceof Error ? error.message : String(error);
         return await finishUnsuccessfulAttempt(
           {
             ...report,
+            ...(hostFailed ? { settlementFailed: true } : {}),
             handlerResult: {
               ...result,
+              ...(hostFailed ? {} : { resultRejected: true }),
               state: "error",
-              summary: `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`,
+              summary: hostFailed
+                ? `Task result settlement failed: ${errText}`
+                : `Handler actions were rejected: ${errText}`,
             },
           },
           {
             attemptId: claim.attemptId,
             sessionId: config.resourceStore.readAttempt(claim.attemptId)?.sessionId,
-            settlementError: error instanceof Error ? error.message : String(error),
+            settlementError: errText,
             summary: result.summary,
             response: result.response,
             result: result.result,
@@ -619,8 +646,21 @@ async function runClaimedTask(
       } catch (error) {
         const stale = rejectStaleEffect(error, report);
         if (stale) return stale.reconcileTaskIds;
+        const hostFailed = isHostSettlementFailure(error);
+        const errText = error instanceof Error ? error.message : String(error);
         return await rejectResult(
-          `Handler result was rejected: ${error instanceof Error ? error.message : String(error)}`,
+          hostFailed ? `Task result settlement failed: ${errText}` : `Handler result was rejected: ${errText}`,
+          hostFailed ? { settlementFailed: true } : { resultRejected: true },
+          result.facts,
+          {
+            attemptId: claim.attemptId,
+            sessionId: config.resourceStore.readAttempt(claim.attemptId)?.sessionId,
+            settlementError: errText,
+            summary: result.summary,
+            response: result.response,
+            result: result.result,
+            facts: result.facts,
+          },
         );
       }
     }
@@ -740,6 +780,7 @@ async function runClaimedTask(
     await finalizeWorkspace("failed");
 
     const diagnostic =
+      run.settlementFailed ||
       run.unavailable ||
       run.handlerBlocked ||
       run.workspacePreparationFailed ||
@@ -750,17 +791,20 @@ async function runClaimedTask(
           // Rejected proposed actions cannot be accepted through the diagnostic path.
           result: result.actions.length ? undefined : result.result,
           facts: result.facts,
-          reason: result.resultRejected
-            ? "HandlerResultInvalid"
-            : run.unavailable
-              ? "HandlerUnavailable"
-              : run.executionFailed
-                ? "HandlerExecutionFailed"
-                : run.workspacePreparationFailed
-                  ? "WorkspacePreparationFailed"
-                  : run.workspaceFinalizationFailed
-                    ? "WorkspaceFinalizationFailed"
-                    : "handler-blocked",
+          ...(unacceptedResult ? { unacceptedResult } : {}),
+          reason: run.settlementFailed
+            ? "HandlerResultSettlementFailed"
+            : result.resultRejected
+              ? "HandlerResultInvalid"
+              : run.unavailable
+                ? "HandlerUnavailable"
+                : run.executionFailed
+                  ? "HandlerExecutionFailed"
+                  : run.workspacePreparationFailed
+                    ? "WorkspacePreparationFailed"
+                    : run.workspaceFinalizationFailed
+                      ? "WorkspaceFinalizationFailed"
+                      : "handler-blocked",
         }
       : unacceptedResult
         ? { reason: "HandlerResultSettlementFailed", unacceptedResult }

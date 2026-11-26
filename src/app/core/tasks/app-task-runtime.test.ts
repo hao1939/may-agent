@@ -18,6 +18,7 @@ import { addLogSubscriber } from "@may-agent/sdk/runtime";
 import { CodexGoalProgressPublisher } from "../../adapters/executors/codex/codex-goal-progress.js";
 import { readTaskChecks } from "./task-check-observations.js";
 import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../metric-source-measurement.js";
+import { HOST_HARNESS_METRICS, buildAppEvolutionMetrics } from "../../adapters/reporting/evolution-metrics.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { openDatabase } from "../../../lib/db.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, type AgentEvent } from "../events/bus.js";
@@ -9353,7 +9354,7 @@ describe("canonical App task runtime", () => {
       expect.objectContaining({
         taskId: "work/invalid-result",
         state: "failed",
-        failureReason: invalid === "invalid-state" ? "HandlerResultInvalid" : "HandlerResultSettlementFailed",
+        failureReason: "HandlerResultInvalid",
       }),
     );
     expect(config.resourceStore.readTask("work/invalid-result")?.status.executionRetryAt).toBeGreaterThan(Date.now());
@@ -10299,6 +10300,160 @@ describe("canonical App task runtime", () => {
       }),
     );
   });
+
+  it.each(["converged", "waiting"] as const)(
+    "separates App action rejections from Host settlement storage failures on %s results through collectors",
+    async (resultState) => {
+      const settlementSql = HOST_HARNESS_METRICS.find((m) => m.id === "host.settlement_integrity_ratio")!.sourceQuery!;
+      const burdenSql = HOST_HARNESS_METRICS.find((m) => m.id === "host.harness_burden_ratio")!.sourceQuery!;
+      const appFailureSql = buildAppEvolutionMetrics("sample", "sample-owner").find(
+        (m) => m.id === "sample.failure_ratio_24h",
+      )!.sourceQuery!;
+
+      // Case A: Invalid App action (self-unblock) on converged/waiting -> HandlerResultInvalid -> App failure, NOT Host defect.
+      const fApp = fixture();
+      const busApp = eventBus();
+      let nextAppEventId = 1;
+      busApp.setPersistenceSubscriber((event) => {
+        Object.defineProperty(event, EVENT_ROW_ID, { value: nextAppEventId++, configurable: true });
+      });
+      await installAppTaskRuntimes({
+        ...options(fApp, busApp),
+        executors: {
+          "bad-action": async (attempt) => ({
+            state: resultState,
+            summary: "Invalid self-unblock action",
+            facts: ["fixture:draft"],
+            ...(resultState === "waiting" ? { reviewAt: Date.now() + 60_000 } : {}),
+            actions: [
+              {
+                kind: "unblock-task",
+                taskId: attempt.task.id,
+                expectedGeneration: attempt.task.generation,
+                reason: "Self unblock",
+              },
+            ],
+          }),
+        },
+        appRegistrySnapshot: {
+          id: `boot:bad-action-${resultState}`,
+          generation: 1,
+          entries: [{ appDir: fApp.appDir, definition: definition() }],
+        },
+      });
+      await attachLoadedAppTask({
+        bus: busApp,
+        appDir: fApp.appDir,
+        appId: "sample",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: `work/bad-action-${resultState}`,
+            parentId: "operations",
+            outcome: "Reject invalid action",
+            acceptance: ["Done"],
+            agent: "sample-owner",
+            executor: "bad-action",
+          },
+        },
+        idempotencyKey: `attach:bad-action-${resultState}`,
+        inputContext: {
+          id: `req-bad-action-${resultState}`,
+          source: { kind: "human", id: "operator" },
+          input: { kind: "sample", data: {} },
+        },
+      });
+      const cfgApp = loadedTaskConfig(fApp);
+      const deadlineApp = performance.now() + 3_000;
+      while (
+        Object.values(readTaskSnapshot(cfgApp).attempts ?? {}).filter((a) => a.state === "failed").length === 0 &&
+        performance.now() < deadlineApp
+      ) {
+        await Bun.sleep(10);
+      }
+      expect(Object.values(readTaskSnapshot(cfgApp).attempts ?? {})).toContainEqual(
+        expect.objectContaining({
+          taskId: `work/bad-action-${resultState}`,
+          state: "failed",
+          failureReason: "HandlerResultInvalid",
+        }),
+      );
+      const appDb = cfgApp.resourceStore.db;
+      expect(appDb.prepare(settlementSql).get()).toMatchObject({ value: null, sampleSize: 0 });
+      expect(appDb.prepare(burdenSql).get()).toMatchObject({ value: 0, sampleSize: 1 });
+      expect(appDb.prepare(appFailureSql).get()).toMatchObject({ value: 1, sampleSize: 1 });
+
+      // Case B: Host storage exception during settlement on converged/waiting -> HandlerResultSettlementFailed -> Host defect, NOT App failure.
+      const fHost = fixture();
+      const busHost = eventBus();
+      let nextHostEventId = 1;
+      busHost.setPersistenceSubscriber((event) => {
+        Object.defineProperty(event, EVENT_ROW_ID, { value: nextHostEventId++, configurable: true });
+      });
+      await installAppTaskRuntimes({
+        ...options(fHost, busHost),
+        executors: {
+          "good-result": async () => ({
+            state: resultState,
+            summary: "Valid handler output",
+            facts: ["fixture:valid"],
+            ...(resultState === "waiting" ? { reviewAt: Date.now() + 60_000 } : {}),
+          }),
+        },
+        appRegistrySnapshot: {
+          id: `boot:host-settle-err-${resultState}`,
+          generation: 1,
+          entries: [{ appDir: fHost.appDir, definition: definition() }],
+        },
+      });
+      const cfgHost = loadedTaskConfig(fHost);
+      cfgHost.resourceStore.db.exec(`
+        CREATE TEMP TRIGGER reject_settlement_${resultState} BEFORE UPDATE ON app_tasks
+        WHEN NEW.phase IN ('converged', 'waiting')
+        BEGIN SELECT RAISE(ABORT, 'synthetic sqlite settlement failure'); END;
+      `);
+      await attachLoadedAppTask({
+        bus: busHost,
+        appDir: fHost.appDir,
+        appId: "sample",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: `work/host-settle-err-${resultState}`,
+            parentId: "operations",
+            outcome: "Settle valid output",
+            acceptance: ["Done"],
+            agent: "sample-owner",
+            executor: "good-result",
+          },
+        },
+        idempotencyKey: `attach:host-settle-err-${resultState}`,
+        inputContext: {
+          id: `req-host-settle-err-${resultState}`,
+          source: { kind: "human", id: "operator" },
+          input: { kind: "sample", data: {} },
+        },
+      });
+      const deadlineHost = performance.now() + 3_000;
+      while (
+        Object.values(readTaskSnapshot(cfgHost).attempts ?? {}).filter((a) => a.state === "failed").length === 0 &&
+        performance.now() < deadlineHost
+      ) {
+        await Bun.sleep(10);
+      }
+      expect(Object.values(readTaskSnapshot(cfgHost).attempts ?? {})).toContainEqual(
+        expect.objectContaining({
+          taskId: `work/host-settle-err-${resultState}`,
+          state: "failed",
+          failureReason: "HandlerResultSettlementFailed",
+        }),
+      );
+      const hostDb = cfgHost.resourceStore.db;
+      expect(hostDb.prepare(settlementSql).get()).toMatchObject({ value: 0, sampleSize: 1 });
+      expect(hostDb.prepare(burdenSql).get()).toMatchObject({ value: 1, sampleSize: 1 });
+      expect(hostDb.prepare(appFailureSql).get()).toMatchObject({ value: null, sampleSize: 0 });
+    },
+  );
 
 });
 

@@ -76,6 +76,15 @@ const HOST_TERMINAL_WINDOW_24H = terminalAttemptWindowPredicateSql(`${NOW_SQL} -
 const HOST_ATTEMPT_FAILURE_SQL = hostAttemptFailurePredicateSql();
 const HOST_ATTEMPT_PREEMPTION_SQL = hostAttemptPreemptionPredicateSql();
 
+const UNRESOLVED_RECOVERY_SQL = `SELECT COUNT(DISTINCT i.id) AS unresolved
+  FROM app_inbox_items i, json_each(i.recovery_json) r
+  WHERE i.recovery_json IS NOT NULL AND i.recovery_json != '{}'
+    AND json_extract(r.value, '$.recoveredAt') IS NULL
+    AND json_extract(r.value, '$.failures') > 0
+    AND ((r.key = 'input-admission' AND i.status != 'done' AND i.execution_task_id IS NULL)
+      OR (r.key = 'input-result' AND i.status != 'done')
+      OR (r.key = 'input-feedback' AND json_extract(i.recovery_json, '$."input-admission".reportedAt') IS NULL))`;
+
 /**
  * Canonical Host (Agent Harness) metrics using Prometheus base units (`ratio`, `seconds`)
  * and explicit `sampleSize` denominators (`value = NULL, sampleSize = 0` -> quiet no_exposure skip).
@@ -97,9 +106,9 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
       scope: "host",
       alert: { mode: "sustained", consecutive: 3, minSampleSize: 10 },
     },
-    source: "Cleanly settled Task attempts vs. settled + Host settlement/plumbing failures (24h)",
+    source: "Cleanly settled Task attempts vs. settled + Host settlement/plumbing failures + unresolved input recovery boundaries (24h)",
     description:
-      "Dimensionally homogeneous ratio [0..1] of cleanly settled Task attempts over settled attempts plus Host-owned settlement/workspace/availability/lease failures in the rolling 24h window. Graceful daemon restart requeues and App/Agent handler failures are excluded from Host settlement defects.",
+      "Ratio [0..1] of cleanly settled Task attempts over settled attempts plus Host-owned settlement/workspace/availability/lease failures and unresolved input recovery boundaries in the rolling 24h window. Graceful daemon restart requeues and App/Agent handler failures are excluded from Host settlement defects.",
     sourceQuery: `WITH att AS (
         SELECT
           COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL AND NOT (${HOST_ATTEMPT_FAILURE_SQL}) THEN 1 END) AS settled,
@@ -107,17 +116,19 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
           COUNT(*) AS terminal
         FROM app_task_attempts
         WHERE ${HOST_TERMINAL_WINDOW_24H}
-      )
+      ),
+      rec AS (${UNRESOLVED_RECOVERY_SQL})
       SELECT
-        CAST(att.settled AS REAL) / NULLIF(att.settled + att.host_failed, 0) AS value,
-        att.settled + att.host_failed AS sampleSize,
+        CAST(att.settled AS REAL) / NULLIF(att.settled + att.host_failed + rec.unresolved, 0) AS value,
+        att.settled + att.host_failed + rec.unresolved AS sampleSize,
         ${NOW_SQL} AS measuredAt,
         json_object(
           'settledAttempts', att.settled,
           'hostFailedAttempts', att.host_failed,
-          'terminalAttempts', att.terminal
+          'terminalAttempts', att.terminal,
+          'unresolvedRecovery', rec.unresolved
         ) AS note
-      FROM att`,
+      FROM att, rec`,
   },
   {
     id: "host.prep_p95_seconds",
@@ -184,9 +195,9 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     unit: "ratio",
     measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
     config: { scope: "host", alert: { disabled: true, mode: "sustained", consecutive: 3, minSampleSize: 5 } },
-    source: "Host settlement/plumbing failures + involuntary restart/capacity/CAS preemptions over terminal attempts (24h)",
+    source: "Host settlement/plumbing failures + involuntary restart/capacity/CAS preemptions + unresolved recoveries over terminal attempts (24h)",
     description:
-      "Dimensionally homogeneous fraction [0..1] of terminal Task attempts experiencing Host-induced friction (Host settlement/workspace/lease failures, daemon restart requeues, capacity deferrals, or CAS retries) in the rolling 24h window, excluding App handler failures and explicit human stops.",
+      "Fraction [0..1] of terminal Task attempts plus unresolved input recovery boundaries experiencing Host-induced friction (Host settlement/workspace/lease failures, daemon restart requeues, capacity deferrals, CAS retries, or unresolved input recovery boundaries) in the rolling 24h window, excluding App handler failures and explicit human stops.",
     sourceQuery: `WITH att AS (
         SELECT
           COUNT(CASE WHEN ${HOST_ATTEMPT_FAILURE_SQL} THEN 1 END) AS host_failed,
@@ -194,17 +205,19 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
           COUNT(*) AS total
         FROM app_task_attempts
         WHERE ${HOST_TERMINAL_WINDOW_24H}
-      )
+      ),
+      rec AS (${UNRESOLVED_RECOVERY_SQL})
       SELECT
-        CAST(att.host_failed + att.preempted AS REAL) / NULLIF(att.total, 0) AS value,
-        att.total AS sampleSize,
+        CAST(att.host_failed + att.preempted + rec.unresolved AS REAL) / NULLIF(att.total + rec.unresolved, 0) AS value,
+        att.total + rec.unresolved AS sampleSize,
         ${NOW_SQL} AS measuredAt,
         json_object(
           'hostFailedAttempts', att.host_failed,
           'preemptedAttempts', att.preempted,
-          'terminalAttempts', att.total
+          'terminalAttempts', att.total,
+          'unresolvedRecovery', rec.unresolved
         ) AS note
-      FROM att`,
+      FROM att, rec`,
   },
   {
     id: HOST_DISK_USED_METRIC_ID,

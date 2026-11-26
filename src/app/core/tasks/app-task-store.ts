@@ -93,6 +93,8 @@ export type CommitTaskMutationOptions = {
   resourceMutation: AppTaskResourceMutation;
 };
 
+const HOST_SETTLEMENT_ERROR = Symbol.for("may-agent.host-settlement-error");
+
 export class ResourceTaskMutationStaleError extends Error {
   constructor() {
     super("Resource-backed task mutation was rejected by a stale fence");
@@ -100,12 +102,34 @@ export class ResourceTaskMutationStaleError extends Error {
   }
 }
 
+export function isHostSettlementFailure(error: unknown): boolean {
+  if (error instanceof ResourceTaskMutationStaleError) return true;
+  if (!error || typeof error !== "object") return false;
+  if ((error as Record<PropertyKey, unknown>)[HOST_SETTLEMENT_ERROR] === true) return true;
+  const named = error as { name?: unknown; code?: unknown; errno?: unknown };
+  if (named.name === "SQLiteError") return true;
+  if (typeof named.code === "string" && named.code.startsWith("SQLITE_")) return true;
+  if (typeof named.code === "string" && typeof named.errno === "number") return true;
+  return false;
+}
+
 /** The resource commit owns serialization and fencing; callers supply the exact write set. */
 export function commitTaskMutation(context: AppTaskContext, tree: TaskTree, options: CommitTaskMutationOptions): void {
   if (!options?.resourceMutation) {
-    throw new Error("Task state mutation requires an exact resourceMutation");
+    const err = new Error("Task state mutation requires an exact resourceMutation");
+    Object.defineProperty(err, HOST_SETTLEMENT_ERROR, { value: true });
+    throw err;
   }
-  if (!context.resourceStore.commit(options.resourceMutation)) {
+  let committed = false;
+  try {
+    committed = context.resourceStore.commit(options.resourceMutation);
+  } catch (error) {
+    if (error && typeof error === "object") {
+      Object.defineProperty(error, HOST_SETTLEMENT_ERROR, { value: true });
+    }
+    throw error;
+  }
+  if (!committed) {
     throw new ResourceTaskMutationStaleError();
   }
   tree.updated_at = new Date().toISOString();

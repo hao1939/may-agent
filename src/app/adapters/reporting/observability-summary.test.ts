@@ -1517,6 +1517,61 @@ describe("top-down Host vs. Apps observability summary", () => {
           declaredHandler: "alex",
         }),
       );
+
+      // 8. Unresolved input-admission / result / feedback recovery boundaries contribute to settlement exposure
+      // both when 0 Task attempts exist (0/1 = 0, sampleSize = 1) and alongside 1 settled attempt (1/2 = 0.5, sampleSize = 2).
+      const recOnlyDb = openDatabase(":memory:");
+      applyDbSchema(recOnlyDb);
+      try {
+        recOnlyDb
+          .prepare(
+            `INSERT INTO app_inbox_items(id, app_id, source_kind, source_id, input_kind, input_data, status, recovery_json, created_at, updated_at)
+             VALUES ('stuck-adm-1', 'alex', 'human', 'web-ui', 'message', '{}', 'pending', ?, ?, ?)`,
+          )
+          .run(
+            JSON.stringify({ "input-admission": { failures: 2, firstFailedAt: liveNow - 10_000, error: "transient" } }),
+            liveNow - 10_000,
+            liveNow - 5_000,
+          );
+        expect(recOnlyDb.prepare(settlementSql).get()).toMatchObject({ value: 0, sampleSize: 1 });
+        expect(recOnlyDb.prepare(burdenSql).get()).toMatchObject({ value: 1, sampleSize: 1 });
+        const recOnlySummary = readObservabilitySummary(recOnlyDb, {
+          query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+          projectsRoot: join(root, "projects"),
+          stateDir: root,
+          loadedApps: [{ id: "alex", owner: "alex" }],
+          now: liveNow,
+        });
+        expect(recOnlySummary.host.trends.settlementIntegrity).toMatchObject({ current: 0, sampleSize: 1 });
+        expect(recOnlySummary.host.trends.harnessBurdenRatio).toMatchObject({ current: 1, sampleSize: 1 });
+
+        // Add 1 settled attempt -> 1 / (1 + 1) = 0.5, sampleSize = 2 across both SQL collector and summary!
+        recOnlyDb
+          .prepare(
+            `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+             VALUES ('alex', 'att-ok-1', 't-1', 1, 'completed', ?, ?)`,
+          )
+          .run(
+            liveNow - 8_000,
+            JSON.stringify({
+              finishedAt: new Date(liveNow - 4_000).toISOString(),
+              acceptedResult: { state: "converged" },
+            }),
+          );
+        expect(recOnlyDb.prepare(settlementSql).get()).toMatchObject({ value: 0.5, sampleSize: 2 });
+        expect(recOnlyDb.prepare(burdenSql).get()).toMatchObject({ value: 0.5, sampleSize: 2 });
+        const mixedRecSummary = readObservabilitySummary(recOnlyDb, {
+          query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+          projectsRoot: join(root, "projects"),
+          stateDir: root,
+          loadedApps: [{ id: "alex", owner: "alex" }],
+          now: liveNow,
+        });
+        expect(mixedRecSummary.host.trends.settlementIntegrity).toMatchObject({ current: 0.5, sampleSize: 2 });
+        expect(mixedRecSummary.host.trends.harnessBurdenRatio).toMatchObject({ current: 0.5, sampleSize: 2 });
+      } finally {
+        recOnlyDb.close();
+      }
     } finally {
       boundaryDb.close();
     }

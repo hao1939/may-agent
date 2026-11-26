@@ -25,6 +25,7 @@ export type TaskCapabilityRun = {
   hostCompletion?: "finite-done";
   workspacePreparationFailed?: boolean;
   workspaceFinalizationFailed?: boolean;
+  settlementFailed?: boolean;
 };
 
 /** Execution is over; retry only the fenced effects, never the executor. */
