@@ -40,6 +40,35 @@ CREATE INDEX IF NOT EXISTS idx_metric_disposition_attempts
   ON app_task_attempts(
     CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), attempt_id)
   WHERE instr(attempt_json, 'metric-disposition:') > 0;
+
+CREATE INDEX IF NOT EXISTS idx_app_task_attempts_terminal_finished_ms
+  ON app_task_attempts(
+    CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
+    app_id,
+    task_id,
+    state,
+    accepted_result_state,
+    started_at
+  )
+  WHERE state IN ('completed', 'failed', 'interrupted');
+
+CREATE INDEX IF NOT EXISTS idx_app_task_attempts_running_started
+  ON app_task_attempts(started_at DESC, app_id, attempt_id)
+  WHERE state = 'running';
+
+CREATE INDEX IF NOT EXISTS idx_scorecard_attempts
+  ON app_task_attempts(
+    COALESCE(
+      CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
+      started_at
+    ),
+    attempt_id
+  )
+  WHERE instr(attempt_json, 'scorecard:') > 0;
+
+CREATE INDEX IF NOT EXISTS idx_app_inbox_recovery_candidates
+  ON app_inbox_items(id)
+  WHERE recovery_json IS NOT NULL AND recovery_json != '{}';
 `;
 
 const METRIC_DISPOSITION_VIEW = `CREATE VIEW metric_dispositions AS

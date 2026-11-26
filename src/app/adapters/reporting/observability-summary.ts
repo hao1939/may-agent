@@ -433,7 +433,7 @@ export type DiskHeadroom = {
 
 export type AuthHeadroom = {
   provider: "azure-cli";
-  state: "valid" | "expired" | "unconfigured" | "unknown";
+  state: "valid" | "refreshable" | "expired" | "unconfigured" | "unknown";
   expiresAt: number | null;
   reason?: string;
 };
@@ -477,14 +477,24 @@ export function probeAzureCliAuthHeadroom(now = Date.now(), azureDir?: string): 
   try {
     const parsed = JSON.parse(readFileSync(cachePath, "utf8")) as {
       AccessToken?: Record<string, { expires_on?: string | number }>;
+      RefreshToken?: Record<string, unknown>;
+      Account?: Record<string, unknown>;
     };
     const entries = Object.values(parsed?.AccessToken ?? {});
+    const refreshCount = Object.keys(parsed?.RefreshToken ?? {}).length;
+    const accountCount = Object.keys(parsed?.Account ?? {}).length;
     if (!entries.length) {
+      if (refreshCount > 0) {
+        return { provider: "azure-cli", state: "refreshable", expiresAt: null };
+      }
+      if (accountCount === 0) {
+        return { provider: "azure-cli", state: "unconfigured", expiresAt: null };
+      }
       return {
         provider: "azure-cli",
-        state: "unknown",
+        state: "expired",
         expiresAt: null,
-        reason: "Azure CLI msal_token_cache.json contains no access token entries",
+        reason: "Azure CLI account has no cached refresh or access token",
       };
     }
     let latestExpiresAt: number | null = null;
@@ -502,6 +512,9 @@ export function probeAzureCliAuthHeadroom(now = Date.now(), azureDir?: string): 
         expiresAt: null,
         reason: "Azure CLI msal_token_cache.json is missing numeric expires_on metadata",
       };
+    }
+    if (latestExpiresAt <= now && refreshCount > 0) {
+      return { provider: "azure-cli", state: "refreshable", expiresAt: null };
     }
     return {
       provider: "azure-cli",
@@ -593,9 +606,6 @@ type RawScorecardFact = {
 };
 
 function readScorecardFacts(db: SqliteDb, start: number, end: number): RawScorecardFact[] {
-  // Bound started_at via idx_app_task_attempts_started (allowing up to 30d attempt duration before window start)
-  // and filter exact finished/started timestamp in SQL before expanding json_each facts.
-  const lookbackStart = Math.max(0, start - 30 * 86_400_000);
   const tsExpr = `COALESCE(
     CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
     a.started_at
@@ -606,15 +616,14 @@ function readScorecardFacts(db: SqliteDb, start: number, end: number): RawScorec
         ${tsExpr} AS timestamp,
         f.value AS fact
       FROM app_task_attempts a, json_each(a.attempt_json, '$.acceptedResult.facts') f
-      WHERE a.started_at >= ? AND a.started_at < ?
-        AND a.accepted_result_state IS NOT NULL
-        AND instr(a.attempt_json, 'scorecard:') > 0
+      WHERE instr(a.attempt_json, 'scorecard:') > 0
         AND ${tsExpr} >= ? AND ${tsExpr} < ?
+        AND a.accepted_result_state IS NOT NULL
         AND f.type = 'text'
         AND substr(f.value, 1, 10) = 'scorecard:'
         AND length(f.value) <= 8000`,
     )
-    .all(lookbackStart, end, start, end) as Array<{
+    .all(start, end) as Array<{
     appId: string;
     taskId: string;
     attemptId: string;
@@ -1466,15 +1475,13 @@ function buildAppDrillDown(
          ) AS goal,
          t.updated_at AS updatedAt,
          (SELECT COUNT(*) FROM app_task_attempts a
-          WHERE a.app_id = t.app_id AND a.task_id = t.task_id
-            AND a.started_at >= ? AND a.started_at < ?
+          WHERE +a.app_id = t.app_id AND +a.task_id = t.task_id
             AND a.state = 'completed' AND a.accepted_result_state = 'converged'
-            AND ${finishMsExpr} IS NOT NULL AND ${finishMsExpr} >= ? AND ${finishMsExpr} < ?) AS convergedWindow,
+            AND ${terminalAttemptWindowPredicateSql("?", "?", "a")}) AS convergedWindow,
          (SELECT COUNT(*) FROM app_task_attempts a
-          WHERE a.app_id = t.app_id AND a.task_id = t.task_id
-            AND a.started_at >= ? AND a.started_at < ?
+          WHERE +a.app_id = t.app_id AND +a.task_id = t.task_id
             AND a.state = 'failed'
-            AND ${finishMsExpr} IS NOT NULL AND ${finishMsExpr} >= ? AND ${finishMsExpr} < ?) AS failedWindow
+            AND ${terminalAttemptWindowPredicateSql("?", "?", "a")}) AS failedWindow
        FROM app_tasks t
        LEFT JOIN app_task_cancellations c ON c.app_id = t.app_id AND c.task_id = t.task_id
        WHERE t.app_id = ?
@@ -1486,7 +1493,7 @@ function buildAppDrillDown(
          t.updated_at DESC
        LIMIT 25`,
     )
-    .all(terminalLookbackStart, end, start, end, terminalLookbackStart, end, start, end, appId, start) as Array<{
+    .all(end, start, end, end, start, end, appId, start) as Array<{
     taskId: string;
     status: string;
     agent: string | null;
@@ -1871,6 +1878,111 @@ export function describeOpenAlert(
   };
 }
 
+export function enrichAlertsWithLatestJudgments<
+  T extends { alertId?: number; metricId?: string; createdAt?: number | null },
+>(db: SqliteDb, alerts: readonly T[]): Array<T & { latestJudgment: Record<string, unknown> | null }> {
+  if (!alerts.length) return [];
+
+  // Batch-read accepted Task dispositions using idx_metric_disposition_attempts (`timestamp >= minCreatedAt`),
+  // avoiding N+1 full scans across historical attempt_json blobs.
+  const createdTimestamps = alerts
+    .map((a) => (typeof a.createdAt === "number" && Number.isFinite(a.createdAt) && a.createdAt > 0 ? a.createdAt : 0))
+    .filter((ts) => ts > 0);
+  const minCreatedAt = createdTimestamps.length === alerts.length ? Math.max(0, Math.min(...createdTimestamps) - 10_000) : 0;
+  const alertKeys = new Set(
+    alerts
+      .filter((a) => a.metricId && a.alertId != null)
+      .map((a) => `${a.metricId}::${a.alertId}`),
+  );
+
+  const dispByKey = new Map<string, Record<string, unknown>>();
+  if (alertKeys.size > 0) {
+    const dispRows = db
+      .prepare(
+        `SELECT app_id, task_id, attempt_id, timestamp, data, metric_id, alert_id
+         FROM metric_dispositions
+         WHERE timestamp >= ?
+         ORDER BY timestamp DESC, attempt_id DESC`,
+      )
+      .all(minCreatedAt) as Array<{
+      app_id: string;
+      task_id: string;
+      attempt_id: string;
+      timestamp: number;
+      data: string;
+      metric_id: string;
+      alert_id: number;
+    }>;
+    for (const row of dispRows) {
+      const key = `${row.metric_id}::${row.alert_id}`;
+      if (!alertKeys.has(key) || dispByKey.has(key)) continue;
+      try {
+        const parsed = JSON.parse(row.data);
+        const obj = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+        dispByKey.set(key, {
+          ...obj,
+          owner: row.app_id,
+          timestamp: row.timestamp,
+          source: {
+            kind: "accepted-task-result",
+            appId: row.app_id,
+            taskId: row.task_id,
+            attemptId: row.attempt_id,
+          },
+        });
+      } catch {
+        /* Ignore malformed disposition. */
+      }
+    }
+  }
+
+  const legacyStmt = db.prepare(
+    `SELECT id, owner, timestamp, data
+     FROM events
+     WHERE event_type = 'metric.alert_judged'
+       AND timestamp >= ?
+       AND (alert_id = CAST(? AS TEXT) OR (alert_id IS NULL AND metric_id = ?))
+     ORDER BY timestamp DESC, id DESC LIMIT 1`,
+  );
+
+  return alerts.map((alert) => {
+    const key = `${alert.metricId ?? ""}::${alert.alertId ?? ""}`;
+    const accepted = dispByKey.get(key);
+    if (accepted) {
+      return { ...alert, latestJudgment: accepted };
+    }
+    const legacyRow = legacyStmt.get(alert.createdAt ?? 0, alert.alertId ?? null, alert.metricId ?? null) as {
+      id?: number;
+      owner?: string | null;
+      timestamp?: number;
+      data?: string | null;
+    } | null;
+    if (!legacyRow) return { ...alert, latestJudgment: null };
+    try {
+      const parsed = legacyRow.data ? JSON.parse(legacyRow.data) : null;
+      const obj = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+      return {
+        ...alert,
+        latestJudgment: {
+          eventId: legacyRow.id ?? null,
+          owner: legacyRow.owner ?? null,
+          timestamp: legacyRow.timestamp ?? null,
+          ...obj,
+        },
+      };
+    } catch {
+      return {
+        ...alert,
+        latestJudgment: {
+          eventId: legacyRow.id ?? null,
+          owner: legacyRow.owner ?? null,
+          timestamp: legacyRow.timestamp ?? null,
+        },
+      };
+    }
+  });
+}
+
 function resolveOptionalWorkflowRef(
   raw: string | null | undefined,
   trulyInstalledSet: ReadonlySet<string>,
@@ -1950,64 +2062,8 @@ export function readObservabilitySummary(
     let hostOpenAlerts = 0;
     const appOpenAlerts = new Map<string, number>();
     const alertSummaries: AlertHandlerSummary[] = [];
-    for (const alert of visibleAlerts) {
-      const acceptedDisp = db
-        .prepare(
-          `SELECT app_id, task_id, attempt_id, timestamp, data
-           FROM metric_dispositions WHERE metric_id = ? AND alert_id = ?
-           ORDER BY timestamp DESC, attempt_id DESC LIMIT 1`,
-        )
-        .get(alert.metricId, alert.alertId) as {
-        app_id: string;
-        task_id: string;
-        attempt_id: string;
-        data: string;
-      } | null;
-      let latestJudgment: Record<string, unknown> | null = null;
-      if (acceptedDisp) {
-        try {
-          latestJudgment = {
-            ...(JSON.parse(acceptedDisp.data) as Record<string, unknown>),
-            source: {
-              kind: "accepted-task-result",
-              appId: acceptedDisp.app_id,
-              taskId: acceptedDisp.task_id,
-              attemptId: acceptedDisp.attempt_id,
-            },
-          };
-        } catch {
-          /* Ignore malformed disposition. */
-        }
-      } else {
-        const legacyRow = db
-          .prepare(
-            `SELECT id, owner, timestamp, data
-             FROM events
-             WHERE event_type = 'metric.alert_judged'
-               AND timestamp >= ?
-               AND (alert_id = CAST(? AS TEXT) OR (alert_id IS NULL AND metric_id = ?))
-             ORDER BY timestamp DESC, id DESC LIMIT 1`,
-          )
-          .get(alert.createdAt ?? 0, alert.alertId, alert.metricId) as {
-          id?: number;
-          owner?: string | null;
-          timestamp?: number;
-          data?: string | null;
-        } | null;
-        if (legacyRow) {
-          try {
-            latestJudgment = {
-              eventId: legacyRow.id ?? null,
-              owner: legacyRow.owner ?? null,
-              timestamp: legacyRow.timestamp ?? null,
-              ...(legacyRow.data ? (JSON.parse(legacyRow.data) as Record<string, unknown>) : {}),
-            };
-          } catch {
-            latestJudgment = { eventId: legacyRow.id ?? null, owner: legacyRow.owner ?? null };
-          }
-        }
-      }
-      const summary = describeOpenAlert({ ...alert, latestJudgment }, catalog);
+    for (const alert of enrichAlertsWithLatestJudgments(db, visibleAlerts)) {
+      const summary = describeOpenAlert(alert, catalog);
       alertSummaries.push(summary);
       if (summary.scope.kind === "host") {
         hostOpenAlerts += 1;
@@ -2081,8 +2137,9 @@ export function readObservabilitySummary(
         `SELECT
            COUNT(DISTINCT i.id) AS unresolvedCount,
            MIN(CAST(json_extract(r.value, '$.firstFailedAt') AS INTEGER)) AS oldestFailedAt
-         FROM app_inbox_items i, json_each(COALESCE(i.recovery_json, '{}')) r
-         WHERE json_extract(r.value, '$.recoveredAt') IS NULL
+         FROM app_inbox_items i, json_each(i.recovery_json) r
+         WHERE i.recovery_json IS NOT NULL AND i.recovery_json != '{}'
+           AND json_extract(r.value, '$.recoveredAt') IS NULL
            AND json_extract(r.value, '$.failures') > 0
            AND ((r.key = 'input-admission' AND i.status != 'done' AND i.execution_task_id IS NULL)
              OR (r.key = 'input-result' AND i.status != 'done')

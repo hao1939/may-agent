@@ -299,11 +299,13 @@ function renderTopDownObservability(data, options = {}) {
 
   const authText = auth.state === 'valid'
     ? `✓ az valid (${formatAgeCompact((auth.expiresAt || 0) - data.generatedAt)})`
-    : auth.state === 'expired'
-      ? '✕ az EXPIRED'
-      : auth.state === 'unconfigured'
-        ? 'az unconfigured'
-        : 'az unknown';
+    : auth.state === 'refreshable'
+      ? '✓ az refreshable'
+      : auth.state === 'expired'
+        ? '✕ az EXPIRED'
+        : auth.state === 'unconfigured'
+          ? 'az unconfigured'
+          : 'az unknown';
 
   const rubricLabels = [
     ['outcomeValue', 'Outcome value (35%)'],

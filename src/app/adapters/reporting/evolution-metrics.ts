@@ -33,8 +33,9 @@ export function terminalAttemptWindowPredicateSql(startSql: string, endSql: stri
 const HOST_TERMINAL_WINDOW_24H = terminalAttemptWindowPredicateSql(`${NOW_SQL} - ${DAY_MS}`, NOW_SQL);
 
 const UNRESOLVED_RECOVERY_SQL = `SELECT COUNT(DISTINCT i.id) AS unresolved
-  FROM app_inbox_items i, json_each(COALESCE(i.recovery_json, '{}')) r
-  WHERE json_extract(r.value, '$.recoveredAt') IS NULL
+  FROM app_inbox_items i, json_each(i.recovery_json) r
+  WHERE i.recovery_json IS NOT NULL AND i.recovery_json != '{}'
+    AND json_extract(r.value, '$.recoveredAt') IS NULL
     AND json_extract(r.value, '$.failures') > 0
     AND ((r.key = 'input-admission' AND i.status != 'done' AND i.execution_task_id IS NULL)
       OR (r.key = 'input-result' AND i.status != 'done')

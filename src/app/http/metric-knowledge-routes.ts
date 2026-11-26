@@ -2,7 +2,11 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { METRIC_LIST_LIMIT, readMetricObservations } from "../adapters/reporting/metric-observations.js";
-import { describeOpenAlert, resolveObservabilityCatalog } from "../adapters/reporting/observability-summary.js";
+import {
+  describeOpenAlert,
+  enrichAlertsWithLatestJudgments,
+  resolveObservabilityCatalog,
+} from "../adapters/reporting/observability-summary.js";
 import { listConfiguredAgentNames } from "@may-agent/sdk/runtime";
 import type { SqliteDb } from "./read-model/state-db.js";
 
@@ -49,75 +53,8 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
     return listConfiguredAgentNames(AGENTS_ROOT, PROJECTS_ROOT);
   }
 
-  function parseEventData(data: unknown): Record<string, unknown> {
-    if (!data || typeof data !== "string") return {};
-    try {
-      const parsed = JSON.parse(data);
-      return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
-    } catch {
-      return {};
-    }
-  }
-
-  function latestAlertJudgment(
-    db: SqliteDb,
-    alert: { alertId?: number; metricId?: string; createdAt?: number },
-  ): Record<string, unknown> | null {
-    const accepted = db
-      .prepare(
-        `SELECT app_id, task_id, attempt_id, timestamp, data
-      FROM metric_dispositions WHERE metric_id = ? AND alert_id = ?
-      ORDER BY timestamp DESC, attempt_id DESC LIMIT 1`,
-      )
-      .get(alert.metricId ?? null, alert.alertId ?? null);
-    if (accepted)
-      return {
-        ...parseEventData(String(accepted.data)),
-        owner: accepted.app_id,
-        timestamp: accepted.timestamp,
-        source: {
-          kind: "accepted-task-result",
-          appId: accepted.app_id,
-          taskId: accepted.task_id,
-          attemptId: accepted.attempt_id,
-        },
-      };
-    const row = db
-      .prepare(
-        `SELECT id, owner, timestamp, data
-       FROM events
-       WHERE event_type = 'metric.alert_judged'
-         AND timestamp >= ?
-         AND (
-           alert_id = CAST(? AS TEXT)
-           OR (
-             alert_id IS NULL
-             AND metric_id = ?
-           )
-         )
-       ORDER BY timestamp DESC, id DESC
-       LIMIT 1`,
-      )
-      .get(alert.createdAt ?? 0, alert.alertId ?? null, alert.metricId ?? null) as {
-      id?: number;
-      owner?: string | null;
-      timestamp?: number;
-      data?: string | null;
-    } | null;
-    if (!row) return null;
-    return {
-      eventId: row.id ?? null,
-      owner: row.owner ?? null,
-      timestamp: row.timestamp ?? null,
-      ...parseEventData(row.data),
-    };
-  }
-
   function enrichOpenAlerts(db: SqliteDb, alerts: any[]): any[] {
-    return alerts.map((alert) => ({
-      ...alert,
-      latestJudgment: latestAlertJudgment(db, alert),
-    }));
+    return enrichAlertsWithLatestJudgments(db, alerts);
   }
 
   function handleLiveness(url?: URL): Response {
@@ -253,7 +190,18 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
 
     const attemptCandidates = db
       .prepare(
-        `SELECT
+        `WITH candidate_keys AS (
+           SELECT app_id, attempt_id FROM app_task_attempts
+           WHERE state = 'running'
+           UNION
+           SELECT app_id, attempt_id FROM app_task_attempts
+           WHERE started_at > ?
+           UNION
+           SELECT app_id, attempt_id FROM app_task_attempts
+           WHERE state IN ('completed', 'failed', 'interrupted')
+             AND CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER) > ?
+         )
+         SELECT
            a.app_id AS appId,
            a.attempt_id AS attemptId,
            a.task_id AS taskId,
@@ -268,18 +216,13 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
              NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
              NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
            ) AS owner
-         FROM app_task_attempts a
+         FROM candidate_keys ck
+         JOIN app_task_attempts a ON a.app_id = ck.app_id AND a.attempt_id = ck.attempt_id
          LEFT JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
-         WHERE a.started_at >= ?
-           AND (
-             a.state = 'running'
-             OR a.started_at > ?
-             OR CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER) > ?
-           )
          ORDER BY a.started_at DESC
          LIMIT ${ATTEMPT_TIMELINE_ROW_LIMIT + 1}`,
       )
-      .all(lookbackSince, since, since) as Array<{
+      .all(since, since) as Array<{
       appId: string;
       attemptId: string;
       taskId: string;

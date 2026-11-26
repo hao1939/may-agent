@@ -1189,6 +1189,30 @@ describe("top-down Host vs. Apps observability summary", () => {
       ms.define({ id: "alpha.latency_custom", owner: "unmapped-agent" });
       const defaultCatalogObs = readMetricObservations(r4Db, now, ["alpha.latency_custom"]);
       expect(defaultCatalogObs.metrics[0]?.scope).toEqual({ kind: "app", appId: "alpha" });
+
+      // 6. Covering finish-time & recovery indexes eliminate full-table scans on app_task_attempts and app_inbox_items,
+      // and MSAL cache with RefreshToken + empty AccessToken reports 'refreshable' (quiet no_exposure, never false failure).
+      for (const m of [
+        HOST_HARNESS_METRICS.find((d) => d.id === "host.settlement_integrity_ratio")!,
+        HOST_HARNESS_METRICS.find((d) => d.id === "host.harness_burden_ratio")!,
+        ...alphaEvoDefs.filter((d) => d.id !== "alpha.workflow_offload_ratio_24h"),
+      ]) {
+        const plan = (r4Db.prepare(`EXPLAIN QUERY PLAN ${m.sourceQuery}`).all() as Array<{ detail: string }>)
+          .map((p) => p.detail)
+          .join(" | ");
+        expect(plan).toContain("idx_app_task_attempts_terminal_finished_ms");
+      }
+      const refreshAzureDir = join(root, "refresh-azure");
+      mkdirSync(refreshAzureDir, { recursive: true });
+      writeFileSync(
+        join(refreshAzureDir, "msal_token_cache.json"),
+        JSON.stringify({ AccessToken: {}, RefreshToken: { rt1: { target: "scope" } }, Account: { a1: {} } }),
+      );
+      expect(probeAzureCliAuthHeadroom(now, refreshAzureDir)).toEqual({
+        provider: "azure-cli",
+        state: "refreshable",
+        expiresAt: null,
+      });
     } finally {
       r4Db.close();
     }

@@ -296,8 +296,13 @@ export async function measureSourceMetrics(options: {
         completedAt = options.measuredAt ?? Date.now();
         measuredBy = "runtime:host-auth-probe";
         const auth = probeAzureCliAuthHeadroom(completedAt);
-        if (auth.state === "unconfigured") {
-          sample = { kind: "no_exposure", sampleSize: 0, measuredAt: completedAt, note: "azure-cli unconfigured" };
+        if (auth.state === "unconfigured" || auth.state === "refreshable") {
+          sample = {
+            kind: "no_exposure",
+            sampleSize: 0,
+            measuredAt: completedAt,
+            note: auth.state === "refreshable" ? "azure-cli refresh token active" : "azure-cli unconfigured",
+          };
         } else if (auth.expiresAt !== null) {
           sample = {
             kind: "sample",
