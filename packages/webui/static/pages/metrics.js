@@ -411,7 +411,7 @@ function renderTopDownObservability(data, options = {}) {
         )}
       </div>
     </section>
-    ${renderOpenAlertsStrip(data.alerts)}
+    ${onMetricsTab ? renderOpenAlertsStrip(data.alerts) : ''}
     <div class="td-apps-grid">${appsHtml || '<p class="health-note">No enabled Apps discovered yet.</p>'}</div>
     ${onMetricsTab && data.appDetail ? renderAppDrillDown(data.appDetail, days) : ''}`;
 }
@@ -510,10 +510,26 @@ async function loadOverviewTasks() {
   try {
     const data = await readHealthJson('/api/tasks?allApps=true&status=pending&status=running&status=waiting&status=attention&limit=8');
     if (generation !== overviewTasksGeneration || currentTab !== 'live') return;
-    el.innerHTML = `<h3>Current Tasks</h3><p class="health-note">Current work, not workflow outcomes. Showing up to 8 recent Tasks; pending does not necessarily mean eligible to run.</p>
-      ${data.items.length ? data.items.map(task => `<div class="health-task">${esc(task.outcome)} · ${esc(task.status)} · ${esc(task.appId)} · ${esc(task.ref)}</div>`).join('') : '<p>No current Tasks in this selection.</p>'}
-      <p><a href="/projects">Inspect Tasks in Projects</a>${data.nextCursor ? ' · more Tasks available' : ''}</p>`;
-  } catch (error) { if (generation === overviewTasksGeneration) el.innerHTML = `<h3>Current Tasks</h3><p class="health-warning">Task read unavailable: ${esc(error.message)}</p>`; }
+    el.innerHTML = `<div class="overview-card-head"><h2>Current Active Tasks</h2><a href="/projects" class="td-window-btn">All Projects →</a></div>
+      <p class="health-note" style="margin:0 0 10px">Current durable work across Apps (up to 8 recent Tasks; pending does not necessarily mean eligible to run).</p>
+      ${data.items.length ? `<div class="overview-task-list">${data.items.map(task => {
+        const taskId = task.id || task.taskId || '';
+        const href = task.appId
+          ? `/projects/${encodeURIComponent(task.appId + '.app')}/tasks?appId=${encodeURIComponent(task.appId)}${taskId ? '&task=' + encodeURIComponent(taskId) : ''}`
+          : '/projects';
+        const st = String(task.status || 'pending').toLowerCase();
+        const badgeCls = st === 'running' ? 'running' : st === 'attention' ? 'error' : st === 'waiting' ? 'interrupted' : 'source';
+        return `<a class="health-task overview-task-row" href="${attrEsc(href)}">
+          <span class="overview-task-top">
+            <span class="badge ${badgeCls}">${esc(task.status)}</span>
+            <span class="td-scope-tag app" style="margin:0">${esc(task.appId)}</span>
+            <code class="overview-task-ref">${esc(task.ref || taskId)}</code>
+          </span>
+          <span class="overview-task-outcome">${esc(task.outcome)}</span>
+        </a>`;
+      }).join('')}</div>` : '<p class="health-note">No active Tasks in this selection.</p>'}
+      ${data.nextCursor ? '<p class="health-note" style="margin-top:8px"><a href="/projects">Inspect more Tasks in Projects →</a></p>' : ''}`;
+  } catch (error) { if (generation === overviewTasksGeneration) el.innerHTML = `<h2>Current Active Tasks</h2><p class="health-warning">Task read unavailable: ${esc(error.message)}</p>`; }
 }
 
 function metricObservationLabel(metric) {

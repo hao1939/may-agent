@@ -1036,6 +1036,14 @@ describe("served workflow and metric health pages", () => {
       db.prepare(
         "INSERT INTO metric_alerts(id, metric_id, alert_type, message, created_at) VALUES (901, 'workflow.error-count-24h', 'threshold', 'Host invariant breach', ?)",
       ).run(now - 500);
+      db.prepare(
+        `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+         VALUES ('research', 'codex-run-1', 'report-codex', 1, 'running', ?, ?)`,
+      ).run(now - 1_800_000, JSON.stringify({ owner: "worker", handler: "executor:codex-goal" }));
+      db.prepare(
+        `INSERT INTO app_inbox_items(id, app_id, source_kind, source_id, input_kind, input_data, status, created_at, updated_at)
+         VALUES ('hum-steer-1', 'research', 'human', 'web-ui', 'steer', '{}', 'done', ?, ?)`,
+      ).run(now - 900_000, now - 900_000);
       try {
         const page = await browser.newPage();
         const errors: string[] = [];
@@ -1049,6 +1057,7 @@ describe("served workflow and metric health pages", () => {
         });
 
         await page.goto(base, { waitUntil: "domcontentloaded" });
+        await page.waitForSelector("#liveness-panel .timeline-ruler");
         await page.waitForSelector('#top-down-overview [data-host-summary]');
         await page.waitForSelector('#top-down-overview [data-app-card="research"]');
         const overviewText = await page.$eval("#top-down-overview", (el) => el.textContent || "");
@@ -1058,11 +1067,16 @@ describe("served workflow and metric health pages", () => {
         expect(await page.$eval('#top-down-overview [data-app-card="research"]', (el) => el.textContent || "")).toContain(
           "low-sample (n=1)",
         );
-        // R-01 & alert declaration: badge is a keyboard-focusable <a> link, and unjudged alerts never claim routing.
+        // Unified Activity Timeline renders native Codex duration bar, human ◆ pin, and alert rail at top of Overview.
+        expect(await page.$("#liveness-panel .timeline-bar.kind-codex.running")).not.toBeNull();
+        expect(await page.$("#liveness-panel .timeline-pin.kind-human")).not.toBeNull();
+        expect(await page.$("#liveness-panel .timeline-alert-rail")).not.toBeNull();
+        // R-01 & unified alert strip: rendered once on Overview (in #liveness-panel, not duplicated in #top-down-overview).
         expect(
           await page.$eval('#top-down-overview [data-host-summary] a.breach-badge', (el) => el.getAttribute("href")),
         ).toBe("/metrics");
-        const stripText = await page.$eval("#top-down-overview [data-active-alerts]", (el) => el.textContent || "");
+        expect(await page.$("#top-down-overview [data-active-alerts]")).toBeNull();
+        const stripText = await page.$eval("#liveness-panel [data-active-alerts]", (el) => el.textContent || "");
         expect(stripText).toContain("Host · Owner: system:host");
         expect(stripText).toContain("No recorded handling");
         expect(stripText).not.toContain("Routed to");
@@ -1070,6 +1084,9 @@ describe("served workflow and metric health pages", () => {
         metricsRequests.length = 0;
         await page.goto(base + "/metrics", { waitUntil: "domcontentloaded" });
         await page.waitForSelector('#metrics-top-down [data-app-card="research"]');
+        expect(await page.$eval("#metrics-top-down [data-active-alerts]", (el) => el.textContent || "")).toContain(
+          "Host · Owner: system:host",
+        );
         await page.waitForSelector("#metrics-workflows [data-workflow-outcomes]");
         await page.waitForSelector("#metrics-context");
         // R-02: /metrics aligns all three panels on the shared default window (days=1) and exact end boundary.
@@ -1102,6 +1119,8 @@ describe("served workflow and metric health pages", () => {
         expect(errors).toEqual([]);
       } finally {
         db.prepare("DELETE FROM metric_alerts WHERE id = 901").run();
+        db.prepare("DELETE FROM app_task_attempts WHERE attempt_id = 'codex-run-1'").run();
+        db.prepare("DELETE FROM app_inbox_items WHERE id = 'hum-steer-1'").run();
         db.prepare("DELETE FROM metric_snapshots WHERE metric_id = 'quality.success'").run();
         db.prepare("DELETE FROM metrics WHERE id = 'quality.success'").run();
         await browser.close();

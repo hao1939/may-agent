@@ -128,7 +128,12 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
     const rawHours = Number(url?.searchParams.get("hours"));
     const hours = Number.isFinite(rawHours) && rawHours > 0 ? Math.min(72, Math.max(1, rawHours)) : 4;
     const since = now - hours * 60 * 60 * 1000;
+    const lookbackSince = since - 7 * 86_400_000;
     const agents = listConfiguredAgents();
+    const appCatalog = resolveObservabilityCatalog(db, {
+      projectsRoot: PROJECTS_ROOT,
+      loadedApps: options.listLoadedApps?.() ?? null,
+    });
 
     const agentLatestRows = db
       .prepare(
@@ -154,14 +159,15 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
     // 'category' bucket which maps to a color in the frontend.
     const allCandidates = db
       .prepare(
-        `SELECT sessionId, agent, status, kind, source, projectId, parentSessionId,
+        `SELECT sessionId, agent, status, kind, source, app_id, projectId, parentSessionId,
               startedAt, endedAt
        FROM sessions
-       WHERE startedAt > ? AND agent IS NOT NULL AND agent != ''
+       WHERE (startedAt > ? OR status IN ('running', 'idle') OR (endedAt IS NOT NULL AND endedAt > ?))
+         AND agent IS NOT NULL AND agent != ''
        ORDER BY startedAt DESC
        LIMIT ?`,
       )
-      .all(since, DASHBOARD_SESSION_ROW_LIMIT + 1) as any[];
+      .all(since, since, DASHBOARD_SESSION_ROW_LIMIT + 1) as any[];
     const allRows = allCandidates.slice(0, DASHBOARD_SESSION_ROW_LIMIT).reverse();
     const activityTruncated = allCandidates.length > DASHBOARD_SESSION_ROW_LIMIT;
 
@@ -186,7 +192,10 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
     for (const row of summaryByAgent.keys()) {
       if (!byAgent.has(row)) byAgent.set(row, []);
     }
+    const sessionById = new Map<string, any>();
     for (const row of allRows) {
+      sessionById.set(row.sessionId, row);
+      if (row.startedAt <= since) continue;
       if (!byAgent.has(row.agent)) byAgent.set(row.agent, []);
       // 'category' is the timeline bucket (heartbeat / project / chat /
       // workflow / other). Distinct from row.kind which is the DB-level
@@ -210,13 +219,413 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       })
       .sort((a, b) => (b.lastSessionAt ?? 0) - (a.lastSessionAt ?? 0));
 
+    // ── Unified Canonical Activity Timeline (Task Attempts + Workflows + Sessions + Human Inputs + Alerts) ──
+    type UnifiedTimelineItem = {
+      id: string;
+      kind: "agent" | "codex" | "workflow" | "chat" | "human" | "heartbeat" | "other";
+      legacyCategory: "heartbeat" | "project" | "chat" | "workflow" | "other";
+      status: "running" | "converged" | "done" | "error" | "blocked" | "interrupted";
+      appId: string | null;
+      agent: string | null;
+      sessionId: string | null;
+      href: string;
+      label: string;
+      detail: string | null;
+      startedAt: number;
+      endedAt: number | null;
+      isPin?: boolean;
+    };
+
+    const normalizeTimelineApp = (raw: unknown): string | null => {
+      const s = typeof raw === "string" ? raw.trim().replace(/^projects\//i, "").replace(/\.app$/i, "") : "";
+      if (!s || s === "platform" || s.startsWith("system:")) return null;
+      if (appCatalog.disabledSet.has(s)) return null;
+      return s;
+    };
+
+    const timelineItems: UnifiedTimelineItem[] = [];
+    const claimedSessionIds = new Set<string>();
+    const claimedAttemptKeys = new Set<string>();
+
+    const attemptRows = db
+      .prepare(
+        `SELECT
+           a.app_id AS appId,
+           a.attempt_id AS attemptId,
+           a.task_id AS taskId,
+           a.state AS state,
+           a.accepted_result_state AS resultState,
+           a.started_at AS startedAt,
+           CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER) AS finishedAt,
+           COALESCE(json_extract(a.attempt_json, '$.handler'), '') AS handler,
+           NULLIF(trim(json_extract(a.attempt_json, '$.sessionId')), '') AS sessionId,
+           COALESCE(
+             NULLIF(trim(json_extract(a.attempt_json, '$.owner')), ''),
+             NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
+             NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
+           ) AS owner
+         FROM app_task_attempts a
+         LEFT JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
+         WHERE a.started_at >= ?
+           AND (
+             a.state = 'running'
+             OR a.started_at > ?
+             OR CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER) > ?
+           )
+         ORDER BY a.started_at DESC
+         LIMIT 800`,
+      )
+      .all(lookbackSince, since, since) as Array<{
+      appId: string;
+      attemptId: string;
+      taskId: string;
+      state: string;
+      resultState: string | null;
+      startedAt: number;
+      finishedAt: number | null;
+      handler: string;
+      sessionId: string | null;
+      owner: string | null;
+    }>;
+
+    for (const r of attemptRows.reverse()) {
+      const appId = normalizeTimelineApp(r.appId);
+      if (r.appId && appCatalog.disabledSet.has(r.appId)) continue;
+      claimedAttemptKeys.add(`${r.appId}::${r.attemptId}`);
+      const linkedSession = r.sessionId ? sessionById.get(r.sessionId) : undefined;
+      if (r.sessionId) claimedSessionIds.add(r.sessionId);
+
+      const h = r.handler.toLowerCase();
+      const kind: UnifiedTimelineItem["kind"] = h.startsWith("workflow:")
+        ? "workflow"
+        : h.startsWith("executor:codex") || h.startsWith("cli:")
+          ? "codex"
+          : h === "executor:conversation"
+            ? "chat"
+            : "agent";
+      const legacyCategory: UnifiedTimelineItem["legacyCategory"] =
+        kind === "workflow" ? "workflow" : kind === "chat" ? "chat" : "project";
+      const isErr = r.state === "failed" || linkedSession?.status === "error";
+      const status: UnifiedTimelineItem["status"] =
+        r.state === "running"
+          ? "running"
+          : isErr
+            ? "error"
+            : r.resultState === "converged"
+              ? "converged"
+              : r.state === "interrupted"
+                ? "interrupted"
+                : "done";
+      const agent = r.owner || (appId ? (appCatalog.ownerByAppId.get(appId) ?? appId) : null);
+      const href = r.sessionId
+        ? `/sessions/${encodeURIComponent(r.sessionId)}`
+        : appId
+          ? `/projects/${encodeURIComponent(appId + ".app")}/tasks?appId=${encodeURIComponent(appId)}&task=${encodeURIComponent(r.taskId)}`
+          : "/projects";
+      timelineItems.push({
+        id: `att:${r.appId}:${r.attemptId}`,
+        kind,
+        legacyCategory,
+        status,
+        appId,
+        agent,
+        sessionId: r.sessionId,
+        href,
+        label: r.taskId,
+        detail: r.handler || kind,
+        startedAt: r.startedAt,
+        endedAt: r.state === "running" ? null : (r.finishedAt ?? linkedSession?.endedAt ?? r.startedAt),
+      });
+    }
+
+    const wfRows = db
+      .prepare(
+        `SELECT runId, workflow, status, app_id AS appId, projectId, attempt_id AS attemptId, startedAt, endedAt
+         FROM workflow_runs
+         WHERE parentWorkflowRunId IS NULL
+           AND startedAt >= ?
+           AND (status = 'running' OR startedAt > ? OR (endedAt IS NOT NULL AND endedAt > ?))
+         ORDER BY startedAt DESC
+         LIMIT 600`,
+      )
+      .all(lookbackSince, since, since) as Array<{
+      runId: string;
+      workflow: string;
+      status: string;
+      appId: string | null;
+      projectId: string | null;
+      attemptId: string | null;
+      startedAt: number;
+      endedAt: number | null;
+    }>;
+
+    for (const wf of wfRows.reverse()) {
+      if (wf.appId && wf.attemptId && claimedAttemptKeys.has(`${wf.appId}::${wf.attemptId}`)) continue;
+      const appId = normalizeTimelineApp(wf.appId ?? wf.projectId);
+      const agent = appId ? (appCatalog.ownerByAppId.get(appId) ?? appId) : null;
+      const status: UnifiedTimelineItem["status"] =
+        wf.status === "running"
+          ? "running"
+          : wf.status === "error"
+            ? "error"
+            : wf.status === "blocked"
+              ? "blocked"
+              : wf.status === "interrupted"
+                ? "interrupted"
+                : "done";
+      const params = new URLSearchParams({ workflow: wf.workflow, runs: "true" });
+      if (appId) params.set("appId", appId);
+      timelineItems.push({
+        id: `wf:${wf.runId}`,
+        kind: "workflow",
+        legacyCategory: "workflow",
+        status,
+        appId,
+        agent,
+        sessionId: null,
+        href: `/metrics?${params.toString()}`,
+        label: wf.workflow,
+        detail: `workflow · ${wf.runId}`,
+        startedAt: wf.startedAt,
+        endedAt: wf.status === "running" ? null : (wf.endedAt ?? wf.startedAt),
+      });
+    }
+
+    for (const s of allRows) {
+      if (claimedSessionIds.has(s.sessionId)) continue;
+      const cat = classifyKind(s) as UnifiedTimelineItem["legacyCategory"];
+      const kind: UnifiedTimelineItem["kind"] =
+        cat === "heartbeat"
+          ? "heartbeat"
+          : cat === "chat"
+            ? "chat"
+            : cat === "workflow"
+              ? "workflow"
+              : cat === "project"
+                ? "agent"
+                : "other";
+      const appId =
+        normalizeTimelineApp(s.app_id ?? s.projectId) ??
+        (s.agent ? (appCatalog.appIdByOwner.get(s.agent) ?? null) : null);
+      const status: UnifiedTimelineItem["status"] =
+        s.status === "error"
+          ? "error"
+          : s.status === "running" || s.status === "idle"
+            ? "running"
+            : s.status === "interrupted"
+              ? "interrupted"
+              : "done";
+      const label =
+        cat === "heartbeat"
+          ? "heartbeat"
+          : cat === "project"
+            ? `project ${s.projectId || ""}`.trim()
+            : cat === "chat"
+              ? "chat"
+              : s.source || "session";
+      timelineItems.push({
+        id: `sess:${s.sessionId}`,
+        kind,
+        legacyCategory: cat,
+        status,
+        appId,
+        agent: s.agent || null,
+        sessionId: s.sessionId,
+        href: `/sessions/${encodeURIComponent(s.sessionId)}`,
+        label,
+        detail: s.sessionId,
+        startedAt: s.startedAt,
+        endedAt: status === "running" ? null : (s.endedAt ?? s.startedAt),
+      });
+    }
+
+    const humanRows = db
+      .prepare(
+        `SELECT id, app_id AS appId, source_id AS sourceId, input_kind AS inputKind, created_at AS createdAt
+         FROM app_inbox_items
+         WHERE source_kind = 'human' AND created_at > ? AND created_at <= ?
+         ORDER BY created_at ASC
+         LIMIT 300`,
+      )
+      .all(since, now) as Array<{
+      id: string;
+      appId: string;
+      sourceId: string;
+      inputKind: string;
+      createdAt: number;
+    }>;
+
+    for (const h of humanRows) {
+      const appId = normalizeTimelineApp(h.appId);
+      if (!appId) continue;
+      timelineItems.push({
+        id: `in:${h.id}`,
+        kind: "human",
+        legacyCategory: "chat",
+        status: "done",
+        appId,
+        agent: appCatalog.ownerByAppId.get(appId) ?? appId,
+        sessionId: null,
+        href: `/projects/${encodeURIComponent(appId + ".app")}/tasks?appId=${encodeURIComponent(appId)}`,
+        label: `human ${h.inputKind}`,
+        detail: h.sourceId || "inbox",
+        startedAt: h.createdAt,
+        endedAt: h.createdAt,
+        isPin: true,
+      });
+    }
+
+    timelineItems.sort((a, b) => a.startedAt - b.startedAt);
+
+    type Swimlane = {
+      id: string;
+      label: string;
+      sublabel: string | null;
+      href: string | null;
+      runningCount: number;
+      errorCount: number;
+      totalCount: number;
+      lastActivityAt: number | null;
+      items: UnifiedTimelineItem[];
+    };
+
+    const appLaneMap = new Map<string, Swimlane>();
+    for (const appId of appCatalog.visibleAppIds) {
+      const owner = appCatalog.ownerByAppId.get(appId) ?? null;
+      appLaneMap.set(appId, {
+        id: appId,
+        label: appId,
+        sublabel: owner && owner !== appId ? owner : null,
+        href: `/projects/${encodeURIComponent(appId + ".app")}/tasks?appId=${encodeURIComponent(appId)}`,
+        runningCount: 0,
+        errorCount: 0,
+        totalCount: 0,
+        lastActivityAt: null,
+        items: [],
+      });
+    }
+    const unboundAppLane: Swimlane = {
+      id: "_host",
+      label: "Host / Direct",
+      sublabel: "unbound",
+      href: "/metrics",
+      runningCount: 0,
+      errorCount: 0,
+      totalCount: 0,
+      lastActivityAt: null,
+      items: [],
+    };
+
+    const agentLaneMap = new Map<string, Swimlane>();
+    for (const ag of agents) {
+      const mappedApp = appCatalog.appIdByOwner.get(ag) ?? null;
+      agentLaneMap.set(ag, {
+        id: ag,
+        label: ag,
+        sublabel: mappedApp && mappedApp !== ag ? mappedApp : null,
+        href: `/agents/${encodeURIComponent(ag)}`,
+        runningCount: 0,
+        errorCount: 0,
+        totalCount: 0,
+        lastActivityAt: null,
+        items: [],
+      });
+    }
+
+    const pushToLane = (lane: Swimlane, item: UnifiedTimelineItem) => {
+      lane.items.push(item);
+      lane.totalCount += 1;
+      if (item.status === "running") lane.runningCount += 1;
+      if (item.status === "error") lane.errorCount += 1;
+      const touchAt = item.status === "running" ? now : Math.max(item.startedAt, item.endedAt ?? item.startedAt);
+      if (lane.lastActivityAt === null || touchAt > lane.lastActivityAt) lane.lastActivityAt = touchAt;
+    };
+
+    for (const item of timelineItems) {
+      if (item.appId && appLaneMap.has(item.appId)) {
+        pushToLane(appLaneMap.get(item.appId)!, item);
+      } else if (item.appId) {
+        let dyn = appLaneMap.get(item.appId);
+        if (!dyn) {
+          dyn = {
+            id: item.appId,
+            label: item.appId,
+            sublabel: item.agent && item.agent !== item.appId ? item.agent : null,
+            href: `/projects/${encodeURIComponent(item.appId + ".app")}/tasks?appId=${encodeURIComponent(item.appId)}`,
+            runningCount: 0,
+            errorCount: 0,
+            totalCount: 0,
+            lastActivityAt: null,
+            items: [],
+          };
+          appLaneMap.set(item.appId, dyn);
+        }
+        pushToLane(dyn, item);
+      } else {
+        pushToLane(unboundAppLane, item);
+      }
+
+      if (item.agent) {
+        let agLane = agentLaneMap.get(item.agent);
+        if (!agLane) {
+          agLane = {
+            id: item.agent,
+            label: item.agent,
+            sublabel: item.appId && item.appId !== item.agent ? item.appId : null,
+            href: `/agents/${encodeURIComponent(item.agent)}`,
+            runningCount: 0,
+            errorCount: 0,
+            totalCount: 0,
+            lastActivityAt: null,
+            items: [],
+          };
+          agentLaneMap.set(item.agent, agLane);
+        }
+        pushToLane(agLane, item);
+      }
+    }
+
+    const sortLanes = (list: Swimlane[]) =>
+      list.sort(
+        (a, b) =>
+          b.runningCount - a.runningCount ||
+          (b.totalCount > 0 ? 1 : 0) - (a.totalCount > 0 ? 1 : 0) ||
+          (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) ||
+          a.label.localeCompare(b.label),
+      );
+
+    const appLanes = sortLanes([...appLaneMap.values()]);
+    if (unboundAppLane.totalCount > 0) appLanes.push(unboundAppLane);
+    const agentLanes = sortLanes([...agentLaneMap.values()]);
+
+    const alertWindowRows = db
+      .prepare(
+        `SELECT ma.id AS alertId, ma.metric_id AS metricId, ma.created_at AS createdAt, ma.resolved_at AS resolvedAt,
+                COALESCE(m.name, ma.metric_id) AS name, COALESCE(m.priority, 'P2') AS priority
+         FROM metric_alerts ma
+         LEFT JOIN metrics m ON m.id = ma.metric_id
+         WHERE ma.created_at > ? OR (ma.resolved_at IS NOT NULL AND ma.resolved_at > ?)
+         ORDER BY ma.created_at ASC
+         LIMIT 100`,
+      )
+      .all(since, since) as Array<{
+      alertId: number;
+      metricId: string;
+      createdAt: number;
+      resolvedAt: number | null;
+      name: string;
+      priority: string;
+    }>;
+
     const activeSessions =
       (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle')").get() as any)?.c ?? 0;
+    const activeRunningItems = timelineItems.filter((i) => i.status === "running").length;
     const openAlertCandidates = enrichOpenAlerts(
       db,
       db
         .prepare(
           `SELECT ma.id as alertId, ma.metric_id as metricId, ma.message, ma.created_at as createdAt,
+              m.name, m.config, m.owner as explicitOwner,
               COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'system:host') as owner,
               m.project, m.priority, m.current, m.threshold, m.target
        FROM metric_alerts ma
@@ -228,7 +637,31 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
        LIMIT ${DASHBOARD_ALERT_ROW_LIMIT + 1}`,
         )
         .all() as any[],
-    );
+    ).map(({ config, explicitOwner, ...alert }) => {
+      const routing = describeOpenAlert(
+        {
+          alertId: alert.alertId,
+          metricId: alert.metricId,
+          name: alert.name,
+          priority: alert.priority,
+          message: alert.message,
+          createdAt: alert.createdAt,
+          owner: explicitOwner ?? alert.owner,
+          project: alert.project,
+          config,
+          latestJudgment: alert.latestJudgment,
+        },
+        appCatalog,
+      );
+      return {
+        ...alert,
+        scope: routing.scope,
+        declaredOwner: routing.declaredOwner,
+        declaredHandler: routing.declaredHandler,
+        handlingStatus: routing.handlingStatus,
+        linkedTask: routing.linkedTask,
+      };
+    });
 
     const openAlerts = openAlertCandidates.slice(0, DASHBOARD_ALERT_ROW_LIMIT);
     const openAlertsTruncated = openAlertCandidates.length > DASHBOARD_ALERT_ROW_LIMIT;
@@ -237,18 +670,26 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       summary: {
         agentsConfigured: agents.length,
         agentsTotal: agents.length,
-        activeAgentsInWindow: agentRows.filter((agent) => agent.sessionCount > 0).length,
+        activeAgentsInWindow: agentLanes.filter((lane) => lane.totalCount > 0).length,
+        activeAppsInWindow: appLanes.filter((lane) => lane.id !== "_host" && lane.totalCount > 0).length,
         windowHours: hours,
         windowSince: since,
-        activityRows: allRows.length,
+        windowEnd: now,
+        activityRows: timelineItems.length,
         activityRowsTruncated: activityTruncated,
         rowLimit: DASHBOARD_SESSION_ROW_LIMIT,
         activeSessions,
+        activeRunning: Math.max(activeSessions, activeRunningItems),
         openAlerts: openAlerts.length,
         openAlertsTruncated,
       },
       agents: agentRows,
       alerts: openAlerts,
+      timeline: {
+        appLanes,
+        agentLanes,
+        alertEvents: alertWindowRows,
+      },
     });
   }
 
