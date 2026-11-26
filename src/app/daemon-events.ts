@@ -16,6 +16,7 @@ export const METRIC_EVALUATION_INTERVAL_MS = 60_000;
 export function attachDaemonMetricTimers(opts: {
   bus: EventBus;
   persistDir: string;
+  listLoadedApps?: () => ReadonlyArray<{ id: string; owner?: string }>;
   setInterval?: typeof globalThis.setInterval;
   clearInterval?: typeof globalThis.clearInterval;
 }): { close(): void; idle(): Promise<void> } {

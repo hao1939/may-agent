@@ -1,16 +1,29 @@
 import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_process";
-import { join } from "node:path";
-import { openReadOnlyDatabase } from "../lib/db.js";
+import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { openReadOnlyDatabase, type SqliteDb } from "../lib/db.js";
 import { readSqlQueryEvidence } from "../lib/db/query-performance.js";
-import { createMetricService } from "../lib/metrics.js";
-import { log } from "@may-agent/sdk/runtime";
+import { createMetricService, type MetricService } from "../lib/metrics.js";
+import { importRuntimeModule, log } from "@may-agent/sdk/runtime";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
 import { getDb } from "../lib/db/connection.js";
 import { withSqliteInitializationRetry } from "../lib/db/busy-retry.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
+import { listAppDefinitionFiles } from "./adapters/discovery/app-definitions.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
+import {
+  HOST_AUTH_REMAINING_METRIC_ID,
+  HOST_DISK_USED_METRIC_ID,
+  HOST_HARNESS_METRICS,
+  buildAppEvolutionMetrics,
+} from "./adapters/reporting/evolution-metrics.js";
+import {
+  probeAzureCliAuthHeadroom,
+  probeDiskHeadroom,
+  scheduleBoundedDiskCacheHygiene,
+} from "./adapters/reporting/observability-summary.js";
 import { readTaskChecks, resetTaskChecks } from "./core/tasks/task-check-observations.js";
 import { METRIC_QUERY_DURATION_METRIC, MetricQueryObservations } from "./adapters/reporting/metric-query-metrics.js";
 import { redactTranscriptSecrets } from "../lib/persistence.js";
@@ -49,20 +62,27 @@ export const STALE_ACTIVE_SOURCE_QUERY = `WITH clock AS (SELECT CAST(ROUND(unixe
         0
       ) AS created_at,
       (SELECT MAX(s.measured_at) FROM metric_snapshots s
-        WHERE s.metric_id = m.id AND s.measured_at <= (SELECT cut FROM clock)) AS last_sample
+        WHERE s.metric_id = m.id AND s.measured_at <= (SELECT cut FROM clock)) AS last_sample,
+      CASE
+        WHEN json_valid(COALESCE(m.config, '{}'))
+          AND json_type(m.config, '$.lastNoExposureAt') = 'integer'
+          AND json_extract(m.config, '$.lastNoExposureAt') <= (SELECT cut FROM clock)
+        THEN json_extract(m.config, '$.lastNoExposureAt')
+        ELSE NULL
+      END AS last_no_exposure
     FROM metrics m
     WHERE m.status = 'active' AND m.id != '${STALE_ACTIVE_METRIC_ID}'
       AND m.measure_interval > 0
   ), stale AS (
     SELECT * FROM cadence
-    WHERE COALESCE(last_sample, created_at) <= (SELECT cut FROM clock) - MAX(900000, measure_interval * 2)
+    WHERE MAX(COALESCE(last_sample, 0), COALESCE(last_no_exposure, 0), created_at) <= (SELECT cut FROM clock) - MAX(900000, measure_interval * 2)
   )
 SELECT COUNT(*) AS value, (SELECT COUNT(*) FROM cadence) AS sampleSize,
   (SELECT cut FROM clock) AS measuredAt,
   json_object('scope', 'Active metrics with a declared cadence; missing first samples receive the same freshness grace.',
     'examples', json((SELECT json_group_array(json_object('metricId', id,
       'measureInterval', measure_interval, 'lastSampleAt', last_sample))
-      FROM (SELECT * FROM stale ORDER BY COALESCE(last_sample, created_at), id LIMIT 5))),
+      FROM (SELECT * FROM stale ORDER BY MAX(COALESCE(last_sample, 0), COALESCE(last_no_exposure, 0), created_at), id LIMIT 5))),
     'examplesTruncated', COUNT(*) > 5) AS note
 FROM stale`;
 
@@ -73,12 +93,21 @@ type SourceMetric = {
   measure_interval: number | null;
 };
 
-type CommandSample = {
-  value: number;
-  sampleSize?: number;
-  measuredAt?: number;
-  note?: string;
-};
+type CommandSample =
+  | {
+      kind?: "sample";
+      value: number;
+      sampleSize?: number;
+      measuredAt?: number;
+      note?: string;
+    }
+  | {
+      /** Prometheus 0/0 empty-exposure result: valid query with zero denominator, neither 0 nor collection failure. */
+      kind: "no_exposure";
+      sampleSize: 0;
+      measuredAt?: number;
+      note?: string;
+    };
 
 function sourceQuerySample(row: Record<string, unknown> | null): CommandSample | null {
   if (!row) return null;
@@ -88,11 +117,19 @@ function sourceQuerySample(row: Record<string, unknown> | null): CommandSample |
 }
 
 function commandSample(value: unknown): CommandSample | null {
-  if (typeof value === "number" && Number.isFinite(value)) return { value };
+  if (typeof value === "number" && Number.isFinite(value)) return { kind: "sample", value };
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const row = value as Record<string, unknown>;
+  if ((row.value === null || row.value === undefined) && row.sampleSize === 0) {
+    return {
+      kind: "no_exposure",
+      sampleSize: 0,
+      ...(typeof row.measuredAt === "number" && Number.isFinite(row.measuredAt) ? { measuredAt: row.measuredAt } : {}),
+      ...(typeof row.note === "string" ? { note: row.note } : row.note != null ? { note: JSON.stringify(row.note) } : {}),
+    };
+  }
   if (typeof row.value !== "number" || !Number.isFinite(row.value)) return null;
-  const sample: CommandSample = { value: row.value };
+  const sample: CommandSample = { kind: "sample", value: row.value };
   if (typeof row.sampleSize === "number" && Number.isFinite(row.sampleSize)) {
     sample.sampleSize = row.sampleSize;
   }
@@ -176,10 +213,10 @@ export async function measureSourceMetrics(options: {
        WHERE status = 'active'
          AND ((source_query IS NOT NULL AND trim(source_query) != '')
            OR (source_command IS NOT NULL AND trim(source_command) != '')
-           OR id = ?)
+           OR id IN (?, ?, ?))
        ORDER BY id`,
     )
-    .all(TASK_SKIPPED_CHECK_METRIC.id) as SourceMetric[];
+    .all(TASK_SKIPPED_CHECK_METRIC.id, HOST_DISK_USED_METRIC_ID, HOST_AUTH_REMAINING_METRIC_ID) as SourceMetric[];
   const dueRows = options.isDue ? rows.filter(options.isDue) : rows;
   const measured: string[] = [];
   const skipped: string[] = [];
@@ -241,6 +278,53 @@ export async function measureSourceMetrics(options: {
           sampleSize: total,
           note: JSON.stringify({ ...observation, until: completedAt, windowMs, skippedChecks: total - counts.claimed }),
         };
+      } else if (row.id === HOST_DISK_USED_METRIC_ID) {
+        completedAt = options.measuredAt ?? Date.now();
+        measuredBy = "runtime:host-disk-probe";
+        const disk = probeDiskHeadroom(options.persistDir);
+        const hygieneScheduled =
+          disk !== null && disk.usedPercent >= 92 ? scheduleBoundedDiskCacheHygiene(completedAt) : false;
+        sample = disk
+          ? {
+              kind: "sample",
+              value: Math.round((disk.usedPercent / 100) * 10000) / 10000,
+              sampleSize: 1,
+              note: JSON.stringify({ ...disk, ...(hygieneScheduled ? { cacheHygieneScheduled: true } : {}) }),
+            }
+          : null;
+      } else if (row.id === HOST_AUTH_REMAINING_METRIC_ID) {
+        completedAt = options.measuredAt ?? Date.now();
+        measuredBy = "runtime:host-auth-probe";
+        const auth = probeAzureCliAuthHeadroom(completedAt);
+        if (auth.state === "unconfigured" || auth.state === "refreshable") {
+          sample = {
+            kind: "no_exposure",
+            sampleSize: 0,
+            measuredAt: completedAt,
+            note: auth.state === "refreshable" ? "azure-cli refresh token active" : "azure-cli unconfigured",
+          };
+        } else if (auth.expiresAt !== null) {
+          sample = {
+            kind: "sample",
+            value: Math.round((auth.expiresAt - completedAt) / 1000),
+            sampleSize: 1,
+            note: JSON.stringify({ provider: auth.provider, state: auth.state, expiresAt: auth.expiresAt }),
+          };
+        } else if (auth.state === "expired") {
+          sample = {
+            kind: "sample",
+            value: 0,
+            sampleSize: 1,
+            note: JSON.stringify({
+              provider: auth.provider,
+              state: auth.state,
+              expiresAt: null,
+              reason: auth.reason ?? null,
+            }),
+          };
+        } else {
+          throw new Error(auth.reason ?? "Configured Azure CLI credentials could not be inspected");
+        }
       } else if (row.source_query) {
         // SQLite prepare executes the first statement and ignores SQL tail; it
         // is not a parser-based single-statement guarantee. Give every query its
@@ -285,6 +369,14 @@ export async function measureSourceMetrics(options: {
         failed(row.id, "Source returned no finite numeric sample");
         continue;
       }
+      if (sample.kind === "no_exposure") {
+        // Valid 0/0 empty denominator: record neither a fake 0/1 sample nor a collection failure,
+        // advance lastNoExposureAt monotonically, and clear superseded current values.
+        const checkedAt = Math.round(sample.measuredAt ?? options.measuredAt ?? completedAt ?? Date.now());
+        metrics.recordNoExposure(row.id, checkedAt);
+        skipped.push(row.id);
+        continue;
+      }
       metrics.record(row.id, sample.value, {
         measuredAt: sample.measuredAt ?? options.measuredAt ?? completedAt,
         measuredBy,
@@ -323,9 +415,77 @@ export type MetricPassRuntime = {
   idle(): Promise<void>;
 };
 
+function upsertAppEvolutionMetrics(
+  db: SqliteDb,
+  metricService: Pick<MetricService, "define">,
+  apps: ReadonlyArray<{ id: string; owner?: string }>,
+): void {
+  if (!apps.length) return;
+  withSqliteInitializationRetry("register App evolution metrics", () => {
+    for (const app of apps) {
+      const appId = typeof app.id === "string" ? app.id.trim() : "";
+      if (!appId) continue;
+      const ownerAgent = typeof app.owner === "string" && app.owner.trim() ? app.owner.trim() : appId;
+      for (const appMetric of buildAppEvolutionMetrics(appId, ownerAgent)) {
+        if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(appMetric.id)) {
+          metricService.define(appMetric);
+        } else {
+          db.run(
+            `UPDATE metrics
+               SET owner = ?, project = ?, source = ?, source_query = ?, measure_interval = ?, description = ?
+             WHERE id = ?`,
+            [
+              appMetric.owner ?? ownerAgent,
+              appMetric.project ?? appId,
+              appMetric.source ?? null,
+              appMetric.sourceQuery ?? null,
+              appMetric.measureInterval ?? null,
+              appMetric.description ?? null,
+              appMetric.id,
+            ],
+          );
+        }
+      }
+    }
+  });
+}
+
+function resolveMeasurementProjectsRoot(persistDir: string, explicitProjectsRoot?: string): string | null {
+  if (explicitProjectsRoot?.trim()) return resolve(explicitProjectsRoot.trim());
+  if (process.env.PROJECTS_ROOT?.trim() || process.env.APP_ROOT?.trim() || process.env.PROJECT_ROOT?.trim()) {
+    return resolveRuntimeRoots(import.meta.url).projectsRoot;
+  }
+  const roots = resolveRuntimeRoots(import.meta.url);
+  if (resolve(persistDir) === roots.persistDir) {
+    return roots.projectsRoot;
+  }
+  const adjacent = join(persistDir, "projects");
+  return existsSync(adjacent) ? adjacent : null;
+}
+
+async function loadAppsFromProjectsRoot(projectsRoot: string): Promise<Array<{ id: string; owner: string }>> {
+  const apps: Array<{ id: string; owner: string }> = [];
+  for (const modulePath of listAppDefinitionFiles(projectsRoot)) {
+    try {
+      const mod = await importRuntimeModule<{ default?: unknown; app?: unknown }>(modulePath);
+      const exported = (mod.default ?? mod.app) as { id?: unknown; agent?: unknown } | undefined;
+      if (!exported || typeof exported !== "object") continue;
+      const id = typeof exported.id === "string" ? exported.id.trim() : "";
+      if (!id) continue;
+      const owner = typeof exported.agent === "string" && exported.agent.trim() ? exported.agent.trim() : id;
+      apps.push({ id, owner });
+    } catch {
+      /* Ignore broken or unvalidated App modules; only loaded definitions get metrics. */
+    }
+  }
+  return apps;
+}
+
 export function attachMetricSourceMeasurement(options: {
   bus: EventBus;
   persistDir: string;
+  projectsRoot?: string;
+  listLoadedApps?: () => ReadonlyArray<{ id: string; owner?: string }>;
 }): MetricPassRuntime {
   const db = getDb(options.persistDir);
   const metricService = createMetricService({ getDb: () => db });
@@ -344,6 +504,27 @@ export function attachMetricSourceMeasurement(options: {
     }
     if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(METRIC_QUERY_DURATION_METRIC.id)) {
       metricService.define(METRIC_QUERY_DURATION_METRIC);
+    }
+    for (const hostMetric of HOST_HARNESS_METRICS) {
+      if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(hostMetric.id)) {
+        metricService.define(hostMetric);
+      } else {
+        db.run(
+          `UPDATE metrics
+             SET source = ?, source_query = ?, measure_interval = ?, description = ?
+           WHERE id = ?`,
+          [
+            hostMetric.source ?? null,
+            hostMetric.sourceQuery ?? null,
+            hostMetric.measureInterval ?? null,
+            hostMetric.description ?? null,
+            hostMetric.id,
+          ],
+        );
+      }
+    }
+    if (options.listLoadedApps) {
+      upsertAppEvolutionMetrics(db, metricService, options.listLoadedApps());
     }
     const subscriberFailureSource = {
       source: "rolling one-hour subscriber.failed event count",
@@ -446,8 +627,26 @@ export function attachMetricSourceMeasurement(options: {
     });
   });
 
+  const standaloneProjectsRoot = options.listLoadedApps
+    ? null
+    : resolveMeasurementProjectsRoot(options.persistDir, options.projectsRoot);
+  let bootstrapAppsPromise: Promise<void> | undefined = standaloneProjectsRoot
+    ? new Promise<void>((resolveTick) => setTimeout(resolveTick, 0))
+        .then(() => loadAppsFromProjectsRoot(standaloneProjectsRoot))
+        .then((apps) => upsertAppEvolutionMetrics(db, metricService, apps))
+        .catch((error) => log("warn", `[metrics:app-discovery] ${measurementError(error)}`))
+        .finally(() => {
+          bootstrapAppsPromise = undefined;
+        })
+    : undefined;
+
   const nextDueAt = new Map<string, number>();
-  return attachMetricPass(options.bus, METRIC_SOURCE_MEASUREMENT_EVENT, "metric-source-measurement", async (current) => {
+  const pass = attachMetricPass(options.bus, METRIC_SOURCE_MEASUREMENT_EVENT, "metric-source-measurement", async (current) => {
+    if (options.listLoadedApps) {
+      upsertAppEvolutionMetrics(db, metricService, options.listLoadedApps());
+    } else if (bootstrapAppsPromise) {
+      await bootstrapAppsPromise;
+    }
     await measureSourceMetrics({
       ...options,
       triggerEventId: current.triggerEventId,
@@ -458,6 +657,13 @@ export function attachMetricSourceMeasurement(options: {
       },
     });
   });
+  return {
+    request: pass.request,
+    async idle() {
+      if (bootstrapAppsPromise) await bootstrapAppsPromise;
+      await pass.idle();
+    },
+  };
 }
 
 /** Recalculate retained evidence without running any collectors. */
