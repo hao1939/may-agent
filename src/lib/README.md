@@ -36,6 +36,8 @@ readonly tool filtering to the shared SDK. Host adapters add the current Task
 context and controls; they do not define a second helper input or tool policy.
 `workflow-input-parity.test.ts` and `test/integration/helper-model-parity.test.ts`
 cover the assignment, effective tools, real reads and corrective finish feedback.
+Provider replies in these fixtures are scripted. They verify execution contracts;
+unscripted model judgment and installed App activation need separate evidence.
 
 A Task binding supplies identity, fencing and background to bounded helpers.
 Only the owning Task invocation receives its reconciliation tool from the
