@@ -358,6 +358,7 @@ function renderTopDownObservability(data, options = {}) {
       <div class="td-trend-body">
         ${renderTrendRow(tr.verifiedOutcomes, days)}
         ${renderTrendRow(tr.costPerOutcomeUsd, days)}
+        ${renderTrendRow(tr.failureRatio, days)}
         ${renderTrendRow(tr.spinRatio, days)}
         ${renderTrendRow(tr.workflowOffloadRatio, days)}
         ${renderTrendRow(tr.autonomyRatio, days)}
@@ -404,7 +405,7 @@ function renderTopDownObservability(data, options = {}) {
       <div class="td-pillars">
         ${renderHostPillarTile(
           ht.settlementIntegrity,
-          `${plumbing.failedTaskAttemptsWindow || 0} failed att · Unhandled 1h: ${plumbing.unhandledSignals1h ?? '—'} · Sub err: ${plumbing.subscriberFailures1h ?? '—'}`,
+          `${plumbing.hostFailedAttemptsWindow ?? plumbing.failedTaskAttemptsWindow ?? 0} host err · ${plumbing.preemptedAttemptsWindow || 0} requeued · Unhandled 1h: ${plumbing.unhandledSignals1h ?? '—'} · Sub err: ${plumbing.subscriberFailures1h ?? '—'}`,
           days,
         )}
         ${renderHostPillarTile(

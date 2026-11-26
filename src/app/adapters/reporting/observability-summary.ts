@@ -7,6 +7,8 @@ import { taskViewPhaseSql } from "../../core/state/task-view-phase.js";
 import {
   ATTEMPT_FINISH_LOOKBACK_SLACK_MS,
   attemptFinishMsSql,
+  hostAttemptFailurePredicateSql,
+  hostAttemptPreemptionPredicateSql,
   terminalAttemptWindowPredicateSql,
 } from "./evolution-metrics.js";
 import { METRIC_LIST_LIMIT, readMetricObservations } from "./metric-observations.js";
@@ -985,7 +987,7 @@ function buildWindowTrends(
   end: number,
   appIds: readonly string[],
   envProbes: EnvironmentProbes,
-  unresolvedRecoveryCount: number,
+  unresolvedRecoveryCount = 0,
 ) {
   const span = Math.max(TREND_BUCKETS, end - start);
   const bucketWidth = span / TREND_BUCKETS;
@@ -998,14 +1000,19 @@ function buildWindowTrends(
   // 1a. Terminal Attempt bucket facts (Host + per-App) aligned on shared finish-time cohort `[start, end)`.
   const finishMsExpr = attemptFinishMsSql("a");
   const terminalCohortPredicate = terminalAttemptWindowPredicateSql("?", "?", "a");
+  const hostFailureExpr = hostAttemptFailurePredicateSql("a");
+  const hostPreemptionExpr = hostAttemptPreemptionPredicateSql("a");
   const terminalAttemptBuckets = db
     .prepare(
       `SELECT
          a.app_id AS appId,
          MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((${finishMsExpr} - ?) / ? AS INTEGER))) AS b,
          COUNT(*) AS terminal,
-         COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state IS NOT NULL THEN 1 END) AS settled,
-         COUNT(CASE WHEN a.state IN ('failed', 'interrupted') THEN 1 END) AS friction,
+         COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state IS NOT NULL AND NOT (${hostFailureExpr}) THEN 1 END) AS settled,
+         COUNT(CASE WHEN ${hostFailureExpr} THEN 1 END) AS hostFailed,
+         COUNT(CASE WHEN (${hostFailureExpr} OR ${hostPreemptionExpr}) THEN 1 END) AS hostFriction,
+         COUNT(CASE WHEN a.state = 'failed' AND NOT (${hostFailureExpr}) THEN 1 END) AS appFailed,
+         COUNT(CASE WHEN ((a.state = 'completed' AND a.accepted_result_state IS NOT NULL) OR a.state = 'failed') AND NOT (${hostFailureExpr}) THEN 1 END) AS appEvaluated,
          COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state = 'converged' THEN 1 END) AS converged,
          COUNT(CASE WHEN COALESCE(a.accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged
        FROM app_task_attempts a
@@ -1017,7 +1024,10 @@ function buildWindowTrends(
     b: number;
     terminal: number;
     settled: number;
-    friction: number;
+    hostFailed: number;
+    hostFriction: number;
+    appFailed: number;
+    appEvaluated: number;
     converged: number;
     nonConverged: number;
   }>;
@@ -1061,7 +1071,9 @@ function buildWindowTrends(
          MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((endedAt - ?) / ? AS INTEGER))) AS b,
          COUNT(CASE WHEN status IN ('done', 'error', 'blocked', 'interrupted') THEN 1 END) AS total,
          COUNT(CASE WHEN status = 'done' THEN 1 END) AS done,
-         COUNT(CASE WHEN status = 'error' THEN 1 END) AS errors
+         COUNT(CASE WHEN status = 'error' THEN 1 END) AS errors,
+         COUNT(CASE WHEN (attempt_id IS NULL OR trim(attempt_id) = '') AND status = 'error' THEN 1 END) AS standaloneErrors,
+         COUNT(CASE WHEN (attempt_id IS NULL OR trim(attempt_id) = '') AND status IN ('done', 'error', 'blocked') THEN 1 END) AS standaloneEvaluated
        FROM workflow_runs
        WHERE parentWorkflowRunId IS NULL AND endedAt >= ? AND endedAt < ?
        GROUP BY 1, b`,
@@ -1072,6 +1084,8 @@ function buildWindowTrends(
     total: number;
     done: number;
     errors: number;
+    standaloneErrors: number;
+    standaloneEvaluated: number;
   }>;
 
   // 3. Execution usage bucket facts (cache hit, cost, prompt tax, prep latency).
@@ -1141,7 +1155,7 @@ function buildWindowTrends(
 
   const zeros = () => Array.from({ length: TREND_BUCKETS }, () => 0);
   const hostSettled = zeros();
-  const hostTerminal = zeros();
+  const hostSettlementExposure = zeros();
   const hostFriction = zeros();
   const hostExecUnits = zeros();
   const hostCacheRead = zeros();
@@ -1157,6 +1171,8 @@ function buildWindowTrends(
     pricedUsd: number[];
     pricedCount: number[];
     unpricedCount: number[];
+    appFailures: number[];
+    appFailureExposure: number[];
     nonConverged: number[];
     finishedAttempts: number[];
     agentExecutions: number[];
@@ -1174,6 +1190,8 @@ function buildWindowTrends(
         pricedUsd: zeros(),
         pricedCount: zeros(),
         unpricedCount: zeros(),
+        appFailures: zeros(),
+        appFailureExposure: zeros(),
         nonConverged: zeros(),
         finishedAttempts: zeros(),
         agentExecutions: zeros(),
@@ -1189,13 +1207,15 @@ function buildWindowTrends(
 
   for (const r of terminalAttemptBuckets) {
     hostSettled[r.b] += r.settled;
-    hostTerminal[r.b] += r.terminal;
-    hostFriction[r.b] += r.friction;
+    hostSettlementExposure[r.b] += r.settled + r.hostFailed;
+    hostFriction[r.b] += r.hostFriction;
     hostExecUnits[r.b] += r.terminal;
     if (r.appId) {
       const a = ensureApp(r.appId);
       a.outcomes[r.b] += r.converged;
       a.outcomeExposure[r.b] += r.terminal;
+      a.appFailures[r.b] += r.appFailed;
+      a.appFailureExposure[r.b] += r.appEvaluated;
       a.nonConverged[r.b] += r.nonConverged;
       a.finishedAttempts[r.b] += r.terminal;
     }
@@ -1210,12 +1230,12 @@ function buildWindowTrends(
   }
 
   for (const r of wfBuckets) {
-    hostFriction[r.b] += r.errors;
-    hostExecUnits[r.b] += r.total;
     if (r.appId) {
       const a = ensureApp(r.appId);
       a.wfDone[r.b] += r.done;
       a.wfTotal[r.b] += r.total;
+      a.appFailures[r.b] += r.standaloneErrors;
+      a.appFailureExposure[r.b] += r.standaloneEvaluated;
     }
   }
 
@@ -1315,7 +1335,7 @@ function buildWindowTrends(
       goodDirection: "up",
       bucketStarts,
       numerators: hostSettled,
-      denominators: hostTerminal,
+      denominators: hostSettlementExposure,
       extraDenominator: unresolvedRecoveryCount,
     }),
     prepLatencyP95: prepTrend,
@@ -1357,6 +1377,7 @@ function buildWindowTrends(
     {
       verifiedOutcomes: TrendSeries;
       costPerOutcomeUsd: TrendSeries;
+      failureRatio: TrendSeries;
       spinRatio: TrendSeries;
       workflowOffloadRatio: TrendSeries;
       autonomyRatio: TrendSeries;
@@ -1399,6 +1420,15 @@ function buildWindowTrends(
         exposures: a.outcomeExposure,
       }),
       costPerOutcomeUsd: costSeries,
+      failureRatio: buildRatioTrend({
+        metricId: `${appId}.failure_ratio_24h`,
+        label: "Failure rate",
+        unit: "ratio",
+        goodDirection: "down",
+        bucketStarts,
+        numerators: a.appFailures,
+        denominators: a.appFailureExposure,
+      }),
       spinRatio: buildRatioTrend({
         metricId: `${appId}.spin_ratio_24h`,
         label: "Spin / cycling ratio",
@@ -2108,15 +2138,24 @@ export function readObservabilitySummary(
       .get(start, end) as { finished: number; errors: number };
 
     const hostTerminalPredicate = terminalAttemptWindowPredicateSql("?", "?");
+    const hostFailurePredicate = hostAttemptFailurePredicateSql();
+    const hostPreemptionPredicate = hostAttemptPreemptionPredicateSql();
     const hostTerminalRow = db
       .prepare(
         `SELECT
            COUNT(*) AS terminal,
-           COUNT(CASE WHEN state = 'failed' THEN 1 END) AS failed
+           COUNT(CASE WHEN ${hostFailurePredicate} THEN 1 END) AS hostFailed,
+           COUNT(CASE WHEN ${hostPreemptionPredicate} THEN 1 END) AS preempted,
+           COUNT(CASE WHEN state = 'failed' THEN 1 END) AS appAndHostFailed
          FROM app_task_attempts
          WHERE ${hostTerminalPredicate}`,
       )
-      .get(end, start, end) as { terminal: number; failed: number };
+      .get(end, start, end) as {
+      terminal: number;
+      hostFailed: number;
+      preempted: number;
+      appAndHostFailed: number;
+    };
 
     const hostFailoverRow = db
       .prepare(
@@ -2128,7 +2167,9 @@ export function readObservabilitySummary(
       .get(start, end) as { failovers: number };
     const hostAttemptRow = {
       terminal: hostTerminalRow.terminal,
-      failed: hostTerminalRow.failed,
+      hostFailed: hostTerminalRow.hostFailed,
+      preempted: hostTerminalRow.preempted,
+      failed: hostTerminalRow.appAndHostFailed,
       failovers: hostFailoverRow.failovers,
     };
 
@@ -2555,6 +2596,8 @@ export function readObservabilitySummary(
         workflowFinishedWindow: hostWorkflowRow.finished,
         workflowErrorsWindow: hostWorkflowRow.errors,
         terminalTaskAttemptsWindow: hostAttemptRow.terminal,
+        hostFailedAttemptsWindow: hostAttemptRow.hostFailed,
+        preemptedAttemptsWindow: hostAttemptRow.preempted,
         failedTaskAttemptsWindow: hostAttemptRow.failed,
       },
       recovery: {

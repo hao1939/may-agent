@@ -1255,4 +1255,325 @@ describe("top-down Host vs. Apps observability summary", () => {
       r4Db.close();
     }
   });
+
+  test("separates Host settlement defects from graceful restart requeues and App handler failures across SQL collectors and summary", () => {
+    const liveNow = Date.now();
+    const boundaryDb = openDatabase(":memory:");
+    applyDbSchema(boundaryDb);
+    try {
+      const ins = boundaryDb.prepare(
+        `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+         VALUES (?, ?, ?, 1, ?, ?, ?)`,
+      );
+      // 1. Cleanly settled attempt
+      ins.run(
+        "alex",
+        "att-settled",
+        "t-ok",
+        "completed",
+        liveNow - 60_000,
+        JSON.stringify({ finishedAt: new Date(liveNow - 50_000).toISOString(), acceptedResult: { state: "converged" } }),
+      );
+      // 2. Graceful daemon restart requeue (interrupted) -> churn only, NOT settlement failure
+      ins.run(
+        "aks-rp-e2e",
+        "att-restart-requeue",
+        "t-k8s",
+        "interrupted",
+        liveNow - 55_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 45_000).toISOString(),
+          failureReason: "previous-runtime-attempt-requeued",
+        }),
+      );
+      // 3. Explicit human stop (interrupted) -> neither settlement failure nor involuntary harness churn
+      ins.run(
+        "may",
+        "att-owner-stop",
+        "t-chat",
+        "interrupted",
+        liveNow - 52_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 42_000).toISOString(),
+          failureReason: "owner-stopped",
+        }),
+      );
+      // 4. App/model handler execution failure & blocked result -> App spin/blocker, NOT Host defect
+      ins.run(
+        "alex",
+        "att-model-loop",
+        "t-loop",
+        "failed",
+        liveNow - 48_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 38_000).toISOString(),
+          failureReason: "HandlerExecutionFailed",
+          summary: "<end_of_image><end_of_image>",
+        }),
+      );
+      ins.run(
+        "alex",
+        "att-handler-blocked",
+        "t-blocked",
+        "failed",
+        liveNow - 46_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 36_000).toISOString(),
+          failureReason: "handler-blocked",
+        }),
+      );
+
+      const settlementSql = HOST_HARNESS_METRICS.find((m) => m.id === "host.settlement_integrity_ratio")!.sourceQuery!;
+      const burdenSql = HOST_HARNESS_METRICS.find((m) => m.id === "host.harness_burden_ratio")!.sourceQuery!;
+
+      // With 0 Host-owned failures: Host settlement integrity is 100% (1/1), while harness burden is 1/5 = 0.2 (the 1 restart requeue).
+      expect(boundaryDb.prepare(settlementSql).get()).toMatchObject({ value: 1, sampleSize: 1 });
+      expect(boundaryDb.prepare(burdenSql).get()).toMatchObject({ value: 0.2, sampleSize: 5 });
+
+      const healthyHostSummary = readObservabilitySummary(boundaryDb, {
+        query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+        projectsRoot: join(root, "projects"),
+        stateDir: root,
+        loadedApps: [
+          { id: "alex", owner: "alex" },
+          { id: "aks-rp-e2e", owner: "aks-explorer" },
+          { id: "may", owner: "may" },
+        ],
+        now: liveNow,
+      });
+      expect(healthyHostSummary.host.plumbing).toMatchObject({
+        terminalTaskAttemptsWindow: 5,
+        hostFailedAttemptsWindow: 0,
+        preemptedAttemptsWindow: 1,
+        failedTaskAttemptsWindow: 2,
+      });
+      expect(healthyHostSummary.host.trends.settlementIntegrity).toMatchObject({ current: 1, sampleSize: 1 });
+      expect(healthyHostSummary.host.trends.harnessBurdenRatio).toMatchObject({ current: 0.2, sampleSize: 5 });
+      // Meanwhile, App 'alex' truthfully records its 2 failed handler attempts and 2/3 = 0.6667 spin ratio!
+      const alexCard = healthyHostSummary.apps.find((a) => a.appId === "alex")!;
+      expect(alexCard.blockers.failedAttemptsWindow).toBe(2);
+      expect(alexCard.trends?.spinRatio).toMatchObject({ current: 0.6667, sampleSize: 3 });
+
+      // 5. Real Host settlement failure ('HandlerResultSettlementFailed') immediately lowers Host settlement integrity to 1/2 = 0.5!
+      ins.run(
+        "alex",
+        "att-settlement-bug",
+        "t-settle-err",
+        "failed",
+        liveNow - 30_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 20_000).toISOString(),
+          failureReason: "HandlerResultSettlementFailed",
+        }),
+      );
+      expect(boundaryDb.prepare(settlementSql).get()).toMatchObject({ value: 0.5, sampleSize: 2 });
+      expect(boundaryDb.prepare(burdenSql).get()).toMatchObject({ value: 2 / 6, sampleSize: 6 });
+
+      const degradedHostSummary = readObservabilitySummary(boundaryDb, {
+        query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+        projectsRoot: join(root, "projects"),
+        stateDir: root,
+        loadedApps: [
+          { id: "alex", owner: "alex" },
+          { id: "aks-rp-e2e", owner: "aks-explorer" },
+          { id: "may", owner: "may" },
+        ],
+        now: liveNow,
+      });
+      expect(degradedHostSummary.host.plumbing).toMatchObject({
+        terminalTaskAttemptsWindow: 6,
+        hostFailedAttemptsWindow: 1,
+        preemptedAttemptsWindow: 1,
+        failedTaskAttemptsWindow: 3,
+      });
+      expect(degradedHostSummary.host.trends.settlementIntegrity).toMatchObject({ current: 0.5, sampleSize: 2 });
+      expect(degradedHostSummary.host.trends.harnessBurdenRatio).toMatchObject({ current: 0.3333, sampleSize: 6 });
+
+      // 6. Repaired completed attempt carrying acceptedResult + running-without-current-attempt-requeued is counted once (mutually exclusive)
+      // in Host settlement integrity while preserving per-App accepted-result outcome counts, and WorkspaceFinalizationFailed counts as Host failure.
+      ins.run(
+        "alex",
+        "att-repaired-completed",
+        "t-repaired",
+        "completed",
+        liveNow - 25_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 15_000).toISOString(),
+          acceptedResult: { state: "converged" },
+          failureReason: "running-without-current-attempt-requeued",
+        }),
+      );
+      ins.run(
+        "alex",
+        "att-ws-finalize-err",
+        "t-ws-fin",
+        "failed",
+        liveNow - 22_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 12_000).toISOString(),
+          failureReason: "WorkspaceFinalizationFailed",
+        }),
+      );
+      // 1 clean settled + 3 Host failures (HandlerResultSettlementFailed + running-without-current-attempt-requeued + WorkspaceFinalizationFailed) = sampleSize 4, value 0.25!
+      expect(boundaryDb.prepare(settlementSql).get()).toMatchObject({ value: 0.25, sampleSize: 4 });
+      const repairedSummary = readObservabilitySummary(boundaryDb, {
+        query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+        projectsRoot: join(root, "projects"),
+        stateDir: root,
+        loadedApps: [
+          { id: "alex", owner: "alex" },
+          { id: "aks-rp-e2e", owner: "aks-explorer" },
+          { id: "may", owner: "may" },
+        ],
+        now: liveNow,
+      });
+      expect(repairedSummary.host.trends.settlementIntegrity).toMatchObject({ current: 0.25, sampleSize: 4 });
+      // App 'alex' still counts both converged accepted results (att-settled + att-repaired-completed = 2)!
+      expect(repairedSummary.apps.find((a) => a.appId === "alex")?.outcomes.convergedMilestonesWindow).toBe(2);
+
+      // 7. Per-App failure_ratio_24h alerts on sustained App/workflow failures (>20%, consecutive=2, minSampleSize=5)
+      // while staying 0% on healthy waiting/interrupted turns, excluding Host failures, and avoiding linked-workflow double counts.
+      for (let i = 0; i < 5; i++) {
+        ins.run(
+          "aks-rp-e2e",
+          `aks-wait-${i}`,
+          "t-k8s",
+          "completed",
+          liveNow - 20_000 + i,
+          JSON.stringify({
+            finishedAt: new Date(liveNow - 10_000 + i).toISOString(),
+            acceptedResult: { state: "waiting" },
+          }),
+        );
+      }
+      const aksFailDef = buildAppEvolutionMetrics("aks-rp-e2e", "aks-explorer").find(
+        (d) => d.id === "aks-rp-e2e.failure_ratio_24h",
+      )!;
+      expect(aksFailDef).toMatchObject({
+        owner: "aks-explorer",
+        project: "aks-rp-e2e",
+        threshold: 0.2,
+        alertOp: ">",
+      });
+      // 5 waiting attempts + 1 interrupted restart requeue -> 0 failures out of 5 evaluated runs (0.0, quiet)!
+      expect(boundaryDb.prepare(aksFailDef.sourceQuery!).get()).toMatchObject({ value: 0, sampleSize: 5 });
+
+      // On 'alex': 1 clean settled + 2 App failed (att-model-loop, att-handler-blocked); Host failures (att-settlement-bug,
+      // att-repaired-completed, att-ws-finalize-err) are excluded! Add 1 standalone error workflow + 1 standalone done workflow
+      // + 1 linked error workflow (with attempt_id -> NOT double-counted) => (2 + 1) / (3 + 2) = 3 / 5 = 0.6!
+      boundaryDb
+        .prepare(
+          `INSERT INTO workflow_runs(runId, workflow, task, status, app_id, attempt_id, startedAt, endedAt)
+           VALUES
+             ('wf-standalone-err', 'alex/audit', 'audit', 'error', 'alex', NULL, ?, ?),
+             ('wf-standalone-ok', 'alex/check', 'check', 'done', 'alex', NULL, ?, ?),
+             ('wf-linked-dup', 'alex/dup', 'dup', 'error', 'alex', 'att-model-loop', ?, ?)`,
+        )
+        .run(
+          liveNow - 19_000,
+          liveNow - 9_000,
+          liveNow - 18_000,
+          liveNow - 8_000,
+          liveNow - 17_000,
+          liveNow - 7_000,
+        );
+      const alexFailDef = buildAppEvolutionMetrics("alex", "alex").find((d) => d.id === "alex.failure_ratio_24h")!;
+      const alexSample = boundaryDb.prepare(alexFailDef.sourceQuery!).get() as { value: number; sampleSize: number };
+      expect(alexSample).toMatchObject({ value: 0.6, sampleSize: 5 });
+
+      let evalClock = liveNow - 5_000;
+      const evalMs = createMetricService({ getDb: () => boundaryDb, now: () => evalClock });
+      evalMs.define(alexFailDef);
+      evalMs.record(alexFailDef.id, alexSample.value, { sampleSize: alexSample.sampleSize, measuredAt: evalClock });
+      expect(evalMs.evaluate(alexFailDef.id)[0]?.status).toBe("unknown"); // consecutive: 2 requires 2 samples
+      evalClock = liveNow - 1_000;
+      evalMs.record(alexFailDef.id, alexSample.value, { sampleSize: alexSample.sampleSize, measuredAt: evalClock });
+      expect(evalMs.evaluate(alexFailDef.id)[0]?.status).toBe("breached");
+
+      const withAppAlert = readObservabilitySummary(boundaryDb, {
+        query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+        projectsRoot: join(root, "projects"),
+        stateDir: root,
+        loadedApps: [
+          { id: "alex", owner: "alex" },
+          { id: "aks-rp-e2e", owner: "aks-explorer" },
+          { id: "may", owner: "may" },
+        ],
+        now: liveNow,
+      });
+      expect(withAppAlert.apps.find((a) => a.appId === "aks-rp-e2e")?.trends?.failureRatio).toMatchObject({
+        current: 0,
+        sampleSize: 5,
+      });
+      expect(withAppAlert.apps.find((a) => a.appId === "alex")?.trends?.failureRatio).toMatchObject({
+        current: 0.6,
+        sampleSize: 5,
+      });
+      expect(withAppAlert.alerts).toContainEqual(
+        expect.objectContaining({
+          metricId: "alex.failure_ratio_24h",
+          scope: { kind: "app", appId: "alex" },
+          declaredOwner: "alex",
+          declaredHandler: "alex",
+        }),
+      );
+
+      // 8. Unresolved input-admission / result / feedback recovery boundaries contribute to settlement exposure
+      // both when 0 Task attempts exist (0/1 = 0, sampleSize = 1) and alongside 1 settled attempt (1/2 = 0.5, sampleSize = 2).
+      const recOnlyDb = openDatabase(":memory:");
+      applyDbSchema(recOnlyDb);
+      try {
+        recOnlyDb
+          .prepare(
+            `INSERT INTO app_inbox_items(id, app_id, source_kind, source_id, input_kind, input_data, status, recovery_json, created_at, updated_at)
+             VALUES ('stuck-adm-1', 'alex', 'human', 'web-ui', 'message', '{}', 'pending', ?, ?, ?)`,
+          )
+          .run(
+            JSON.stringify({ "input-admission": { failures: 2, firstFailedAt: liveNow - 10_000, error: "transient" } }),
+            liveNow - 10_000,
+            liveNow - 5_000,
+          );
+        expect(recOnlyDb.prepare(settlementSql).get()).toMatchObject({ value: 0, sampleSize: 1 });
+        expect(recOnlyDb.prepare(burdenSql).get()).toMatchObject({ value: 1, sampleSize: 1 });
+        const recOnlySummary = readObservabilitySummary(recOnlyDb, {
+          query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+          projectsRoot: join(root, "projects"),
+          stateDir: root,
+          loadedApps: [{ id: "alex", owner: "alex" }],
+          now: liveNow,
+        });
+        expect(recOnlySummary.host.trends.settlementIntegrity).toMatchObject({ current: 0, sampleSize: 1 });
+        expect(recOnlySummary.host.trends.harnessBurdenRatio).toMatchObject({ current: 1, sampleSize: 1 });
+
+        // Add 1 settled attempt -> 1 / (1 + 1) = 0.5, sampleSize = 2 across both SQL collector and summary!
+        recOnlyDb
+          .prepare(
+            `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+             VALUES ('alex', 'att-ok-1', 't-1', 1, 'completed', ?, ?)`,
+          )
+          .run(
+            liveNow - 8_000,
+            JSON.stringify({
+              finishedAt: new Date(liveNow - 4_000).toISOString(),
+              acceptedResult: { state: "converged" },
+            }),
+          );
+        expect(recOnlyDb.prepare(settlementSql).get()).toMatchObject({ value: 0.5, sampleSize: 2 });
+        expect(recOnlyDb.prepare(burdenSql).get()).toMatchObject({ value: 0.5, sampleSize: 2 });
+        const mixedRecSummary = readObservabilitySummary(recOnlyDb, {
+          query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+          projectsRoot: join(root, "projects"),
+          stateDir: root,
+          loadedApps: [{ id: "alex", owner: "alex" }],
+          now: liveNow,
+        });
+        expect(mixedRecSummary.host.trends.settlementIntegrity).toMatchObject({ current: 0.5, sampleSize: 2 });
+        expect(mixedRecSummary.host.trends.harnessBurdenRatio).toMatchObject({ current: 0.5, sampleSize: 2 });
+      } finally {
+        recOnlyDb.close();
+      }
+    } finally {
+      boundaryDb.close();
+    }
+  });
 });

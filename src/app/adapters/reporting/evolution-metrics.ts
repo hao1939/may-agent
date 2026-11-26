@@ -30,7 +30,51 @@ export function terminalAttemptWindowPredicateSql(startSql: string, endSql: stri
     AND ${finishMs} < ${endSql}`;
 }
 
+/**
+ * Host-owned Task attempt failure reasons (`attempt-runner.ts` / `app-task-reconciler.ts`):
+ * failures in Host settlement, workspace preparation, handler availability, or
+ * lease/reconciler state consistency — excluding App/Agent handler errors
+ * (`HandlerExecutionFailed`, `HandlerResultInvalid`, `handler-blocked`) and
+ * intentional lifecycle preemptions (`previous-runtime-attempt-requeued`,
+ * `ResourceAdmissionDeferred`, `stale-reconciliation-result`, `owner-stopped`).
+ */
+export const HOST_ATTEMPT_FAILURE_REASONS = [
+  "HandlerResultSettlementFailed",
+  "WorkspacePreparationFailed",
+  "WorkspaceFinalizationFailed",
+  "HandlerUnavailable",
+  "terminal-agent-session-expired-lease-requeued",
+  "late-terminal-workflow-result-requeued",
+  "running-without-current-attempt-requeued",
+] as const;
+
+/**
+ * Involuntary Host lifecycle preemptions (daemon restart requeues, capacity
+ * backpressure deferrals, and CAS concurrency retries). Tracked as harness
+ * churn (`harness_burden_ratio` / `preemptedAttemptsWindow`) without falsely
+ * penalizing `settlement_integrity_ratio`.
+ */
+export const HOST_ATTEMPT_PREEMPTION_REASONS = [
+  "previous-runtime-attempt-requeued",
+  "ResourceAdmissionDeferred",
+  "stale-reconciliation-result",
+] as const;
+
+export function hostAttemptFailurePredicateSql(alias = ""): string {
+  const prefix = alias ? `${alias}.` : "";
+  const list = HOST_ATTEMPT_FAILURE_REASONS.map((r) => `'${r}'`).join(", ");
+  return `COALESCE(json_extract(${prefix}attempt_json, '$.failureReason'), '') IN (${list})`;
+}
+
+export function hostAttemptPreemptionPredicateSql(alias = ""): string {
+  const prefix = alias ? `${alias}.` : "";
+  const list = HOST_ATTEMPT_PREEMPTION_REASONS.map((r) => `'${r}'`).join(", ");
+  return `COALESCE(json_extract(${prefix}attempt_json, '$.failureReason'), '') IN (${list})`;
+}
+
 const HOST_TERMINAL_WINDOW_24H = terminalAttemptWindowPredicateSql(`${NOW_SQL} - ${DAY_MS}`, NOW_SQL);
+const HOST_ATTEMPT_FAILURE_SQL = hostAttemptFailurePredicateSql();
+const HOST_ATTEMPT_PREEMPTION_SQL = hostAttemptPreemptionPredicateSql();
 
 const UNRESOLVED_RECOVERY_SQL = `SELECT COUNT(DISTINCT i.id) AS unresolved
   FROM app_inbox_items i, json_each(i.recovery_json) r
@@ -62,22 +106,28 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
       scope: "host",
       alert: { mode: "sustained", consecutive: 3, minSampleSize: 10 },
     },
-    source: "Cleanly settled Task attempts vs. terminal attempts + unresolved input recovery boundaries (24h)",
+    source: "Cleanly settled Task attempts vs. settled + Host settlement/plumbing failures + unresolved input recovery boundaries (24h)",
     description:
-      "Ratio [0..1] of cleanly settled Task attempts over all terminal (completed, failed, interrupted) attempts finishing in the rolling 24h window plus unresolved input recovery boundaries. Empty exposure (0/0) skips quietly rather than recording 0 or 1.",
+      "Ratio [0..1] of cleanly settled Task attempts over settled attempts plus Host-owned settlement/workspace/availability/lease failures and unresolved input recovery boundaries in the rolling 24h window. Graceful daemon restart requeues and App/Agent handler failures are excluded from Host settlement defects.",
     sourceQuery: `WITH att AS (
         SELECT
-          COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL THEN 1 END) AS settled,
+          COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL AND NOT (${HOST_ATTEMPT_FAILURE_SQL}) THEN 1 END) AS settled,
+          COUNT(CASE WHEN ${HOST_ATTEMPT_FAILURE_SQL} THEN 1 END) AS host_failed,
           COUNT(*) AS terminal
         FROM app_task_attempts
         WHERE ${HOST_TERMINAL_WINDOW_24H}
       ),
       rec AS (${UNRESOLVED_RECOVERY_SQL})
       SELECT
-        CAST(att.settled AS REAL) / NULLIF(att.terminal + rec.unresolved, 0) AS value,
-        att.terminal + rec.unresolved AS sampleSize,
+        CAST(att.settled AS REAL) / NULLIF(att.settled + att.host_failed + rec.unresolved, 0) AS value,
+        att.settled + att.host_failed + rec.unresolved AS sampleSize,
         ${NOW_SQL} AS measuredAt,
-        json_object('settledAttempts', att.settled, 'terminalAttempts', att.terminal, 'unresolvedRecovery', rec.unresolved) AS note
+        json_object(
+          'settledAttempts', att.settled,
+          'hostFailedAttempts', att.host_failed,
+          'terminalAttempts', att.terminal,
+          'unresolvedRecovery', rec.unresolved
+        ) AS note
       FROM att, rec`,
   },
   {
@@ -145,30 +195,29 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     unit: "ratio",
     measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
     config: { scope: "host", alert: { disabled: true, mode: "sustained", consecutive: 3, minSampleSize: 5 } },
-    source: "Mechanical attempt failures/interrupts + workflow errors + unresolved recoveries over total runs (24h)",
+    source: "Host settlement/plumbing failures + involuntary restart/capacity/CAS preemptions + unresolved recoveries over terminal attempts (24h)",
     description:
-      "Fraction [0..1] of Host execution units experiencing harness-level friction (failed/interrupted terminal attempts, top-level workflow errors, or unresolved input recovery boundaries) in the rolling 24h window.",
+      "Fraction [0..1] of terminal Task attempts plus unresolved input recovery boundaries experiencing Host-induced friction (Host settlement/workspace/lease failures, daemon restart requeues, capacity deferrals, CAS retries, or unresolved input recovery boundaries) in the rolling 24h window, excluding App handler failures and explicit human stops.",
     sourceQuery: `WITH att AS (
         SELECT
-          COUNT(CASE WHEN state IN ('failed', 'interrupted') THEN 1 END) AS friction,
+          COUNT(CASE WHEN ${HOST_ATTEMPT_FAILURE_SQL} THEN 1 END) AS host_failed,
+          COUNT(CASE WHEN ${HOST_ATTEMPT_PREEMPTION_SQL} THEN 1 END) AS preempted,
           COUNT(*) AS total
         FROM app_task_attempts
         WHERE ${HOST_TERMINAL_WINDOW_24H}
       ),
-      wf AS (
-        SELECT
-          COUNT(CASE WHEN status = 'error' THEN 1 END) AS errs,
-          COUNT(CASE WHEN status IN ('done', 'error', 'blocked', 'interrupted') THEN 1 END) AS total
-        FROM workflow_runs
-        WHERE parentWorkflowRunId IS NULL AND endedAt >= ${NOW_SQL} - ${DAY_MS} AND endedAt < ${NOW_SQL}
-      ),
       rec AS (${UNRESOLVED_RECOVERY_SQL})
       SELECT
-        CAST(att.friction + wf.errs + rec.unresolved AS REAL) / NULLIF(att.total + wf.total + rec.unresolved, 0) AS value,
-        att.total + wf.total + rec.unresolved AS sampleSize,
+        CAST(att.host_failed + att.preempted + rec.unresolved AS REAL) / NULLIF(att.total + rec.unresolved, 0) AS value,
+        att.total + rec.unresolved AS sampleSize,
         ${NOW_SQL} AS measuredAt,
-        json_object('attemptFriction', att.friction, 'workflowErrors', wf.errs, 'unresolvedRecovery', rec.unresolved) AS note
-      FROM att, wf, rec`,
+        json_object(
+          'hostFailedAttempts', att.host_failed,
+          'preemptedAttempts', att.preempted,
+          'terminalAttempts', att.total,
+          'unresolvedRecovery', rec.unresolved
+        ) AS note
+      FROM att, rec`,
   },
   {
     id: HOST_DISK_USED_METRIC_ID,
@@ -213,9 +262,9 @@ function escapeSqlLiteral(value: string): string {
 }
 
 /**
- * Generates the 5 canonical evolution metric definitions for an enabled App (`<appId>.*`).
- * All new evolution metrics start in trend-first mode (`alert.disabled: true`) so sparklines
- * accumulate cleanly before thresholds are calibrated.
+ * Generates the canonical evolution & reliability metric definitions for an enabled App (`<appId>.*`).
+ * `<appId>.failure_ratio_24h` has sustained alerting enabled (`> 20%`, `consecutive: 2`, `minSampleSize: 5`)
+ * routed to the App's owner, while trend-only efficiency/leverage metrics keep `alert.disabled: true`.
  */
 export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): MetricDefinition[] {
   const sqlApp = escapeSqlLiteral(appId);
@@ -320,6 +369,58 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
             'outcomes', outc.n
           ) AS note
         FROM u, unpriced_att, outc`,
+    },
+    {
+      id: `${appId}.failure_ratio_24h`,
+      name: `${appId}: execution failure ratio (24h)`,
+      owner: ownerAgent,
+      project: appId,
+      type: "gauge",
+      unit: "ratio",
+      measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
+      threshold: 0.2,
+      alertOp: ">",
+      priority: "P2",
+      config: {
+        scope: `app:${appId}`,
+        handler: ownerAgent,
+        alert: { mode: "sustained", consecutive: 2, minSampleSize: 5 },
+      },
+      source: "App-owned failed Task attempts + standalone error workflows over evaluated App runs (24h)",
+      description:
+        "Fraction [0..1] of evaluated App executions (settled + App-failed Task attempts, plus standalone top-level finished workflows) failing in the rolling 24h window. Excludes normal waiting/interrupted steps and Host-owned plumbing failures.",
+      sourceQuery: `WITH att AS (
+          SELECT
+            COUNT(CASE WHEN state = 'failed' AND NOT (${HOST_ATTEMPT_FAILURE_SQL}) THEN 1 END) AS app_failed,
+            COUNT(CASE WHEN (
+              (state = 'completed' AND accepted_result_state IS NOT NULL)
+              OR state = 'failed'
+            ) AND NOT (${HOST_ATTEMPT_FAILURE_SQL}) THEN 1 END) AS app_evaluated
+          FROM app_task_attempts
+          WHERE +app_id = ${sqlApp}
+            AND ${terminal24h}
+        ),
+        wf AS (
+          SELECT
+            COUNT(CASE WHEN status = 'error' THEN 1 END) AS err_wf,
+            COUNT(CASE WHEN status IN ('done', 'error', 'blocked') THEN 1 END) AS eval_wf
+          FROM workflow_runs
+          WHERE parentWorkflowRunId IS NULL
+            AND (attempt_id IS NULL OR trim(attempt_id) = '')
+            AND endedAt >= ${NOW_SQL} - ${DAY_MS} AND endedAt < ${NOW_SQL}
+            AND COALESCE(NULLIF(trim(app_id), ''), NULLIF(trim(projectId), '')) = ${sqlApp}
+        )
+        SELECT
+          CAST(att.app_failed + wf.err_wf AS REAL) / NULLIF(att.app_evaluated + wf.eval_wf, 0) AS value,
+          att.app_evaluated + wf.eval_wf AS sampleSize,
+          ${NOW_SQL} AS measuredAt,
+          json_object(
+            'appFailedAttempts', att.app_failed,
+            'appEvaluatedAttempts', att.app_evaluated,
+            'standaloneErrorWorkflows', wf.err_wf,
+            'standaloneEvaluatedWorkflows', wf.eval_wf
+          ) AS note
+        FROM att, wf`,
     },
     {
       id: `${appId}.spin_ratio_24h`,
