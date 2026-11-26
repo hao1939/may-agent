@@ -16,7 +16,7 @@ test("pass cost preserves its worst source, failures and bounded plan evidence w
   expect(sample).toMatchObject({ value: 1_500, sampleSize: 21, measuredAt: 20 });
   expect(sample.note.length).toBeLessThanOrEqual(4_000);
   const note = JSON.parse(sample.note);
-  expect(note).toMatchObject({ failures: 1, queries: 21, totalMs: 1_520, examplesTruncated: true });
+  expect(note).toMatchObject({ failures: 1, queries: 21, totalMs: 1_520, preview: "top-3", examplesTruncated: false });
   expect(note.examples[0]).toMatchObject({ metricId: "slow", durationMs: 1_500, failed: true,
     query: { plan: { fingerprint: "get:source", capturedAt: 10, rowsTruncated: true } } });
   expect(note.examples[0].query.plan.rows.length).toBeGreaterThan(0);
@@ -52,6 +52,8 @@ test("44 attempts survive the note budget with fingerprints, multiplicity, failu
   expect(cohortFingerprint(expected.slice(1))).not.toBe(cohortFingerprint(expected));
   expect(cohortFingerprint([...expected, expected[0]])).not.toBe(cohortFingerprint(expected));
   expect(note.examples).toHaveLength(3);
+  expect(note.examplesTruncated).toBe(false);
+  expect(note.preview).toBe("top-3");
   expect(note.examples.map((e: { metricId: string }) => e.metricId)).toEqual(expected.slice(-3).reverse().map(e => e.metricId));
   expect(JSON.stringify(note.cohort)).not.toContain("private-");
   expect(note.contention).toMatchObject({ status: "incomplete", coverage: "unknown", busyWaitMs: "unknown", busyWaitCount: "unknown",
@@ -78,6 +80,29 @@ test("pass and per-query intervals correlate only overlapping passive observatio
     { kind: "checkpoint", startOffsetMs: 20, durationMs: 1, queries: [2], mode: "PASSIVE", busy: "unknown", walFrames: "unknown", checkpointedFrames: "unknown" },
     { kind: "writer", startOffsetMs: 11, durationMs: 13, queries: [1, 2] },
   ]);
+});
+
+test("44-query mixed pass summarizes sample writes and preserves its late query overlap within budget", () => {
+  let now = 100;
+  const observations = new MetricQueryObservations(() => now);
+  for (let n = 0; n < 44; n++) observations.record(`fixture.query-source-${n}`, 5, false, undefined,
+    { start: 100 + n * 10, queryFingerprint: normalizedQueryFingerprint(`SELECT field_${n} FROM fixture`) });
+  now = 550;
+  const intervals = Array.from({ length: 43 }, (_, n) => ({ kind: "writer" as const, start: 106 + n * 10, end: 108 + n * 10 }));
+  intervals.push({ kind: "writer", start: 531, end: 534 });
+  const sample = observations.sample(1, { intervals, coverage: "unknown", dropped: 2 })!;
+  const note = JSON.parse(sample.note);
+  expect(sample.note.length).toBeLessThanOrEqual(4_000);
+  expect(note.cohort).toMatchObject({ attempted: 44, retained: 44, status: "complete" });
+  expect(note.examplesTruncated).toBe(false);
+  expect(note.contention.passOnlyWriters).toEqual({ count: 43, totalMs: 86 });
+  expect(note.contention.intervals).toEqual([{ kind: "writer", startOffsetMs: 431, durationMs: 3, queries: [43] }]);
+  expect(note.contention.dropped).toBe(2);
+  // More actual query overlaps than the witness cap: no silent loss.
+  const overflow = JSON.parse(observations.sample(1, { intervals: Array.from({ length: 20 }, () => intervals[43]),
+    coverage: "unknown", dropped: 2 })!.note);
+  expect(overflow.contention.dropped + overflow.contention.intervals.length).toBe(22);
+  expect(overflow.contention.status).toBe("incomplete");
 });
 
 test("capture and serialization overflow are explicitly incomplete, not a complete top-three cohort", () => {

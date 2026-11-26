@@ -138,10 +138,16 @@ export class MetricQueryObservations {
         attempts.every(a => a.queryFingerprint !== "unknown") ? "complete" : "incomplete";
     };
     encode();
-    // Prefer scarce cross-process checkpoint witnesses over the frequent sample-write intervals.
-    const intervals = (contention?.intervals.filter(i => i.start < end && i.end > this.start) ?? [])
-      .sort((a, b) => Number(a.kind === "writer") - Number(b.kind === "writer"));
-    const correlated = intervals.slice(0, 16).map(i => ({
+    const intervals = (contention?.intervals.filter(i => i.start < end && i.end > this.start) ?? []);
+    // Correlate before bounding: ordinary sample writes between queries must not evict
+    // a late query-overlapping writer. Summarize pass-only writes without losing counts.
+    const passOnlyWriters = intervals.filter(i => i.kind === "writer" &&
+      !this.windows.some(([start, end]) => start < i.end && end > i.start));
+    const witnesses = intervals.filter(i => !passOnlyWriters.includes(i))
+      .sort((a, b) => Number(this.windows.some(([s, e]) => s < b.end && e > b.start)) -
+        Number(this.windows.some(([s, e]) => s < a.end && e > a.start)) ||
+        Number(a.kind === "writer") - Number(b.kind === "writer"));
+    const correlated = witnesses.slice(0, 16).map(i => ({
       kind: i.kind, startOffsetMs: rounded(i.start - this.start), durationMs: rounded(i.end - i.start),
       // Query indices are invocation ordinals; they remain valid even if trailing entries are dropped below.
       queries: this.windows.flatMap(([start, end], index) => start < i.end && end > i.start ? [index] : []),
@@ -150,12 +156,14 @@ export class MetricQueryObservations {
     }));
     const signals = {
       // Neither Bun nor Node SQLite exposes native busy-handler waits. Errors are not waits.
-      status: "incomplete", coverage: "unknown", scope: "local stateTransaction + maintenance; other workers/in-flight unknown",
+      status: "incomplete", coverage: "unknown", scope: "stateTransaction + maintenance; delayed/in-flight/colliding workers unknown",
       clock: "monotonic-epoch-ms",
       busyWaitCount: "unknown", busyWaitMs: "unknown", lockWaitCount: "unknown", lockWaitMs: "unknown",
       busyFailures: this.busyFailures, lockedFailures: this.lockedFailures,
       writerCoverage: "unknown", checkpointCoverage: "unknown",
-      dropped: (contention?.dropped ?? 0) + Math.max(0, intervals.length - correlated.length), intervals: correlated,
+      passOnlyWriters: { count: passOnlyWriters.length,
+        totalMs: rounded(passOnlyWriters.reduce((sum, i) => sum + i.end - i.start, 0)) },
+      dropped: (contention?.dropped ?? 0) + Math.max(0, witnesses.length - correlated.length), intervals: correlated,
     };
     const examples = structuredClone(this.examples);
     let evidenceTruncated = false;
@@ -174,7 +182,7 @@ export class MetricQueryObservations {
     }
     const observation = {
       queries: this.count, failures: this.failures, totalMs: this.totalMs,
-      cohort, contention: signals, examples, examplesTruncated: this.count > examples.length, evidenceTruncated,
+      cohort, contention: signals, examples, preview: "top-3", examplesTruncated: false, evidenceTruncated,
     };
     const stringify = () => JSON.stringify(observation);
     let note = stringify();

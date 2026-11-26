@@ -116,7 +116,66 @@ describe("source-query metric measurement", () => {
       ]));
       expect(checkpoints).toBe(0);
       expect(note.examples).toHaveLength(3);
+      expect(note.preview).toBe("top-3");
+      expect(note.examplesTruncated).toBe(false);
     } finally { read.mockRestore(); writerSpy.mockRestore(); clock.mockRestore(); }
+  });
+
+  it("correlates a real concurrent Host worker transaction with an unmocked SQL invocation", async () => {
+    const db = getDb(persistDir);
+    db.exec("CREATE TABLE writer_overlap_fixture (value INTEGER)");
+    const metrics = createMetricService({ getDb: () => db });
+    const sql = "WITH RECURSIVE n(x) AS (VALUES(0) UNION ALL SELECT x+1 FROM n WHERE x<2000000) SELECT sum(x) AS value FROM n";
+    metrics.define({ id: "cohort.concurrent-writer", type: "gauge", sourceQuery: sql });
+    const marker = join(persistDir, "begin-read");
+    const code = `const {getDb, closeDb} = await import(${JSON.stringify(new URL("../lib/db/connection.ts", import.meta.url).href)});
+      const {stateTransaction} = await import(${JSON.stringify(new URL("../lib/db/transaction.ts", import.meta.url).href)});
+      const {existsSync} = await import("node:fs");
+      const root = ${JSON.stringify(persistDir)};
+      const db = getDb(root, {existingSchemaOnly:true});
+      console.log("ready");
+      const deadline = Date.now()+5000;
+      while (!existsSync(${JSON.stringify(marker)})) {
+        if(Date.now()>deadline) throw new Error("read did not start");
+        await new Promise(resolve => setTimeout(resolve,1));
+      }
+      stateTransaction(db, () => {
+        db.exec("INSERT INTO writer_overlap_fixture VALUES (1)");
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,30);
+      });
+      closeDb(root);`;
+    let child!: ReturnType<typeof execFile>;
+    const completed = new Promise<string | undefined>(resolve => {
+      child = execFile(process.execPath, ["--eval", code], { timeout: 10_000 },
+        (error, _stdout, stderr) => resolve(error ? `${error.message}: ${stderr}` : undefined));
+    });
+    const open = database.openReadOnlyDatabase;
+    let reader: ReturnType<typeof spyOn> | undefined;
+    try {
+      await new Promise<void>((resolve, reject) => {
+        child.stdout!.once("data", () => resolve());
+        child.once("error", reject);
+        child.once("exit", code => { if (code !== 0) reject(new Error(`Worker exited ${code}`)); });
+      });
+      reader = spyOn(database, "openReadOnlyDatabase").mockImplementation(path => {
+        // Signal only: real SQLite query and worker transaction execute concurrently.
+        writeFileSync(marker, "start");
+        return open(path);
+      });
+      await measureSourceMetrics({ bus, persistDir, isDue: row => row.id === "cohort.concurrent-writer" });
+      expect(await completed).toBeUndefined();
+      const note = JSON.parse(metrics.get(METRIC_QUERY_DURATION_METRIC.id)!.observation!.note!);
+      expect(note.cohort).toMatchObject({ attempted: 1, retained: 1, status: "complete" });
+      expect(note.contention.intervals).toEqual(expect.arrayContaining([
+        expect.objectContaining({ kind: "writer", queries: [0] }),
+      ]));
+      expect(note.contention.writerCoverage).toBe("unknown");
+      expect(db.prepare("SELECT count(*) AS count FROM writer_overlap_fixture").get()!.count).toBe(1);
+    } finally {
+      reader?.mockRestore();
+      child.kill();
+      await completed;
+    }
   });
 
   it("reads real maintenance checkpoint observations across processes without executing another checkpoint", async () => {

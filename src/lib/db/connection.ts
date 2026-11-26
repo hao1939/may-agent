@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { openDatabase, type SqliteDb } from "../db.js";
 import { withSqliteInitializationRetry } from "./busy-retry.js";
 import { applyDbSchema } from "./schema.js";
+import { flushWriterObservations, registerWriterObservations } from "./contention-observations.js";
 
 const dbCache = new Map<string, SqliteDb>();
 
@@ -29,6 +30,7 @@ export function getDb(persistDir: string, options: DatabaseConnectionOptions = {
   }
   if (!existingSchemaOnly) bootstrapMissingDatabase(dbPath);
   const db = openDatabase(dbPath);
+  registerWriterObservations(db, persistDir);
   try {
     // Maintenance and Task workers use the live Host database. Reapplying
     // CREATE TABLE/INDEX would compete for SQLite's one write lock even when
@@ -106,6 +108,7 @@ function bootstrapMissingDatabase(dbPath: string): void {
 export function closeDb(persistDir: string): void {
   const cached = dbCache.get(persistDir);
   if (cached) {
+    flushWriterObservations(cached);
     cached.close();
     dbCache.delete(persistDir);
   }
@@ -114,6 +117,7 @@ export function closeDb(persistDir: string): void {
 /** Close cached connections after a non-blocking checkpoint. Call on shutdown. */
 export function closeAllDbs(): void {
   for (const [dir, db] of dbCache) {
+    flushWriterObservations(db);
     try { db.exec("PRAGMA wal_checkpoint(PASSIVE)"); } catch { /* best-effort */ }
     try { db.close(); } catch { /* best-effort */ }
     dbCache.delete(dir);
