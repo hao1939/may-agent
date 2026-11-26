@@ -236,10 +236,10 @@ describe("environment-agnostic SDK execution preparation", () => {
     expect(mutations).toBe(0);
   });
 
-  test("normalizes root anyOf tool parameter schemas to type: object for Gemini provider compatibility", async () => {
+  test.each(["gemini-4-argon", "github_copilot/gemini-4-carbon"])("normalizes root tool schemas for Gemini route %s", async (modelId) => {
     const geminiModel = {
       ...streamTestModel,
-      id: "gemini-4-argon",
+      id: modelId,
       baseUrl: "http://127.0.0.1:9",
       input: ["text"],
     };
@@ -283,6 +283,8 @@ describe("environment-agnostic SDK execution preparation", () => {
       required: ["status", "summary"],
     });
     expect(capturedTools?.[0]?.parameters).not.toHaveProperty("anyOf");
+    expect((finishTool.parameters as { anyOf?: unknown[] }).anyOf).toHaveLength(2);
+    expect(() => finishTool.prepareArguments!({ status: "done", summary: "Missing output" })).toThrow("requires the schema-validated output");
   });
 
   test("maps sourceRoot explicitly and rejects stale implicit execution mappings", () => {

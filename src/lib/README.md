@@ -186,6 +186,21 @@ marks overdue pending receipts without replaying subscribers, erasing accepted
 receipts or clearing independent App admission. Existing exact-target plan expiry
 and broad App admission recovery keep their respective responsibilities.
 
+## Provider routes
+
+Model selection preserves the configured route identity. The SDK model registry
+supports `github_copilot/gemini-4-carbon` through Responses with a conservative
+200,000-token context limit and the advertised 65,536-token output limit. Its
+unverified tariff remains unknown. An unavailable route is not permission to
+substitute another model or relabel its evidence.
+
+Gemini's existing object-root projection for function schemas recognizes the
+final model-name segment of provider-qualified IDs. The original argument
+validator still checks the returned value. Model-registry and provider-request
+tests cover route selection and both qualified and unqualified Gemini names.
+Supporting a route does not change any installed App's model selection or prove
+that model's judgment quality; those are App acceptance and activation decisions.
+
 Detailed tests live beside their source. Cross-component execution and process
 coverage is described in the [test guide](../../test/README.md). External direct-execution consumers use the documented adapter in the
 [script guide](../../scripts/README.md#external-execution-consumers); review

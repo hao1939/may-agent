@@ -1059,7 +1059,8 @@ function normalizeProviderRootToolParameters(parameters: TSchema): TSchema {
 }
 
 function normalizeContextForModel(model: Model<Api>, context: Parameters<SimpleStreamFunction>[1]): Parameters<SimpleStreamFunction>[1] {
-  if (!model.id.startsWith("gemini-")) return context;
+  const modelName = model.id.slice(model.id.lastIndexOf("/") + 1);
+  if (!modelName.startsWith("gemini-")) return context;
   const normalizeList = (list: Array<{ name: string; description: string; parameters: TSchema }> | undefined) => {
     if (!list?.length) return list;
     let listChanged = false;
