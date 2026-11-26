@@ -450,9 +450,15 @@ describe("Telegram durable input and natural follow-up", () => {
       await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/watch"));
       expect(f.published.find((e) => e.data.metadata?.command === "/watch")!.data.metadata.topicId)
         .toBe("topic_aaaaaaaa");
-      f.message(103, "What's the status?", { message_thread_id: 7 });
+      const discussionCard = f.sends().find(c => c.body.text.includes("Following updates."))!;
+      expect(discussionCard.body.text).toContain("Reply here to discuss this work.");
+      await waitFor(() => Boolean(f.db.prepare("SELECT 1 FROM notification_messages WHERE telegram_msg_id = ?").get(discussionCard.messageId)));
+      f.message(103, "What's the status?", { message_thread_id: 7,
+        reply_to_message: { message_id: discussionCard.messageId, text: discussionCard.body.text } });
       await waitFor(() => f.inputs().length === 1);
       expect(f.inputs()[0].data.context).toMatchObject({ focusedTask: { appId: "may", taskId: "first" } });
+      expect(f.inputs()[0].data.context.displayedHumanCondition).toBeUndefined();
+      expect(f.inputs()[0].data.taskReply).toBeUndefined();
       expect(f.sends().filter((c) => c.body.text.startsWith("Background work accepted"))).toHaveLength(1);
       expect(f.tasks.get("second")?.status).toBe("running");
     } finally { await f.close(); }
@@ -747,7 +753,10 @@ describe("Telegram durable input and natural follow-up", () => {
         "evaluation",
         true,
       ),
-    ).toContain("1 more action(s) are not shown. Use /todo more.");
+    ).toContain("1 action(s) shown on this page; 2 total in this query.\nMore actions are available. Use /todo more.");
+    expect(renderTelegramTodos([task], undefined, undefined, true)).toContain("total unknown");
+    expect(renderTelegramTodos([], 2)).toContain("0 action(s) shown on this page; 2 total in this query.");
+    expect(renderTelegramTodos([], 2)).not.toContain("Nothing needs your action");
     expect(
       renderTelegramTask({
         ...task,
@@ -873,6 +882,10 @@ describe("Telegram durable input and natural follow-up", () => {
         cursor: "todo-cursor-2",
       });
       expect(sent).toContainEqual(expect.stringContaining("Use /todo more."));
+      const finalTodo = sent.find(text => text.includes("Approve the second page."))!;
+      expect(finalTodo).toContain("1 action(s) shown on this page; 2 total in this query.");
+      expect(finalTodo).not.toContain("Use /todo more.");
+      expect(finalTodo).not.toContain("more action(s) are not shown");
       expect(sentParseModes.filter((mode) => mode === "HTML")).toHaveLength(4);
       expect(sentParseModes[0]).toBeUndefined();
     } finally {
@@ -1357,7 +1370,7 @@ describe("Telegram durable input and natural follow-up", () => {
       );
       expect(sent).toContainEqual(expect.stringContaining("evaluation — 1 open · 1 active"));
       expect(sent).toContainEqual(expect.stringContaining("Task 8f12ac90"));
-      expect(sent).toContainEqual(expect.stringContaining("Following updates. Reply here"));
+      expect(sent).toContainEqual(expect.stringContaining("Following updates. Reply to this message with an exact response"));
       const exactProposal =
         "Exact proposal: apply the reviewed docs candidate at commit 01234567; cost is one restart; simpler option is no change.";
       const approvalCards = sent.filter((text) => text.includes(exactProposal));

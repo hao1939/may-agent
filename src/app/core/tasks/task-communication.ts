@@ -146,7 +146,9 @@ export function applyTaskCommunication(
         typeof prior.messageId !== "string"
       )
         throw new Error("replyId must name a published explanation in this Conversation from this Task generation");
-      readTaskCommunicationInput(config, claim, (prior.communication as TaskCommunication).inputId);
+      const origin = readTaskCommunicationInput(config, claim, (prior.communication as TaskCommunication).inputId);
+      if (origin.conversationId !== conversationId || inputConversationAppId(db, origin) !== conversationAppId)
+        throw new Error("replyId must name a published explanation in this Conversation from this Task generation");
       messageId = prior.messageId;
     }
     // A known Request belongs to the Task which accepted its originating input.
@@ -172,11 +174,10 @@ export function applyTaskCommunication(
         if (owner?.task_id !== claim.taskId)
           throw new Error("Request has no saved acceptance relationship to this Task");
       }
-      for (const original of linked) readTaskCommunicationInput(config, claim, original.id);
       const ids = update.inputIds ?? [item.id];
-      for (const id of ids) {
+      for (const id of [...linked.map((original) => original.id), ...ids]) {
         const origin = readTaskCommunicationInput(config, claim, id);
-        if (origin.conversationId !== conversationId)
+        if (origin.conversationId !== conversationId || inputConversationAppId(db, origin) !== conversationAppId)
           throw new Error("Request inputs must belong to the same Conversation");
       }
       // The durable input-to-Task admission proves authority for ordinary Tasks too.

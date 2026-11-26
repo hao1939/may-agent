@@ -186,7 +186,7 @@ async function publishChatEvent(event) {
     signal: AbortSignal.timeout(10000),
   });
   const receipt = await response.json();
-  if (!response.ok || receipt.delivery !== 'accepted') {
+  if (!response.ok || receipt.delivery !== 'accepted' || !Number.isSafeInteger(receipt.eventId) || receipt.eventId <= 0) {
     throw new Error(receipt.error || 'The Host has not confirmed acceptance');
   }
   return receipt;

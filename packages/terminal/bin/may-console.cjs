@@ -818,7 +818,8 @@ function renderTodos(page, pending) {
   const total = Number.isSafeInteger(page?.total) ? page.total : tasks.length;
   const scope = pending?.appId ? ` for ${pending.appId}` : " across all Apps";
   const lines = ["", `Actions needed${scope}:`, ""];
-  if (tasks.length === 0) lines.push("  Nothing needs your action.");
+  if (tasks.length === 0) lines.push(page?.total === 0 && !page?.nextCursor
+    ? "  Nothing needs your action." : "  No actions shown on this page.");
   for (const task of tasks) {
     if (typeof task.ref === "string" && task.ref.trim()) rememberCompletion(knownTaskRefs, task.ref.trim(), 512);
     const since = Number(task?.humanAction?.since);
@@ -828,9 +829,8 @@ function renderTodos(page, pending) {
     lines.push(...indentedLines(humanActionText(task), 4), "");
   }
   nextTodoPage = page?.nextCursor ? { appId: pending?.appId || null, cursor: page.nextCursor } : null;
-  if (total > tasks.length) {
-    lines.push(`  ${total - tasks.length} more action(s) are not shown.${nextTodoPage ? " Run /todo more." : ""}`);
-  } else if (nextTodoPage) lines.push("  More actions are available (bounded page; total unknown). Run /todo more.");
+  lines.push(`  ${tasks.length} action(s) shown on this page; ${Number.isSafeInteger(page?.total) ? `${total} total in this query` : "total unknown"}.`);
+  if (nextTodoPage) lines.push("  More actions are available. Run /todo more.");
   if (lines.at(-1) !== "") lines.push("");
   presentView(pending?.command || "/todo", renderedLines(lines), {
     taskRefs: tasks.map(taskIdentity).filter(Boolean),
@@ -955,11 +955,11 @@ function taskPresentationKey(task) {
   return taskIdentity(task) ? `${task.appId}\0${task.taskId}` : "";
 }
 
-function rememberConversationResultTask(task, messageId) {
+function rememberConversationResultTask(task, text) {
   const key = taskPresentationKey(task);
   if (!key) return;
   if (conversationResultsByTask.has(key)) conversationResultsByTask.delete(key);
-  conversationResultsByTask.set(key, messageId);
+  conversationResultsByTask.set(key, text);
   while (conversationResultsByTask.size > 128) {
     conversationResultsByTask.delete(conversationResultsByTask.keys().next().value);
   }
@@ -1073,7 +1073,7 @@ function renderConversation(messages) {
     else printConversationText(speaker, renderedText);
     rememberRenderedConversationMessage(id);
     if (kind === "agent" && id.startsWith("result:")) {
-      for (const task of metadataTaskRefs) rememberConversationResultTask(task, id);
+      for (const task of metadataTaskRefs) rememberConversationResultTask(task, text);
     }
   }
   // Assignment hints are attribution only. Following execution detail is opt-in.
@@ -1305,7 +1305,9 @@ function handleEvent(event) {
             pending.watchSelectionVersion === watchedTaskSelectionVersion && pendingWatchKey === currentWatchKey;
           if (currentSelection) {
             const taskKey = taskPresentationKey(task);
-            const conversationAlreadyPresentedResult = Boolean(task?.terminal && conversationResultsByTask.has(taskKey));
+            // Mentioning this Task is not proof that its outcome was delivered.
+            const conversationAlreadyPresentedResult = Boolean(task?.terminal &&
+              conversationResultsByTask.get(taskKey) === String(currentTaskText(task)).trim());
             if (task && !conversationAlreadyPresentedResult) renderWatchSnapshot(task);
             else if (task && conversationAlreadyPresentedResult) {
               rememberTaskRevision(taskKey, taskPresentationRevision(task));

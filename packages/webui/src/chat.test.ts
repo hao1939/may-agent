@@ -11,6 +11,7 @@ afterEach(() => {
 // coalescing, selection guards and WebSocket handlers remain production code.
 function fixture(fetch: (url: string) => Promise<Response>) {
   class Element {
+    value = "";
     innerHTML = "";
     textContent = "";
     dataset = {};
@@ -46,7 +47,7 @@ function fixture(fetch: (url: string) => Promise<Response>) {
       createDocumentFragment: () => new Element(),
       querySelector: () => new Element(),
     },
-    WebSocket: TestSocket, fetch, AbortSignal, URLSearchParams, setTimeout, clearTimeout, setInterval, clearInterval,
+    WebSocket: TestSocket, fetch, crypto, toast() {}, AbortSignal, URLSearchParams, setTimeout, clearTimeout, setInterval, clearInterval,
     location: { protocol: "http:", host: "host.example.test" }, window: {},
     currentTab: "sessions", currentRouteParams: {}, currentAgentChat: null,
     humanInterface: { appId: "conversation", agent: "host", conversationId: "conversation:primary" },
@@ -95,6 +96,28 @@ test("overflow during a Conversation read recovers its final answer and active t
   expect(ui.elements.get("chat-messages")!.children[0].children[0].children[0].textContent).toBe("Final Conversation answer");
   expect(ui.frames.at(-1)).toEqual({ type: "status" });
 });
+
+test.each([undefined, null, 0, -1, 1.5, "7", Number.MAX_SAFE_INTEGER + 1])(
+  "May composer retains draft and publication identity after invalid accepted eventId %j", async (eventId) => {
+    const writes: Array<{ idempotencyKey: string }> = [];
+    const ui = fixture(async (url, options?: RequestInit) => {
+      if (url === "/api/events") {
+        writes.push(JSON.parse(String(options?.body)));
+        return Response.json({ delivery: "accepted", ...(writes.length === 1 ? { eventId } : { eventId: 7 }) });
+      }
+      return Response.json({ messages: [], activeTurn: null });
+    });
+    ui.context.currentAgentChat = "host";
+    const input = ui.elements.get("chat-input")!;
+    input.value = "Keep the original draft";
+    await ui.context.sendMayConversation();
+    expect(input.value).toBe("Keep the original draft");
+    await ui.context.sendMayConversation();
+    expect(writes).toHaveLength(2);
+    expect(writes[1].idempotencyKey).toBe(writes[0].idempotencyKey);
+    expect(input.value).toBe("");
+  },
+);
 
 test("read-only diagnostics use exact session subscriptions and reread after overflow", async () => {
   const ui = fixture(async () => { throw new Error("No chat read is expected"); });

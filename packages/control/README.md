@@ -70,7 +70,10 @@ remain Conversation context. They do not address background work. The Host
 revalidates deliberate replies before routing to the same- or cross-App owning
 Task and again before projecting question fields into its receipt. A stale,
 missing or ambiguous question stays ordinary Conversation input with refresh
-guidance; it never binds to a newer Condition. Original human provenance and
+guidance; it never binds to a newer Condition. If the owner cannot accept the
+complete message under its declared input contract, the text likewise remains
+in the originating Conversation, without an exact owning-Task receipt.
+Original human provenance and
 the journaled return address survive exact admission and uncertain-ack retries.
 Admission proves receipt only, not a sufficient answer, Condition fulfillment
 or an external action. Older complete Telegram question bindings and explicit

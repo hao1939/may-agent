@@ -42,6 +42,7 @@ import {
   renderTelegramTaskUpdate,
   renderTelegramTasks,
   renderTelegramTodos,
+  replyInstruction,
   representedTaskIdentities,
   singleTaskReference,
   taskButtons,
@@ -1069,7 +1070,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         delete session.nextTodoPage;
       }
       deliverCommandView(
-        renderTelegramTodos(page.items, page.total ?? page.items.length, appId, Boolean(page.nextCursor)),
+        renderTelegramTodos(page.items, page.total, appId, Boolean(page.nextCursor)),
         page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
         undefined,
         undefined,
@@ -1198,7 +1199,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         };
         session.watchedTask = watched;
         deliverCommandView(
-          `${renderTelegramTaskUpdate(task)}\n\nFollowing updates. Reply here to discuss this work. Other Tasks continue unchanged.`,
+          `${renderTelegramTaskUpdate(task)}\n\nFollowing updates. ${approvalProposalForTask(task) || humanConditionAnchor(task)
+            ? replyInstruction(task)
+            : "Reply here to discuss this work."} Other Tasks continue unchanged.`,
           [{ appId: task.appId, taskId: task.taskId }],
           () => {
             if (session.watchedTask !== watched) {

@@ -241,7 +241,7 @@ describe("May Console", () => {
     expect((await once(child, "exit"))[0]).toBe(0);
   });
 
-  test("shares Conversation context and manages stable Tasks instead of sessions", async () => {
+  test.each(["duplicate", "distinct"])("shares Conversation context and preserves %s watched outcomes", async (resultKind) => {
     const root = mkdtempSync(join(tmpdir(), "may-console-"));
     const instance = "test";
     const socketDir = join(root, "instances", instance);
@@ -673,6 +673,11 @@ describe("May Console", () => {
     ).toBe(true);
     child.stdin.write("/todo more\n");
     await waitFor(() => output.includes("6d22bc11") && output.includes("Approve or reject the second change."));
+    await waitFor(() => frames.some(frame => frame.event?.data?.metadata?.command === "/todo more"));
+    const finalTodo = frames.filter(frame => frame.event?.data?.metadata?.command === "/todo more").at(-1);
+    expect(finalTodo?.event.data.text).toContain("1 action(s) shown on this page; 2 total in this query.");
+    expect(finalTodo?.event.data.text).not.toContain("more action(s) are not shown");
+    expect(finalTodo?.event.data.text).not.toContain("Run /todo more.");
     expect(
       frames.some(
         (frame) =>
@@ -863,11 +868,13 @@ describe("May Console", () => {
     expect(output.split("Checking the final facts").length - 1).toBe(1);
 
     taskTerminal = true;
+    const conversationResult = resultKind === "duplicate"
+      ? "The design and implementation now align." : "Verification is queued; the final outcome is still pending.";
     remoteConversationMessages.push({
       id: "result:review-docs",
       sequence: 5,
       author: { kind: "agent", id: "may" },
-      text: "The design and implementation now align.",
+      text: conversationResult,
       metadata: {
         taskRefs: [{ appId: "evaluation", taskId: "review/docs", ref: "8f12ac90" }],
       },
@@ -881,7 +888,7 @@ describe("May Console", () => {
         data: { appId: "may", conversationId: "may:primary" },
       })}\n`,
     );
-    await waitFor(() => output.includes("\nmay> The design and implementation now align."));
+    await waitFor(() => output.includes(`\nmay> ${conversationResult}`));
     client?.write(
       `${JSON.stringify({
         type: "app.task.updated",

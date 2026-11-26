@@ -901,14 +901,30 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             return { accepted: true, by: `conversation:${conversationId}:app-inbox:${item.appId}` };
           }
           const suppliedReply = readHumanTaskReply(data, event.source === "telegram");
-          const reply = suppliedReply && host.hasApp(suppliedReply.target.appId) &&
+          let reply = suppliedReply && host.hasApp(suppliedReply.target.appId) &&
             currentHumanTaskReply(options.db, suppliedReply) ? suppliedReply : null;
+          let unsupportedReply = false;
+          if (reply) {
+            // Preflight only the declared input contract. Persistence/admission
+            // failures must remain failures, never reroute an uncertain write.
+            try {
+              host.assertAcceptsInput(reply.target.appId, {
+                kind: "message", data: { message: text, context: { ...context, taskReply: reply } },
+              });
+            } catch {
+              unsupportedReply = true;
+              reply = null;
+            }
+          }
           // Display context is evidence for discussion, never a receipt. Only
           // a revalidated deliberate action may project exact question fields.
           delete context.taskReply;
           if (reply) context.taskReply = reply;
-          else if (data.taskReply || suppliedReply) context.taskReplyNotice =
-            "The displayed Task/question is unavailable or changed. Text retained as ordinary conversation; inspect it again to act.";
+          else if (data.taskReply || suppliedReply) context.taskReplyNotice = unsupportedReply
+            ? "The owning App does not support this exact message. Text retained as ordinary conversation; ask for a supported input path."
+            : "The displayed Task/question is unavailable or changed. Text retained as ordinary conversation; inspect it again to act.";
+          const publicationIdentity = persistedEventId ??
+            (typeof data.idempotencyKey === "string" && data.idempotencyKey.trim() ? data.idempotencyKey.trim() : undefined);
           const admitted = receiveInput({
             appId: reply?.target.appId ?? appId,
             ...(reply ? {
@@ -932,10 +948,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             channelThreadId: typeof metadata.channelThreadId === "string" ? metadata.channelThreadId : undefined,
             channelMessageId: typeof metadata.channelMessageId === "number" ? metadata.channelMessageId : undefined,
             replyToSourceId: typeof data.replyTo === "string" ? data.replyTo : undefined,
-            idempotencyKey:
-              typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()
-                ? data.idempotencyKey.trim()
-                : eventIdentity(event),
+            // Caller keys are only unique at their originating address. The
+            // saved origin-event lookup above still recovers legacy inbox keys.
+            idempotencyKey: publicationIdentity === undefined ? undefined :
+              `conversation:${JSON.stringify([appId, conversationId, publicationIdentity])}`,
           });
 
           notifyConversationUpdated(inputConversationAppId(options.db, admitted.item), admitted.item.conversationId);

@@ -209,12 +209,12 @@ function humanActionLine(task: HumanTaskView): string {
 
 export function renderTelegramTodos(
   tasks: HumanTaskView[],
-  total = tasks.length,
+  total?: number,
   appId?: string,
   hasMore = false,
 ): string {
   const scope = appId ? ` for ${appId}` : " across all Apps";
-  if (tasks.length === 0) return `Nothing needs your action${scope}.`;
+  if (tasks.length === 0 && total === 0 && !hasMore) return `Nothing needs your action${scope}.`;
   return [
     `<b>Needs you${escapeTelegramHtml(scope)}</b>`,
     "",
@@ -232,9 +232,9 @@ export function renderTelegramTodos(
         ];
       })
       .slice(0, -1),
-    ...(total > tasks.length
-      ? ["", `${total - tasks.length} more action(s) are not shown.${hasMore ? " Use /todo more." : ""}`]
-      : []),
+    "",
+    `${tasks.length} action(s) shown on this page; ${Number.isSafeInteger(total) ? `${total} total in this query` : "total unknown"}.`,
+    ...(hasMore ? ["More actions are available. Use /todo more."] : []),
   ].join("\n");
 }
 

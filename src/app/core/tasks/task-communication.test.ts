@@ -224,6 +224,42 @@ test("an owning attempt reads and answers the originating Conversation, not its 
   } finally { await f.close(); }
 });
 
+test("communication checks App and Conversation for replies, existing links and supplied inputs", async () => {
+  let checked = false;
+  const f = await fixture(async (attempt) => {
+    await attempt.apply({ communication: [{ id: "foreign-explanation", inputId: "foreign", message: "Foreign explanation" }] });
+    await expect(attempt.apply({ communication: [{ id: "bad-reply", inputId: "local", replyId: "foreign-explanation",
+      requestUpdates: [{ id: "promise", expectedRevision: 0, disposition: "open", scope: "Local promise" }],
+    }] })).rejects.toThrow("replyId must name");
+    await expect(attempt.apply({ communication: [{ id: "bad-input", inputId: "local",
+      requestUpdates: [{ id: "promise", expectedRevision: 0, disposition: "open", scope: "Local promise", inputIds: ["foreign"] }],
+    }] })).rejects.toThrow("same Conversation");
+    await attempt.apply({ communication: [{ id: "local-explanation", inputId: "local", message: "Local explanation",
+      requestUpdates: [{ id: "promise", expectedRevision: 0, disposition: "open", scope: "Local promise" }],
+    }] });
+    // Historical/corrupt links cannot confer authority merely by sharing a name.
+    f.db.run("INSERT INTO conversation_request_inputs (app_id, conversation_id, request_id, input_id) VALUES (?, ?, ?, ?)",
+      ["sample", "discussion", "promise", "foreign"]);
+    await expect(attempt.apply({ communication: [{ id: "bad-link", inputId: "local", replyId: "local-explanation",
+      requestUpdates: [{ id: "promise", expectedRevision: 1, disposition: "fulfilled", reason: "Done" }],
+    }] })).rejects.toThrow("same Conversation");
+    f.db.run("DELETE FROM conversation_request_inputs WHERE input_id = ?", ["foreign"]);
+    await attempt.apply({ communication: [{ id: "local-close", inputId: "local", replyId: "local-explanation",
+      requestUpdates: [{ id: "promise", expectedRevision: 1, disposition: "fulfilled", reason: "Done" }],
+    }] });
+    checked = true;
+    return { state: "converged", summary: "Checked canonical addresses", facts: [] };
+  });
+  try {
+    f.admit("local");
+    f.inbox.host.admit({ id: "foreign", appId: "sample", conversationAppId: "other", conversationId: "discussion",
+      conversationSequence: 2, source: { kind: "human", id: "foreign" }, input: { kind: "message", data: { message: "Other App" } } });
+    await f.run();
+    expect(checked).toBe(true);
+    expect(readConversationRequest(f.db, "sample", "discussion", "promise")?.status).toBe("closed");
+  } finally { await f.close(); }
+});
+
 const progress: TaskCommunication = {
   id: "progress",
   inputId: "ask",

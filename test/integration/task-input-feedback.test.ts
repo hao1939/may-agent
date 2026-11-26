@@ -171,11 +171,11 @@ test("public targeted input retains its receipt, attaches once and reaches only 
 
 // Real configured Conversation admission and owning Task receipts, without a
 // model call. The start gate blocks execution, not journal/admission writes.
-for (const ownerApp of ["interface", "worker"]) {
+for (const ownerApp of ["interface", "worker", "restrictive"]) {
   test(`displayed question reaches its ${ownerApp} owner; passive views stay Conversation`, async () => {
     const root = mkdtempSync(join(tmpdir(), "human-question-ingress-"));
     const persistDir = join(root, "state");
-    for (const appId of ["interface", "worker"]) {
+    for (const appId of ["interface", "interface2", "worker", "restrictive"]) {
       mkdirSync(join(root, `${appId}.app/tasks`), { recursive: true });
       writeFileSync(join(root, `${appId}.app/tasks/seed.json`), JSON.stringify({
         root_task_id: "root", groups: { root: { id: "root", parent_id: null } },
@@ -197,9 +197,9 @@ for (const ownerApp of ["interface", "worker"]) {
       writeFileSync(join(root, `${appId}.app/app.js`), `export default {
         id: ${JSON.stringify(appId)}, version: 1, agent: "owner", tasks: {},
         inputSchema: { type: "object", required: ["kind", "data"], properties: {
-          kind: { const: "message" }, data: { type: "object" }
+          kind: { const: ${JSON.stringify(appId === "restrictive" ? "probe" : "message")} }, data: { type: "object" }
         } },
-        ${appId === "interface" ? 'conversation: { mode: "task", inputKinds: ["message"], conversationId: "primary" },' : ""}
+        ${appId.startsWith("interface") ? 'conversation: { mode: "task", inputKinds: ["message"], conversationId: "primary" },' : ""}
         task() { throw new Error("An exact reply must bypass mapping"); }
       };`);
     }
@@ -260,6 +260,21 @@ for (const ownerApp of ["interface", "worker"]) {
         expect(typeof row.execution_task_id).toBe("string");
       }
       const before = receipts.length;
+      if (ownerApp === "restrictive") {
+        const first = publish("unsupported-reply", { replyTo: "shown-question", taskReply });
+        expect(first.delivery).toBe("accepted");
+        expect(publish("unsupported-reply", { replyTo: "shown-question", taskReply }).eventId).toBe(first.eventId);
+        const retained = db.prepare("SELECT app_id, target_task_id, input_data FROM app_inbox_items WHERE source_id = 'unsupported-reply'").get()!;
+        expect(retained).toMatchObject({ app_id: "interface", target_task_id: null });
+        expect(JSON.parse(String(retained.input_data))).toMatchObject({
+          message: "Use the isolated fixture", context: { taskReplyNotice: expect.stringContaining("ordinary conversation") },
+        });
+        expect(JSON.parse(String(retained.input_data)).context.taskReply).toBeUndefined();
+        expect(receipts.filter(event => event.target?.taskId === "question")).toHaveLength(0);
+        expect(readAppConversationResource(db, "interface", "primary").messages.filter(message => message.id === "unsupported-reply"))
+          .toHaveLength(1);
+        return;
+      }
       // Simulate a committed owner admission with an unconfirmed outer HTTP
       // receipt. Retrying must run the retained route, not today's card lookup.
       bus.setDeliveryRecorder((event, result) => {
@@ -357,9 +372,11 @@ for (const ownerApp of ["interface", "worker"]) {
       };
       try {
         const ref = service.getTask(target)!.ref;
-        await deliver({ text: `/task ${ref}` }, 100);
-        await until(() => sent.some(message => message.text.startsWith(`Task ${ref}`)));
-        const card = sent.find(message => message.text.startsWith(`Task ${ref}`))!;
+        await deliver({ text: `/watch ${ref}` }, 100);
+        await until(() => sent.some(message => message.text.includes("Following updates.")));
+        const card = sent.find(message => message.text.includes("Following updates."))!;
+        expect(card.text).toContain("Following updates. Reply to this message with an exact response");
+        expect(card.text).not.toContain("Reply here to discuss this work");
         await until(() => Boolean(db.prepare("SELECT 1 FROM notification_messages WHERE chat_id = '42' AND telegram_msg_id = ?")
           .get(card.messageId)));
         const message = { text: "Use the native fixture", reply_to_message: { message_id: card.messageId, text: card.text } };
@@ -526,6 +543,48 @@ for (const ownerApp of ["interface", "worker"]) {
           expect(history.messages.filter(message => message.id === "deliberate")).toHaveLength(1);
           expect(history.messages.some(message => message.text === "The owner received your choice; verification is still needed."))
             .toBe(true);
+        }
+        if (ownerApp === "worker") {
+          const recoveredEvents = createEventInterface({ bus: recoveredBus, db: reopened,
+            hasApp: id => recoveredRuntime.host.hasApp(id),
+            validateAppInput: (id, input) => recoveredRuntime.host.assertAcceptsInput(id, input),
+          });
+          const send = (origin: string) => recoveredEvents.publish({
+            type: "conversation.message.created", target: { appId: origin }, idempotencyKey: "turn-1",
+            data: { conversationId: "primary", author: { kind: "human", id: `human-${origin}` },
+              text: `Feedback from ${origin}`, taskReply: { target, taskGeneration: 1 } },
+          }, { source: "control-socket" });
+          recoveredBus.setDeliveryRecorder((event, result) => {
+            if (event.type !== "conversation.message.created" || event.data.idempotencyKey !== "turn-1")
+              recoveredWriter.recordDelivery(event, result);
+          });
+          const publications = ["interface", "interface2", "worker"].map(origin => send(origin));
+          const exact = reopened.prepare("SELECT id, origin_event_id, idempotency_key, source_id, task_admission_key FROM app_inbox_items WHERE source_id LIKE 'human-%' ORDER BY source_id").all();
+          expect(exact).toHaveLength(3);
+          expect(new Set(exact.map(row => row.idempotency_key)).size).toBe(3);
+          for (const row of exact) {
+            const key = String(row.task_admission_key);
+            expect(reopenedStore.readTaskContext({ taskIds: [], admissionIds: [key] }).appTaskAdmissions![key]!)
+              .toMatchObject({ taskId: "question", inputEvent: { source: "human", data: { request: {
+                source: { kind: "human", id: row.source_id },
+              } } } });
+          }
+          // Simulate a retained pre-upgrade inbox key, then recreate the Host.
+          reopened.run("UPDATE app_inbox_items SET idempotency_key = 'turn-1' WHERE origin_event_id = ?", [publications[0]!.eventId]);
+          recoveredRuntime.close();
+          const retryRuntime = await startAppInboxRuntime({ registry, db: reopened, bus: recoveredBus, scanIntervalMs: 60_000,
+            attachTask: recoveredCapability.attach, admitConversation: recoveredCapability.admitConversation,
+            admitTaskEvent: recoveredCapability.admitEvent, hasTaskTarget: recoveredCapability.has,
+            previewTaskEvent: recoveredCapability.previewEvent, previewTaskEventRoutes: recoveredCapability.previewEventRoutes,
+          });
+          try {
+            recoveredBus.setDeliveryRecorder(recoveredWriter.recordDelivery);
+            for (const [index, origin] of ["interface", "interface2", "worker"].entries()) {
+              const retry = send(origin);
+              expect(retry).toMatchObject({ eventId: publications[index]!.eventId, delivery: "accepted" });
+            }
+            expect(reopened.prepare("SELECT id FROM app_inbox_items WHERE source_id LIKE 'human-%'").all()).toHaveLength(3);
+          } finally { retryRuntime.close(); }
         }
       } finally {
         stopWakes();
