@@ -66,6 +66,16 @@ CREATE INDEX IF NOT EXISTS idx_scorecard_attempts
   )
   WHERE instr(attempt_json, 'scorecard:') > 0;
 
+CREATE INDEX IF NOT EXISTS idx_gym_comparison_attempts
+  ON app_task_attempts(
+    COALESCE(
+      CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
+      started_at
+    ),
+    attempt_id
+  )
+  WHERE instr(attempt_json, 'gym-comparison:') > 0;
+
 CREATE INDEX IF NOT EXISTS idx_app_inbox_recovery_candidates
   ON app_inbox_items(id)
   WHERE recovery_json IS NOT NULL AND recovery_json != '{}';

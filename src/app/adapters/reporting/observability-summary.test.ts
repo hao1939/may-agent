@@ -1572,6 +1572,141 @@ describe("top-down Host vs. Apps observability summary", () => {
       } finally {
         recOnlyDb.close();
       }
+      // 7. Wave 4: Agent Live Scorecard (app-rubric-v1) + Gym pass^3 vs sub-3-trial rollups via idx_gym_comparison_attempts.
+      const gymDb = openDatabase(":memory:");
+      applyDbSchema(gymDb);
+      try {
+        gymDb
+          .prepare(
+            `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+             VALUES
+               ('alex', 'gym-pass3', 'comparison/may-v2', 1, 'completed', ?, ?),
+               ('alex', 'gym-k1', 'comparison/scout-v1', 1, 'completed', ?, ?),
+               ('alex', 'gym-unaccepted', 'comparison/draft', 1, 'failed', ?, ?),
+               ('alex', 'eval-may', 'review/may-1', 1, 'completed', ?, ?)`,
+          )
+          .run(
+            liveNow - 20_000,
+            JSON.stringify({
+              finishedAt: new Date(liveNow - 15_000).toISOString(),
+              acceptedResult: {
+                state: "converged",
+                facts: [
+                  `gym-comparison:${JSON.stringify({
+                    version: 1,
+                    agent: "may",
+                    candidate: "may-cand-v2",
+                    benchmark: "outcome-coordination",
+                    model: "gemini-4-argon",
+                    trialsPerScenario: 3,
+                    scenarioCount: 4,
+                    passedScenariosHatK: 3,
+                    baselinePassHatKRatio: 0.5,
+                    candidatePassHatKRatio: 0.75,
+                    trialPassRatio: 0.9167,
+                    verdict: "candidate-supported",
+                  })}`,
+                ],
+              },
+            }),
+            liveNow - 30_000,
+            JSON.stringify({
+              finishedAt: new Date(liveNow - 25_000).toISOString(),
+              acceptedResult: {
+                state: "converged",
+                facts: [
+                  `gym-comparison:${JSON.stringify({
+                    version: 1,
+                    agent: "scout",
+                    candidate: "scout-dev",
+                    benchmark: "research-evidence",
+                    model: "gemini-4-argon",
+                    trialsPerScenario: 1,
+                    scenarioCount: 4,
+                    passedScenariosHatK: 4,
+                    baselinePassHatKRatio: 0.75,
+                    candidatePassHatKRatio: 1,
+                    trialPassRatio: 1,
+                    verdict: "candidate-supported",
+                  })}`,
+                ],
+              },
+            }),
+            liveNow - 10_000,
+            JSON.stringify({
+              finishedAt: new Date(liveNow - 5_000).toISOString(),
+              unacceptedDraft: [
+                `gym-comparison:${JSON.stringify({
+                  version: 1,
+                  agent: "bob",
+                  trialsPerScenario: 3,
+                  scenarioCount: 4,
+                  candidatePassHatKRatio: 1,
+                })}`,
+              ],
+            }),
+            liveNow - 12_000,
+            JSON.stringify({
+              finishedAt: new Date(liveNow - 8_000).toISOString(),
+              acceptedResult: {
+                state: "converged",
+                facts: [
+                  `scorecard:${JSON.stringify({
+                    version: 1,
+                    targetKind: "app",
+                    appId: "may",
+                    taskId: "input/req-1",
+                    agent: "may",
+                    cohort: "req-1@g1",
+                    rubricVersion: "app-rubric-v1",
+                    dimensions: {
+                      outcomeValue: 4,
+                      correctnessAndEvidence: 4,
+                      autonomyAndRecovery: 3,
+                      efficiency: 4,
+                      humanCoordination: 4,
+                    },
+                  })}`,
+                ],
+              },
+            }),
+          );
+        const gymPlan = (
+          gymDb
+            .prepare(
+              `EXPLAIN QUERY PLAN SELECT attempt_id FROM app_task_attempts WHERE instr(attempt_json, 'gym-comparison:') > 0 AND COALESCE(CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), started_at) >= 0`,
+            )
+            .all() as Array<{ detail: string }>
+        )
+          .map((p) => p.detail)
+          .join(" | ");
+        expect(gymPlan).toContain("idx_gym_comparison_attempts");
+
+        const agentCaps = readAgentCapabilityRollups(gymDb, liveNow);
+        const mayCap = agentCaps("may");
+        expect(mayCap.scorecard7d).toMatchObject({ status: "scored", sampleSize: 1, gated: false });
+        expect(mayCap.gym).toMatchObject({
+          status: "pass_hat_3",
+          benchmark: "outcome-coordination",
+          trialsPerScenario: 3,
+          scenarioCount: 4,
+          passedScenariosHatK: 3,
+          passHat3Ratio: 0.75,
+          passHatKRatio: 0.75,
+          verdict: "candidate-supported",
+        });
+        const scoutCap = agentCaps("scout");
+        expect(scoutCap.gym).toMatchObject({
+          status: "sub_3_trials",
+          trialsPerScenario: 1,
+          passHat3Ratio: null,
+          passHatKRatio: 1,
+          trialPassRatio: 1,
+        });
+        expect(agentCaps("bob").gym).toMatchObject({ status: "not_run", passHat3Ratio: null });
+      } finally {
+        gymDb.close();
+      }
     } finally {
       boundaryDb.close();
     }

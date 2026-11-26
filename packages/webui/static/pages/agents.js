@@ -27,6 +27,70 @@ function setAgentsSearch(val) {
   renderAgentsRoster(true);
 }
 
+function renderGymPill(gym, showEmpty = false) {
+  if (!gym || gym.status === 'not_run') {
+    return showEmpty ? `<span class="td-score-pill" title="No retained Gym comparison fact in last 30 days">· No Gym run</span>` : '';
+  }
+  if (gym.status === 'pass_hat_3' && gym.passHat3Ratio != null) {
+    const pct = Math.round(Number(gym.passHat3Ratio) * 100);
+    const cls = pct >= 80 ? 'good' : pct >= 50 ? 'warn' : 'gated';
+    const icon = pct >= 80 ? '✓' : pct >= 50 ? '▲' : '✕';
+    const tip = `Gym pass^${gym.trialsPerScenario || 3} (${gym.benchmark || 'suite'}): ${gym.passedScenariosHatK ?? 0}/${gym.scenarioCount ?? 0} scenarios passed all ${gym.trialsPerScenario || 3} trials`;
+    return `<span class="td-score-pill ${cls}" title="${attrEsc(tip)}">${icon} Gym pass³ ${pct}%</span>`;
+  }
+  const k = gym.trialsPerScenario || 1;
+  const pct = Math.round(Number(gym.trialPassRatio ?? gym.passHatKRatio ?? 0) * 100);
+  const tip = `Gym k=${k} (${gym.benchmark || 'suite'}): ${pct}% trial pass — run k=3 for pass^3 consistency`;
+  return `<span class="td-score-pill" title="${attrEsc(tip)}">Gym k=${esc(String(k))} · ${pct}%</span>`;
+}
+
+function renderAgentEvaluationCompareCard(scorecard, gym) {
+  const dimLabels = [
+    ['outcomeValue', 'Outcome value'],
+    ['correctnessAndEvidence', 'Correctness & proof'],
+    ['autonomyAndRecovery', 'Autonomy & recovery'],
+    ['efficiency', 'Efficiency'],
+    ['humanCoordination', 'Human coordination'],
+  ];
+  const dims = scorecard?.dimensions || {};
+  const dimRows = dimLabels.map(([key, label]) => {
+    const d = dims[key];
+    const val = !d || (d.assessed === 0 && d.notApplicable === 0)
+      ? '—'
+      : d.assessed === 0 && d.notApplicable > 0
+        ? 'n/a'
+        : `${Number(d.mean ?? 0).toFixed(1)} / 4`;
+    return `<div class="agent-eval-dim-row"><span>${esc(label)}</span><span>${esc(val)}</span></div>`;
+  }).join('');
+  const livePill = typeof renderScorePill === 'function' ? renderScorePill(scorecard) : `<span class="td-score-pill">· Unscored</span>`;
+  const gymPill = renderGymPill(gym, true);
+  const liveMeta = scorecard?.sampleSize > 0
+    ? `${scorecard.sampleSize} cohort${scorecard.sampleSize === 1 ? '' : 's'} · ${esc(scorecard.confidence || 'low-sample')}${scorecard.latestAt ? ` · ${esc(timeAgo(scorecard.latestAt))}` : ''}`
+    : 'No live cohorts graded in 7d';
+  const gymMeta = gym && gym.status !== 'not_run'
+    ? `${esc(gym.benchmark || 'suite')} · ${gym.passedScenariosHatK ?? 0}/${gym.scenarioCount ?? 0} pass^${gym.trialsPerScenario || 1}${gym.verdict ? ` · ${esc(gym.verdict)}` : ''}${gym.latestAt ? ` · ${esc(timeAgo(gym.latestAt))}` : ''}`
+    : 'Run compare-candidate (trials=3) to establish pass^3';
+  return `<div class="agent-panel-card">
+    <div class="agent-panel-head"><h3>Evaluation: Live Rubric vs. Gym Consistency</h3></div>
+    <div class="agent-eval-compare-grid">
+      <div class="agent-eval-col">
+        <div class="agent-eval-col-head"><span>Live (7d · app-rubric-v1)</span>${livePill}</div>
+        <div class="agent-eval-sub">${liveMeta}</div>
+        <div class="agent-eval-dims">${dimRows}</div>
+      </div>
+      <div class="agent-eval-col">
+        <div class="agent-eval-col-head"><span>Gym (30d · pass³)</span>${gymPill}</div>
+        <div class="agent-eval-sub">${gymMeta}</div>
+        ${gym && gym.status === 'sub_3_trials'
+          ? `<div class="agent-eval-note">Latest run used k=${esc(String(gym.trialsPerScenario))}; promotion requires pass^3 (3/3 trials).</div>`
+          : gym && gym.model
+            ? `<div class="agent-eval-note">Model: <code>${esc(gym.model)}</code>${gym.candidate ? ` · Candidate: <code>${esc(gym.candidate)}</code>` : ''}</div>`
+            : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderAgentRoleBadge(a) {
   const isInterface = typeof humanInterface !== 'undefined' && humanInterface?.agent === a.name;
   if (isInterface) return `<span class="agent-role-pill interface">Interface · Owner</span>`;
@@ -64,6 +128,7 @@ function renderAgentCard(a) {
         <h3><a href="/agents/${encodeURIComponent(a.name)}" onclick="event.stopPropagation()">${esc(a.name)}</a></h3>
         ${renderAgentRoleBadge(a)}
         ${typeof renderScorePill === 'function' && a.scorecard7d?.sampleSize > 0 ? renderScorePill(a.scorecard7d) : ''}
+        ${renderGymPill(a.gym)}
       </div>
       ${a.model ? `<span class="model-chip">${esc(a.model)}</span>` : ''}
     </header>
@@ -236,6 +301,7 @@ async function renderAgentDetail(name) {
       <h2 style="margin:0;font-size:18px">${esc(name)}</h2>
       ${summary ? renderAgentRoleBadge(summary) : ''}
       ${summary && typeof renderScorePill === 'function' && summary.scorecard7d?.sampleSize > 0 ? renderScorePill(summary.scorecard7d) : ''}
+      ${summary ? renderGymPill(summary.gym) : ''}
       ${summary && summary.model ? `<span class="model-chip">${esc(summary.model)}</span>` : ''}
     </div>
     ${summary ? `<div class="agent-detail-kpis">
@@ -441,8 +507,9 @@ async function loadAgentOverview(name) {
 
     let html = `<div class="agent-overview-grid">`;
 
-    // ── Left column: Role/Config card + Owned Active Metrics ──
+    // ── Left column: Live vs. Gym Evaluation + Role/Config card + Owned Active Metrics ──
     html += `<div style="display:flex;flex-direction:column;gap:14px">`;
+    html += renderAgentEvaluationCompareCard(aboutRes?.scorecard7d, aboutRes?.gym);
     if (cfg) {
       html += `<div class="agent-panel-card">
         <div class="agent-panel-head"><h3>Configuration (agent.json)</h3></div>
