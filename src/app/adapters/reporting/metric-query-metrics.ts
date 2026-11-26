@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { MetricDefinition } from "../../../lib/metrics.js";
 import type { SqlQueryEvidence } from "../../../lib/db/query-performance.js";
 import { contentionNow, type ContentionSnapshot } from "../../../lib/db/contention-observations.js";
@@ -29,10 +30,10 @@ export type QueryAttempt = {
   durationMs: number;
   outcome: "ok" | "failed" | "busy" | "locked";
 };
-// v1: one prefix-compressed metric ID per invocation; fingerprint dictionary; invocation tuples.
+// v2 compresses the prefix-ID JSON with raw DEFLATE/base64url; v1 remains readable.
 // Millisecond offsets/durations use 0.01ms precision; the scalar retains full precision.
 export type QueryCohort = {
-  version: 1;
+  version: 1 | 2;
   passId: string;
   measuredAt: number;
   start: number;
@@ -43,7 +44,7 @@ export type QueryCohort = {
   dropped: number;
   status: "complete" | "incomplete";
   cohortFingerprint: string;
-  ids: Array<[number, string]>;
+  ids: Array<[number, string]> | string;
   fingerprints: string[];
   // fingerprint index, startOffsetMs, durationMs, outcome (omitted/0 ok, 1 failed, 2 busy, 3 locked)
   entries: Array<[number, number, number, number?]>;
@@ -60,7 +61,10 @@ export function cohortFingerprint(attempts: ReadonlyArray<Pick<QueryAttempt, "me
 
 export function decodeQueryCohort(cohort: QueryCohort): QueryAttempt[] {
   const ids: string[] = [];
-  for (const [prefix, suffix] of cohort.ids) ids.push((ids.at(-1) ?? "").slice(0, prefix) + suffix);
+  const encodedIds: Array<[number, string]> = cohort.version === 2
+    ? JSON.parse(inflateRawSync(Buffer.from(cohort.ids as string, "base64url"), { maxOutputLength: 512_000 }).toString())
+    : cohort.ids as Array<[number, string]>;
+  for (const [prefix, suffix] of encodedIds) ids.push((ids.at(-1) ?? "").slice(0, prefix) + suffix);
   return cohort.entries.map(([fingerprint, startOffsetMs, durationMs, outcome = 0], id) => ({
     metricId: ids[id], queryFingerprint: cohort.fingerprints[fingerprint], startOffsetMs, durationMs,
     outcome: outcomes[outcome],
@@ -114,17 +118,18 @@ export class MetricQueryObservations {
     const end = this.now();
     const attempts = [...this.attempts];
     const cohort: QueryCohort = {
-      version: 1, passId: `${process.pid}:${this.start}`, measuredAt, start: this.start, end,
+      version: 2, passId: `${process.pid}:${this.start}`, measuredAt, start: this.start, end,
       attempted: this.count, failed: this.failures, retained: 0, dropped: 0, status: "incomplete",
       cohortFingerprint: this.identity.copy().digest("hex").slice(0, 16), ids: [], fingerprints: [], entries: [],
     };
     const encode = () => {
       let previous = "";
-      cohort.ids = []; cohort.fingerprints = []; cohort.entries = [];
+      const ids: Array<[number, string]> = [];
+      cohort.fingerprints = []; cohort.entries = [];
       for (const a of attempts) {
         let prefix = 0;
         while (prefix < previous.length && previous[prefix] === a.metricId[prefix]) prefix++;
-        cohort.ids.push([prefix, a.metricId.slice(prefix)]);
+        ids.push([prefix, a.metricId.slice(prefix)]);
         previous = a.metricId;
         let fingerprint = cohort.fingerprints.indexOf(a.queryFingerprint);
         if (fingerprint < 0) { fingerprint = cohort.fingerprints.length; cohort.fingerprints.push(a.queryFingerprint); }
@@ -132,6 +137,7 @@ export class MetricQueryObservations {
         cohort.entries.push(outcome ? [fingerprint, a.startOffsetMs, a.durationMs, outcome] :
           [fingerprint, a.startOffsetMs, a.durationMs]);
       }
+      cohort.ids = deflateRawSync(JSON.stringify(ids)).toString("base64url");
       cohort.retained = attempts.length;
       cohort.dropped = this.count - attempts.length;
       cohort.status = !cohort.dropped && attempts.filter(a => a.outcome !== "ok").length === this.failures &&
@@ -161,6 +167,9 @@ export class MetricQueryObservations {
       busyWaitCount: "unknown", busyWaitMs: "unknown", lockWaitCount: "unknown", lockWaitMs: "unknown",
       busyFailures: this.busyFailures, lockedFailures: this.lockedFailures,
       writerCoverage: "unknown", checkpointCoverage: "unknown",
+      historyEvictions: contention?.evictions?.reduce((sum, e) => sum + e.count, 0) ?? 0,
+      historyLoss: contention?.evictions?.some(e => e.start === undefined || e.end === undefined ||
+        (e.start < end && e.end > this.start)) ? "unknown" : "none-observed",
       passOnlyWriters: { count: passOnlyWriters.length,
         totalMs: rounded(passOnlyWriters.reduce((sum, i) => sum + i.end - i.start, 0)) },
       dropped: (contention?.dropped ?? 0) + Math.max(0, witnesses.length - correlated.length), intervals: correlated,

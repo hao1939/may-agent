@@ -38,7 +38,8 @@ describe("state transaction delivery", () => {
       for (let i = 0; i < 130; i++) stateTransaction(db, () => undefined);
       expect(() => stateTransaction(db, () => { throw new Error("fixture rollback"); })).toThrow("fixture rollback");
       const history = readContentionObservations(db, "missing-fixture-directory");
-      expect(history).toMatchObject({ coverage: "unknown", dropped: 3 });
+      expect(history).toMatchObject({ coverage: "unknown", dropped: 0, evictions: [{ count: 3 }] });
+      expect(history.evictions![0].end).toBeLessThanOrEqual(history.intervals[0].start);
       expect(history.intervals).toHaveLength(128);
       expect(readContentionObservations(other, "missing-fixture-directory").intervals).toEqual([]);
     } finally { db.close(); other.close(); }

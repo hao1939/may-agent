@@ -15,8 +15,14 @@ preview was dropped for space. `cohort.status`, `attempted`, `retained` and
 `dropped` reconcile the actual invocation evidence independently. This does not
 change reuse eligibility.
 
-Cohort v1 has one prefix-compressed `ids` pair per invocation: prefix length
-from the preceding decoded ID, then suffix. `fingerprints` holds normalized SQL
+Cohort v2 stores `ids` as raw-DEFLATE-compressed JSON, encoded as base64url.
+The decoded JSON has one prefix-compressed pair per invocation: prefix length
+from the preceding decoded ID, then suffix. Compression is bounded to the
+retained identifier list (at most 256 IDs of 256 characters); it lets ordinary
+heterogeneous 44-query passes keep writer and checkpoint witnesses within the
+unchanged 4,000-character budget. The decoder also accepts v1 uncompressed pairs;
+notes without a cohort still have only historical previews. `fingerprints` holds
+normalized SQL
 SHA-256 identities (first 64 bits, base64url); no SQL, binds or results are stored
 in the cohort. Each `entries` tuple is `[fingerprintIndex, startOffsetMs,
 durationMs, outcome?]`, where omitted/0 is success, 1 failure, 2 BUSY and 3 LOCKED.
@@ -40,8 +46,13 @@ Existing maintenance PASSIVE checkpoints publish a bounded, atomically replaced
 reads these files, never checkpoints or probes locks. The 16-interval note cap
 prioritizes query overlaps (then checkpoint witnesses). Pass-only writers are
 summarized as a count and total duration, not allowed to evict query overlaps;
-actual interval loss is counted. Optional plans/SQL are trimmed before cohort
-entries. Missing, delayed, stale, dropped, colliding and in-flight coverage remains
+actual interval loss is counted. `contention.dropped` counts only pass-attributed
+losses and serialization/cap losses, not lifetime history evictions. Separate
+`historyEvictions` reports the latter. Capture retains a bounded time envelope
+of evicted intervals: `historyLoss` is unknown if that envelope could intersect
+the pass (or an older sidecar has no envelope), otherwise none-observed. This
+never promotes overall partial coverage to complete. Optional plans/SQL are
+trimmed before cohort entries. Missing, delayed, stale, dropped, colliding and in-flight coverage remains
 **unknown**, never evidence of no contention. Native busy/lock
 wait counts and times are unsupported by the SQLite APIs and remain unknown;
 observed BUSY/LOCKED failures are separate counts, not wait duration estimates.

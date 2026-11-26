@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { execFile } from "node:child_process";
 import { stateTransaction } from "../lib/db/transaction.js";
-import { contentionNow, publishCheckpointObservation, readContentionObservations } from "../lib/db/contention-observations.js";
+import { contentionNow, observeContention, publishCheckpointObservation, readContentionObservations } from "../lib/db/contention-observations.js";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,7 +13,7 @@ import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY, EVENT_DELIVERY_RESULT } from "./core/events/bus.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
-import { cohortFingerprint, decodeQueryCohort, METRIC_QUERY_DURATION_METRIC } from "./adapters/reporting/metric-query-metrics.js";
+import { cohortFingerprint, decodeQueryCohort, MetricQueryObservations, METRIC_QUERY_DURATION_METRIC } from "./adapters/reporting/metric-query-metrics.js";
 import * as database from "../lib/db.js";
 import { profileDatabase, SqlPerformance } from "../lib/db/query-performance.js";
 import * as queryPerformance from "../lib/db/query-performance.js";
@@ -64,11 +64,14 @@ describe("source-query metric measurement", () => {
   it("round-trips 44 SQL attempts including prepare/invalid/busy failures and correlates writer/checkpoint evidence", async () => {
     const db = getDb(persistDir);
     const metrics = createMetricService({ getDb: () => db });
+    const ids = ["accounts", "admission", "background", "collector", "dispatch", "execution", "heartbeat", "observation", "resources", "scheduler", "workflow"]
+      .flatMap(namespace => ["completed-attempts-six-hour-window", "oldest-active-read-age-in-seconds",
+        "running-source-query-duration-ms", "worker-read-failure-count-per-day"].map(name => `${namespace}.${name}`)).sort();
     for (let n = 0; n < 44; n++) metrics.define({
-      id: `cohort.fixture-${String(n).padStart(2, "0")}-source`, type: "gauge",
-      sourceQuery: n === 41 ? "SELECT * FROM missing_cohort_fixture" : n === 43 ? "SELECT 'invalid' AS value" : `SELECT ${n} AS value`,
+      id: ids[n], type: "gauge",
+      sourceQuery: n === 41 ? "SELECT * FROM missing_cohort_fixture" : n === 43 ? "SELECT 'invalid' AS value" : `SELECT ${n} AS value, ${n} AS field_${n}`,
     });
-    let elapsed = 100;
+    let elapsed = performance.now() + 10_000;
     const clock = spyOn(performance, "now").mockImplementation(() => elapsed);
     const open = database.openReadOnlyDatabase;
     let checkpoints = 0;
@@ -82,34 +85,36 @@ describe("source-query metric measurement", () => {
       return { ...actual, prepare(sql, options) {
         const statement = actual.prepare(sql, options);
         return { ...statement, get(...params) {
-          if (sql === "SELECT 42 AS value") throw Object.assign(new Error("fixture busy"), { code: "SQLITE_BUSY", errno: 5 });
+          if (sql === "SELECT 42 AS value, 42 AS field_42") throw Object.assign(new Error("fixture busy"), { code: "SQLITE_BUSY", errno: 5 });
           const result = statement.get(...params);
           elapsed += 2;
-          if (sql === "SELECT 0 AS value") {
+          if (sql === "SELECT 0 AS value, 0 AS field_0") {
             stateTransaction(db, () => { elapsed += 3; });
             publishCheckpointObservation(persistDir, {
               kind: "checkpoint", mode: "PASSIVE", start: performance.timeOrigin + elapsed - 2,
               end: performance.timeOrigin + elapsed + 1, busy: 1, log: 12, checkpointed: 8,
             });
           }
-          elapsed += 5;
+          elapsed += 1_271.37;
           return result;
         } };
       } };
     });
     try {
-      const result = await measureSourceMetrics({ bus, persistDir, isDue: row => row.id.startsWith("cohort.fixture-") });
+      const result = await measureSourceMetrics({ bus, persistDir, isDue: row => ids.includes(row.id) });
       expect(result.failures).toHaveLength(3);
       const sample = metrics.get(METRIC_QUERY_DURATION_METRIC.id)!.observation!;
       expect(sample.sampleSize).toBe(44);
       expect(sample.note!.length).toBeLessThanOrEqual(4_000);
       const note = JSON.parse(sample.note!);
-      expect(note.cohort).toMatchObject({ version: 1, attempted: 44, retained: 44, failed: 3, dropped: 0, status: "complete" });
+      expect(note.cohort).toMatchObject({ version: 2, attempted: 44, retained: 44, failed: 3, dropped: 0, status: "complete" });
       const attempts = decodeQueryCohort(note.cohort);
       expect(cohortFingerprint(attempts)).toBe(note.cohort.cohortFingerprint);
+      expect(new Set(attempts.map(a => a.queryFingerprint)).size).toBe(44);
+      expect(attempts.at(-1)!.startOffsetMs).toBeGreaterThan(50_000);
       expect(attempts.slice(-3).map(a => a.outcome)).toEqual(["failed", "busy", "failed"]);
       expect(attempts[41].queryFingerprint).toBe(queryPerformance.normalizedQueryFingerprint("SELECT * FROM missing_cohort_fixture"));
-      expect(note.contention).toMatchObject({ coverage: "unknown", busyFailures: 1, busyWaitMs: "unknown", busyWaitCount: "unknown" });
+      expect(note.contention).toMatchObject({ dropped: 0, coverage: "unknown", busyFailures: 1, busyWaitMs: "unknown", busyWaitCount: "unknown" });
       expect(note.contention.intervals).toEqual(expect.arrayContaining([
         expect.objectContaining({ kind: "writer", queries: [0], durationMs: 3 }),
         expect.objectContaining({ kind: "checkpoint", queries: [0], mode: "PASSIVE", busy: 1, walFrames: 12, checkpointedFrames: 8 }),
@@ -119,6 +124,38 @@ describe("source-query metric measurement", () => {
       expect(note.preview).toBe("top-3");
       expect(note.examplesTruncated).toBe(false);
     } finally { read.mockRestore(); writerSpy.mockRestore(); clock.mockRestore(); }
+  });
+
+  it("separates pre-pass writer/checkpoint history evictions from possible in-pass loss", () => {
+    const db = database.openDatabase(":memory:");
+    try {
+      for (let n = 0; n < 130; n++) {
+        observeContention(db, { kind: "writer", start: n, end: n + 0.5 });
+        publishCheckpointObservation(persistDir, { kind: "checkpoint", mode: "PASSIVE", start: n, end: n + 0.5 });
+      }
+      let now = 1_000;
+      const pass = new MetricQueryObservations(() => now);
+      pass.record("fixture.history", 100, false, undefined, { start: now, queryFingerprint: "a" });
+      now = 1_200;
+      const before = JSON.parse(pass.sample(1, readContentionObservations(db, persistDir))!.note);
+      expect(before.contention).toMatchObject({ dropped: 0, historyEvictions: 4, historyLoss: "none-observed", coverage: "unknown" });
+      expect(before.contention.intervals).toEqual([]);
+      for (let n = 0; n < 130; n++) {
+        observeContention(db, { kind: "writer", start: 1_000 + n, end: 1_001 + n });
+        publishCheckpointObservation(persistDir, { kind: "checkpoint", mode: "PASSIVE", start: 1_000 + n, end: 1_001 + n });
+      }
+      const after = JSON.parse(pass.sample(1, readContentionObservations(db, persistDir))!.note);
+      expect(after.contention.historyEvictions).toBe(264);
+      expect(after.contention.historyLoss).toBe("unknown");
+      expect(after.contention.coverage).toBe("unknown");
+      // Only observed witnesses removed by this pass's cap/budget count as dropped.
+      expect(after.contention.dropped + after.contention.intervals.length).toBe(98 + 128);
+      // Legacy sidecars with a lifetime count but no eviction time bounds stay unknown.
+      writeFileSync(join(persistDir, "checkpoint-observations.json"), JSON.stringify({ version: 1, intervals: [], dropped: 1 }));
+      const legacy = readContentionObservations(db, persistDir);
+      expect(legacy.evictions).toContainEqual({ count: 1 });
+      expect(legacy.dropped).toBe(0);
+    } finally { db.close(); }
   });
 
   it("correlates a real concurrent Host worker transaction with an unmocked SQL invocation", async () => {

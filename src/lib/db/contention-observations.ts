@@ -14,9 +14,16 @@ export type ContentionInterval = {
   log?: number;
   checkpointed?: number;
 };
-export type ContentionSnapshot = { intervals: ContentionInterval[]; dropped: number; coverage: "unknown" };
+type Eviction = { count: number; start?: number; end?: number };
+export type ContentionSnapshot = {
+  intervals: ContentionInterval[];
+  // Losses already attributed to this pass, NOT lifetime capture evictions.
+  dropped: number;
+  evictions?: Eviction[];
+  coverage: "unknown";
+};
 const limit = 128;
-type History = { intervals: ContentionInterval[]; dropped: number };
+type History = { intervals: ContentionInterval[]; dropped: number; evictionStart?: number; evictionEnd?: number };
 const local = new WeakMap<SqliteDb, History>();
 const publishers = new WeakMap<SqliteDb, { persistDir: string; timer?: ReturnType<typeof setTimeout> }>();
 // Fixed slots bound both disk use and read cost even across short-lived workers.
@@ -45,7 +52,12 @@ export function observeContention(db: SqliteDb, interval: ContentionInterval): v
   let history = local.get(db);
   if (!history) local.set(db, history = { intervals: [], dropped: 0 });
   history.intervals.push(interval);
-  if (history.intervals.length > limit) { history.intervals.shift(); history.dropped++; }
+  if (history.intervals.length > limit) {
+    const evicted = history.intervals.shift()!;
+    history.dropped++;
+    history.evictionStart = Math.min(history.evictionStart ?? Infinity, evicted.start);
+    history.evictionEnd = Math.max(history.evictionEnd ?? -Infinity, evicted.end);
+  }
   const publisher = publishers.get(db);
   if (publisher && !publisher.timer) {
     publisher.timer = setTimeout(() => flushWriterObservations(db), 100);
@@ -61,8 +73,14 @@ export function publishCheckpointObservation(persistDir: string, interval: Conte
   // One maintenance owner; bounded history survives process-per-pass maintenance.
   const previous = readCheckpointObservations(persistDir);
   const intervals = [...previous.intervals, interval];
-  const dropped = previous.dropped + Math.max(0, intervals.length - limit);
-  publish(path, { version: 1, intervals: intervals.slice(-limit), dropped });
+  const evictions = [...(previous.evictions ?? []), ...intervals.slice(0, -limit).map(i => ({ count: 1, start: i.start, end: i.end }))];
+  const dropped = evictions.reduce((sum, e) => sum + e.count, 0);
+  // Unknown bounds from an older sidecar stay unknown rather than inventing coverage.
+  const bounded = evictions.every(e => e.start !== undefined && e.end !== undefined);
+  publish(path, { version: 1, intervals: intervals.slice(-limit), dropped,
+    ...(dropped && bounded ? { evictionStart: Math.min(...evictions.map(e => e.start!)),
+      evictionEnd: Math.max(...evictions.map(e => e.end!)) } : {}),
+  });
 }
 
 function publish(path: string, value: unknown): void {
@@ -92,7 +110,11 @@ function readSnapshot(path: string, kind: ContentionInterval["kind"]): Contentio
         v.end < v.start || [v.busy, v.log, v.checkpointed].some(n => n !== undefined && !Number.isFinite(n)))) {
       throw new Error("Invalid observation");
     }
-    return { intervals: value.intervals, dropped: value.dropped, coverage: "unknown" };
+    const bounded = Number.isFinite(value.evictionStart) && Number.isFinite(value.evictionEnd) && value.evictionEnd >= value.evictionStart;
+    return { intervals: value.intervals, dropped: 0, coverage: "unknown",
+      evictions: value.dropped ? [{ count: value.dropped,
+        ...(bounded ? { start: value.evictionStart, end: value.evictionEnd } : {}) }] : [],
+    };
   } catch { return { intervals: [], dropped: 0, coverage: "unknown" }; }
 }
 
@@ -103,7 +125,11 @@ export function readContentionObservations(db: SqliteDb, persistDir: string): Co
   const workers = Array.from({ length: writerSlots }, (_, slot) => readSnapshot(writerPath(persistDir, slot), "writer"));
   return {
     intervals: [...(history?.intervals ?? []), ...checkpoint.intervals, ...workers.flatMap(w => w.intervals)],
-    dropped: (history?.dropped ?? 0) + checkpoint.dropped + workers.reduce((sum, w) => sum + w.dropped, 0),
+    dropped: 0,
+    evictions: [
+      ...(history?.dropped ? [{ count: history.dropped, start: history.evictionStart, end: history.evictionEnd }] : []),
+      ...(checkpoint.evictions ?? []), ...workers.flatMap(w => w.evictions ?? []),
+    ],
     coverage: "unknown",
   };
 }

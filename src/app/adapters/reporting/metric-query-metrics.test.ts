@@ -46,7 +46,7 @@ test("44 attempts survive the note budget with fingerprints, multiplicity, failu
   const sample = observations.sample(epoch + 1_125)!;
   const note = JSON.parse(sample.note);
   expect(sample.note.length).toBeLessThanOrEqual(4_000);
-  expect(note.cohort).toMatchObject({ version: 1, attempted: 44, failed: 3, retained: 44, dropped: 0, status: "complete" });
+  expect(note.cohort).toMatchObject({ version: 2, attempted: 44, failed: 3, retained: 44, dropped: 0, status: "complete" });
   expect(decodeQueryCohort(note.cohort)).toEqual(expected);
   expect(note.cohort.cohortFingerprint).toBe(cohortFingerprint(expected));
   expect(cohortFingerprint(expected.slice(1))).not.toBe(cohortFingerprint(expected));
@@ -122,4 +122,16 @@ test("capture and serialization overflow are explicitly incomplete, not a comple
   const escaped = new MetricQueryObservations(() => 100);
   for (let n = 0; n < 6; n++) escaped.record(`${n}${"\u0001".repeat(255)}`, n, false);
   expect(escaped.sample(1)!.note.length).toBeLessThanOrEqual(4_000);
+});
+
+test("historical v1 ID pairs remain decodable alongside v2 compressed IDs", () => {
+  const observations = new MetricQueryObservations(() => 100);
+  observations.record("fixture.first", 1, false, undefined, { start: 100, queryFingerprint: "a" });
+  observations.record("fixture.second", 2, true, undefined, { start: 102, queryFingerprint: "b" });
+  const cohort = JSON.parse(observations.sample(1)!.note).cohort;
+  const current = decodeQueryCohort(cohort);
+  expect(cohort.version).toBe(2);
+  expect(typeof cohort.ids).toBe("string");
+  expect(decodeQueryCohort({ ...cohort, version: 1, ids: [[0, "fixture.first"], [8, "second"]] })).toEqual(current);
+  expect(cohortFingerprint(current)).toBe(cohort.cohortFingerprint);
 });
