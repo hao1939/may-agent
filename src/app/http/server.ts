@@ -456,15 +456,6 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     json,
     platformUiContentTypeFor,
   });
-  const { handleAgents, handleAgentAbout } = createAgentRouteHandlers({
-    stateDir: STATE_DIR,
-    agentsRoot: AGENTS_ROOT,
-    sharedRoot: SHARED_ROOT,
-    projectsRoot: PROJECTS_ROOT,
-    getDb: _db,
-    json,
-    readProjects,
-  });
   function listLoadedAppsSafe(): ReadonlyArray<Record<string, unknown>> | null {
     try {
       const apps = services.listApps();
@@ -473,6 +464,17 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
       return null;
     }
   }
+
+  const { handleAgents, handleAgentAbout } = createAgentRouteHandlers({
+    stateDir: STATE_DIR,
+    agentsRoot: AGENTS_ROOT,
+    sharedRoot: SHARED_ROOT,
+    projectsRoot: PROJECTS_ROOT,
+    getDb: _db,
+    listLoadedApps: listLoadedAppsSafe,
+    json,
+    readProjects,
+  });
 
   const { handleLiveness, handleMetrics, handleBrowse, handleKnowledgeSearch, handleAlertResolve } =
     createMetricAndKnowledgeRouteHandlers({
