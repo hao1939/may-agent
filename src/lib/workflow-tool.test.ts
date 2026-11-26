@@ -500,19 +500,24 @@ export async function execute(ctx) {
     expect(await running).toMatchObject({ type: "done", summary: "parent result" });
   });
 
-  it("cancels the active step and rejects late workflow effects", async () => {
+  it.each([0, 25])("cancels an entered step on caller abort and rejects late effects (setup delay: %sms)", async (setupDelay) => {
     const root = workflowRoot("workflow-timeout-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
+    const lateAttempt = join(root, "late-effect-attempted");
     writeFileSync(
       join(workflowDir, "timeout.ts"),
       `
+import { writeFileSync } from "node:fs";
 export const name = "timeout";
-export const description = "Timeout test workflow";
+export const description = "Caller cancellation test workflow";
+if (${setupDelay}) await new Promise(resolve => setTimeout(resolve, ${setupDelay}));
 export async function execute(ctx) {
   try {
     await ctx.call("global/worker", { prompt: "wait forever" });
   } catch {}
+  // Prove the authored continuation reaches the fenced Host API after abort.
+  writeFileSync(${JSON.stringify(lateAttempt)}, "attempted");
   await ctx.events.emit({ type: "test.late-effect", data: {} });
   return ctx.done("late completion");
 }
@@ -522,10 +527,13 @@ export async function execute(ctx) {
     let workflowRunId = "";
     let resolveStep!: (result: any) => void;
     let cancelled = 0;
+    const entered = Promise.withResolvers<void>();
+    const caller = new AbortController();
     const callAgent = (_agent: string, _task: string, opts: { workflowRunId?: string }) => {
       workflowRunId = opts.workflowRunId ?? "";
       return new Promise((resolve) => {
         resolveStep = resolve;
+        entered.resolve();
       });
     };
     const manager = {
@@ -552,16 +560,22 @@ export async function execute(ctx) {
       workflowDir,
       agentName: "owner",
       agentDefinitions: workerDefs,
-      executionTimeoutMs: 10,
+      signal: caller.signal,
       onEvent: (event) => events.push(event),
     });
 
-    const result = await runner.run("timeout", "test");
-    await Bun.sleep(20);
+    const running = runner.run("timeout", "test");
+    await Promise.race([
+      entered.promise,
+      running.then(() => { throw new Error("Workflow ended before its helper entered"); }),
+    ]);
+    caller.abort(new Error("fixture caller stopped"));
+    const result = await running;
 
     expect(result.type).toBe("error");
-    expect(result.type === "error" ? result.error : "").toContain('Workflow "timeout" timed out after 10ms');
+    expect(result.type === "error" ? result.error : "").toContain("fixture caller stopped");
     expect(cancelled).toBe(1);
+    expect(existsSync(lateAttempt)).toBe(true);
     expect(events.some((event) => event.type === "test.late-effect")).toBe(false);
   });
 
