@@ -249,9 +249,9 @@ function escapeSqlLiteral(value: string): string {
 }
 
 /**
- * Generates the 5 canonical evolution metric definitions for an enabled App (`<appId>.*`).
- * All new evolution metrics start in trend-first mode (`alert.disabled: true`) so sparklines
- * accumulate cleanly before thresholds are calibrated.
+ * Generates the canonical evolution & reliability metric definitions for an enabled App (`<appId>.*`).
+ * `<appId>.failure_ratio_24h` has sustained alerting enabled (`> 20%`, `consecutive: 2`, `minSampleSize: 5`)
+ * routed to the App's owner, while trend-only efficiency/leverage metrics keep `alert.disabled: true`.
  */
 export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): MetricDefinition[] {
   const sqlApp = escapeSqlLiteral(appId);
@@ -356,6 +356,58 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
             'outcomes', outc.n
           ) AS note
         FROM u, unpriced_att, outc`,
+    },
+    {
+      id: `${appId}.failure_ratio_24h`,
+      name: `${appId}: execution failure ratio (24h)`,
+      owner: ownerAgent,
+      project: appId,
+      type: "gauge",
+      unit: "ratio",
+      measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
+      threshold: 0.2,
+      alertOp: ">",
+      priority: "P2",
+      config: {
+        scope: `app:${appId}`,
+        handler: ownerAgent,
+        alert: { mode: "sustained", consecutive: 2, minSampleSize: 5 },
+      },
+      source: "App-owned failed Task attempts + standalone error workflows over evaluated App runs (24h)",
+      description:
+        "Fraction [0..1] of evaluated App executions (settled + App-failed Task attempts, plus standalone top-level finished workflows) failing in the rolling 24h window. Excludes normal waiting/interrupted steps and Host-owned plumbing failures.",
+      sourceQuery: `WITH att AS (
+          SELECT
+            COUNT(CASE WHEN state = 'failed' AND NOT (${HOST_ATTEMPT_FAILURE_SQL}) THEN 1 END) AS app_failed,
+            COUNT(CASE WHEN (
+              (state = 'completed' AND accepted_result_state IS NOT NULL)
+              OR state = 'failed'
+            ) AND NOT (${HOST_ATTEMPT_FAILURE_SQL}) THEN 1 END) AS app_evaluated
+          FROM app_task_attempts
+          WHERE +app_id = ${sqlApp}
+            AND ${terminal24h}
+        ),
+        wf AS (
+          SELECT
+            COUNT(CASE WHEN status = 'error' THEN 1 END) AS err_wf,
+            COUNT(CASE WHEN status IN ('done', 'error', 'blocked') THEN 1 END) AS eval_wf
+          FROM workflow_runs
+          WHERE parentWorkflowRunId IS NULL
+            AND (attempt_id IS NULL OR trim(attempt_id) = '')
+            AND endedAt >= ${NOW_SQL} - ${DAY_MS} AND endedAt < ${NOW_SQL}
+            AND COALESCE(NULLIF(trim(app_id), ''), NULLIF(trim(projectId), '')) = ${sqlApp}
+        )
+        SELECT
+          CAST(att.app_failed + wf.err_wf AS REAL) / NULLIF(att.app_evaluated + wf.eval_wf, 0) AS value,
+          att.app_evaluated + wf.eval_wf AS sampleSize,
+          ${NOW_SQL} AS measuredAt,
+          json_object(
+            'appFailedAttempts', att.app_failed,
+            'appEvaluatedAttempts', att.app_evaluated,
+            'standaloneErrorWorkflows', wf.err_wf,
+            'standaloneEvaluatedWorkflows', wf.eval_wf
+          ) AS note
+        FROM att, wf`,
     },
     {
       id: `${appId}.spin_ratio_24h`,

@@ -1430,6 +1430,93 @@ describe("top-down Host vs. Apps observability summary", () => {
       expect(repairedSummary.host.trends.settlementIntegrity).toMatchObject({ current: 0.25, sampleSize: 4 });
       // App 'alex' still counts both converged accepted results (att-settled + att-repaired-completed = 2)!
       expect(repairedSummary.apps.find((a) => a.appId === "alex")?.outcomes.convergedMilestonesWindow).toBe(2);
+
+      // 7. Per-App failure_ratio_24h alerts on sustained App/workflow failures (>20%, consecutive=2, minSampleSize=5)
+      // while staying 0% on healthy waiting/interrupted turns, excluding Host failures, and avoiding linked-workflow double counts.
+      for (let i = 0; i < 5; i++) {
+        ins.run(
+          "aks-rp-e2e",
+          `aks-wait-${i}`,
+          "t-k8s",
+          "completed",
+          liveNow - 20_000 + i,
+          JSON.stringify({
+            finishedAt: new Date(liveNow - 10_000 + i).toISOString(),
+            acceptedResult: { state: "waiting" },
+          }),
+        );
+      }
+      const aksFailDef = buildAppEvolutionMetrics("aks-rp-e2e", "aks-explorer").find(
+        (d) => d.id === "aks-rp-e2e.failure_ratio_24h",
+      )!;
+      expect(aksFailDef).toMatchObject({
+        owner: "aks-explorer",
+        project: "aks-rp-e2e",
+        threshold: 0.2,
+        alertOp: ">",
+      });
+      // 5 waiting attempts + 1 interrupted restart requeue -> 0 failures out of 5 evaluated runs (0.0, quiet)!
+      expect(boundaryDb.prepare(aksFailDef.sourceQuery!).get()).toMatchObject({ value: 0, sampleSize: 5 });
+
+      // On 'alex': 1 clean settled + 2 App failed (att-model-loop, att-handler-blocked); Host failures (att-settlement-bug,
+      // att-repaired-completed, att-ws-finalize-err) are excluded! Add 1 standalone error workflow + 1 standalone done workflow
+      // + 1 linked error workflow (with attempt_id -> NOT double-counted) => (2 + 1) / (3 + 2) = 3 / 5 = 0.6!
+      boundaryDb
+        .prepare(
+          `INSERT INTO workflow_runs(runId, workflow, task, status, app_id, attempt_id, startedAt, endedAt)
+           VALUES
+             ('wf-standalone-err', 'alex/audit', 'audit', 'error', 'alex', NULL, ?, ?),
+             ('wf-standalone-ok', 'alex/check', 'check', 'done', 'alex', NULL, ?, ?),
+             ('wf-linked-dup', 'alex/dup', 'dup', 'error', 'alex', 'att-model-loop', ?, ?)`,
+        )
+        .run(
+          liveNow - 19_000,
+          liveNow - 9_000,
+          liveNow - 18_000,
+          liveNow - 8_000,
+          liveNow - 17_000,
+          liveNow - 7_000,
+        );
+      const alexFailDef = buildAppEvolutionMetrics("alex", "alex").find((d) => d.id === "alex.failure_ratio_24h")!;
+      const alexSample = boundaryDb.prepare(alexFailDef.sourceQuery!).get() as { value: number; sampleSize: number };
+      expect(alexSample).toMatchObject({ value: 0.6, sampleSize: 5 });
+
+      let evalClock = liveNow - 5_000;
+      const evalMs = createMetricService({ getDb: () => boundaryDb, now: () => evalClock });
+      evalMs.define(alexFailDef);
+      evalMs.record(alexFailDef.id, alexSample.value, { sampleSize: alexSample.sampleSize, measuredAt: evalClock });
+      expect(evalMs.evaluate(alexFailDef.id)[0]?.status).toBe("unknown"); // consecutive: 2 requires 2 samples
+      evalClock = liveNow - 1_000;
+      evalMs.record(alexFailDef.id, alexSample.value, { sampleSize: alexSample.sampleSize, measuredAt: evalClock });
+      expect(evalMs.evaluate(alexFailDef.id)[0]?.status).toBe("breached");
+
+      const withAppAlert = readObservabilitySummary(boundaryDb, {
+        query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+        projectsRoot: join(root, "projects"),
+        stateDir: root,
+        loadedApps: [
+          { id: "alex", owner: "alex" },
+          { id: "aks-rp-e2e", owner: "aks-explorer" },
+          { id: "may", owner: "may" },
+        ],
+        now: liveNow,
+      });
+      expect(withAppAlert.apps.find((a) => a.appId === "aks-rp-e2e")?.trends?.failureRatio).toMatchObject({
+        current: 0,
+        sampleSize: 5,
+      });
+      expect(withAppAlert.apps.find((a) => a.appId === "alex")?.trends?.failureRatio).toMatchObject({
+        current: 0.6,
+        sampleSize: 5,
+      });
+      expect(withAppAlert.alerts).toContainEqual(
+        expect.objectContaining({
+          metricId: "alex.failure_ratio_24h",
+          scope: { kind: "app", appId: "alex" },
+          declaredOwner: "alex",
+          declaredHandler: "alex",
+        }),
+      );
     } finally {
       boundaryDb.close();
     }

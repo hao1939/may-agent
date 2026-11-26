@@ -358,6 +358,7 @@ function renderTopDownObservability(data, options = {}) {
       <div class="td-trend-body">
         ${renderTrendRow(tr.verifiedOutcomes, days)}
         ${renderTrendRow(tr.costPerOutcomeUsd, days)}
+        ${renderTrendRow(tr.failureRatio, days)}
         ${renderTrendRow(tr.spinRatio, days)}
         ${renderTrendRow(tr.workflowOffloadRatio, days)}
         ${renderTrendRow(tr.autonomyRatio, days)}

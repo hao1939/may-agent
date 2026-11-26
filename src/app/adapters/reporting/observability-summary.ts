@@ -1011,6 +1011,8 @@ function buildWindowTrends(
          COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state IS NOT NULL AND NOT (${hostFailureExpr}) THEN 1 END) AS settled,
          COUNT(CASE WHEN ${hostFailureExpr} THEN 1 END) AS hostFailed,
          COUNT(CASE WHEN (${hostFailureExpr} OR ${hostPreemptionExpr}) THEN 1 END) AS hostFriction,
+         COUNT(CASE WHEN a.state = 'failed' AND NOT (${hostFailureExpr}) THEN 1 END) AS appFailed,
+         COUNT(CASE WHEN ((a.state = 'completed' AND a.accepted_result_state IS NOT NULL) OR a.state = 'failed') AND NOT (${hostFailureExpr}) THEN 1 END) AS appEvaluated,
          COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state = 'converged' THEN 1 END) AS converged,
          COUNT(CASE WHEN COALESCE(a.accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged
        FROM app_task_attempts a
@@ -1024,6 +1026,8 @@ function buildWindowTrends(
     settled: number;
     hostFailed: number;
     hostFriction: number;
+    appFailed: number;
+    appEvaluated: number;
     converged: number;
     nonConverged: number;
   }>;
@@ -1067,7 +1071,9 @@ function buildWindowTrends(
          MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((endedAt - ?) / ? AS INTEGER))) AS b,
          COUNT(CASE WHEN status IN ('done', 'error', 'blocked', 'interrupted') THEN 1 END) AS total,
          COUNT(CASE WHEN status = 'done' THEN 1 END) AS done,
-         COUNT(CASE WHEN status = 'error' THEN 1 END) AS errors
+         COUNT(CASE WHEN status = 'error' THEN 1 END) AS errors,
+         COUNT(CASE WHEN (attempt_id IS NULL OR trim(attempt_id) = '') AND status = 'error' THEN 1 END) AS standaloneErrors,
+         COUNT(CASE WHEN (attempt_id IS NULL OR trim(attempt_id) = '') AND status IN ('done', 'error', 'blocked') THEN 1 END) AS standaloneEvaluated
        FROM workflow_runs
        WHERE parentWorkflowRunId IS NULL AND endedAt >= ? AND endedAt < ?
        GROUP BY 1, b`,
@@ -1078,6 +1084,8 @@ function buildWindowTrends(
     total: number;
     done: number;
     errors: number;
+    standaloneErrors: number;
+    standaloneEvaluated: number;
   }>;
 
   // 3. Execution usage bucket facts (cache hit, cost, prompt tax, prep latency).
@@ -1163,6 +1171,8 @@ function buildWindowTrends(
     pricedUsd: number[];
     pricedCount: number[];
     unpricedCount: number[];
+    appFailures: number[];
+    appFailureExposure: number[];
     nonConverged: number[];
     finishedAttempts: number[];
     agentExecutions: number[];
@@ -1180,6 +1190,8 @@ function buildWindowTrends(
         pricedUsd: zeros(),
         pricedCount: zeros(),
         unpricedCount: zeros(),
+        appFailures: zeros(),
+        appFailureExposure: zeros(),
         nonConverged: zeros(),
         finishedAttempts: zeros(),
         agentExecutions: zeros(),
@@ -1202,6 +1214,8 @@ function buildWindowTrends(
       const a = ensureApp(r.appId);
       a.outcomes[r.b] += r.converged;
       a.outcomeExposure[r.b] += r.terminal;
+      a.appFailures[r.b] += r.appFailed;
+      a.appFailureExposure[r.b] += r.appEvaluated;
       a.nonConverged[r.b] += r.nonConverged;
       a.finishedAttempts[r.b] += r.terminal;
     }
@@ -1220,6 +1234,8 @@ function buildWindowTrends(
       const a = ensureApp(r.appId);
       a.wfDone[r.b] += r.done;
       a.wfTotal[r.b] += r.total;
+      a.appFailures[r.b] += r.standaloneErrors;
+      a.appFailureExposure[r.b] += r.standaloneEvaluated;
     }
   }
 
@@ -1358,6 +1374,7 @@ function buildWindowTrends(
     {
       verifiedOutcomes: TrendSeries;
       costPerOutcomeUsd: TrendSeries;
+      failureRatio: TrendSeries;
       spinRatio: TrendSeries;
       workflowOffloadRatio: TrendSeries;
       autonomyRatio: TrendSeries;
@@ -1400,6 +1417,15 @@ function buildWindowTrends(
         exposures: a.outcomeExposure,
       }),
       costPerOutcomeUsd: costSeries,
+      failureRatio: buildRatioTrend({
+        metricId: `${appId}.failure_ratio_24h`,
+        label: "Failure rate",
+        unit: "ratio",
+        goodDirection: "down",
+        bucketStarts,
+        numerators: a.appFailures,
+        denominators: a.appFailureExposure,
+      }),
       spinRatio: buildRatioTrend({
         metricId: `${appId}.spin_ratio_24h`,
         label: "Spin / cycling ratio",
