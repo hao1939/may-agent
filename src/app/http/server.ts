@@ -38,6 +38,7 @@ export { extractMarkdownSection, projectEventTargetForPath } from "./project-rou
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
+import { observabilitySummaryQuery, readObservabilitySummary } from "../adapters/reporting/observability-summary.js";
 import { readMetricHistory } from "../adapters/reporting/metric-observations.js";
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import { findEventPublication, getEventView, type EventInterface } from "../core/events/interface.js";
@@ -53,6 +54,7 @@ export type DaemonHttpServices = {
   getStatus(): ExecutionStatus;
   getAppConversation(appId: string, conversationId: string, options?: { limit?: number }): AppConversationResource;
   listApps(appId?: string): unknown[];
+  listAppDirMap?(): ReadonlyMap<string, string>;
   listTasks(options?: Record<string, unknown>): HumanTaskPage;
   getTask(input: Record<string, unknown>): HumanTaskView | null;
 };
@@ -455,21 +457,42 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     json,
     platformUiContentTypeFor,
   });
+  function listLoadedAppsSafe(): ReadonlyArray<Record<string, unknown>> | null {
+    try {
+      const apps = services.listApps();
+      return Array.isArray(apps) ? (apps as ReadonlyArray<Record<string, unknown>>) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function listAppDirMapSafe(): ReadonlyMap<string, string> | null {
+    try {
+      return services.listAppDirMap?.() ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   const { handleAgents, handleAgentAbout } = createAgentRouteHandlers({
     stateDir: STATE_DIR,
     agentsRoot: AGENTS_ROOT,
     sharedRoot: SHARED_ROOT,
     projectsRoot: PROJECTS_ROOT,
     getDb: _db,
+    listLoadedApps: listLoadedAppsSafe,
+    listAppDirMap: listAppDirMapSafe,
     json,
     readProjects,
   });
+
   const { handleLiveness, handleMetrics, handleBrowse, handleKnowledgeSearch, handleAlertResolve } =
     createMetricAndKnowledgeRouteHandlers({
       agentsRoot: AGENTS_ROOT,
       sharedRoot: SHARED_ROOT,
       projectsRoot: PROJECTS_ROOT,
       getDb: _db,
+      listLoadedApps: listLoadedAppsSafe,
       json,
       sendDaemonFrame,
       buildPublishFrame,
@@ -510,6 +533,27 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
       if (url.pathname === "/api/browse") return handleBrowse(url);
       if (url.pathname === "/api/knowledge/search") return handleKnowledgeSearch(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);
+      if (url.pathname === "/api/observability") {
+        if (req.method !== "GET") return json({ error: "GET required" }, 405);
+        let query: ReturnType<typeof observabilitySummaryQuery>;
+        try {
+          query = observabilitySummaryQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid observability filter" }, 400);
+        }
+        try {
+          return json(
+            readObservabilitySummary(_db(), {
+              query,
+              projectsRoot: PROJECTS_ROOT,
+              stateDir: STATE_DIR,
+              loadedApps: listLoadedAppsSafe(),
+            }),
+          );
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Observability read failed" }, 503);
+        }
+      }
       if (url.pathname === "/api/context-usage") {
         let query: ReturnType<typeof contextUsageQuery>;
         try {
@@ -517,7 +561,11 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
         } catch (error) {
           return json({ error: error instanceof Error ? error.message : "Invalid usage filter" }, 400);
         }
-        return json(readContextUsage(_db(), query));
+        try {
+          return json(readContextUsage(_db(), query));
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Context usage read failed" }, 503);
+        }
       }
       if (url.pathname === "/api/task-attempts") {
         if (req.method !== "GET") return json({ error: "GET required" }, 405);

@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { assertConvertedTaskReceipts } from "../lib/db/legacy-task-formats.js";
 import type { ApprovalProposal } from "@may-agent/control/events";
 import type { TaskStatus } from "@may-agent/sdk/app";
@@ -1067,6 +1068,15 @@ export class HumanTaskService {
         },
       ];
     });
+  }
+
+  /** Internal directory -> canonical App ID map from the loaded AppRegistry; never exposed over HTTP. */
+  listAppDirMap(): ReadonlyMap<string, string> {
+    const map = new Map<string, string>();
+    for (const entry of this.registry.snapshot().entries) {
+      if (entry.appDir) map.set(resolve(entry.appDir), entry.definition.id);
+    }
+    return map;
   }
 
   listTasks(
