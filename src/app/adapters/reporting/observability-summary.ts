@@ -7,6 +7,8 @@ import { taskViewPhaseSql } from "../../core/state/task-view-phase.js";
 import {
   ATTEMPT_FINISH_LOOKBACK_SLACK_MS,
   attemptFinishMsSql,
+  hostAttemptFailurePredicateSql,
+  hostAttemptPreemptionPredicateSql,
   terminalAttemptWindowPredicateSql,
 } from "./evolution-metrics.js";
 import { METRIC_LIST_LIMIT, readMetricObservations } from "./metric-observations.js";
@@ -998,6 +1000,8 @@ function buildWindowTrends(
   // 1a. Terminal Attempt bucket facts (Host + per-App) aligned on shared finish-time cohort `[start, end)`.
   const finishMsExpr = attemptFinishMsSql("a");
   const terminalCohortPredicate = terminalAttemptWindowPredicateSql("?", "?", "a");
+  const hostFailureExpr = hostAttemptFailurePredicateSql("a");
+  const hostPreemptionExpr = hostAttemptPreemptionPredicateSql("a");
   const terminalAttemptBuckets = db
     .prepare(
       `SELECT
@@ -1005,7 +1009,8 @@ function buildWindowTrends(
          MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((${finishMsExpr} - ?) / ? AS INTEGER))) AS b,
          COUNT(*) AS terminal,
          COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state IS NOT NULL THEN 1 END) AS settled,
-         COUNT(CASE WHEN a.state IN ('failed', 'interrupted') THEN 1 END) AS friction,
+         COUNT(CASE WHEN ${hostFailureExpr} THEN 1 END) AS hostFailed,
+         COUNT(CASE WHEN (${hostFailureExpr} OR ${hostPreemptionExpr}) THEN 1 END) AS hostFriction,
          COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state = 'converged' THEN 1 END) AS converged,
          COUNT(CASE WHEN COALESCE(a.accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged
        FROM app_task_attempts a
@@ -1017,7 +1022,8 @@ function buildWindowTrends(
     b: number;
     terminal: number;
     settled: number;
-    friction: number;
+    hostFailed: number;
+    hostFriction: number;
     converged: number;
     nonConverged: number;
   }>;
@@ -1141,7 +1147,7 @@ function buildWindowTrends(
 
   const zeros = () => Array.from({ length: TREND_BUCKETS }, () => 0);
   const hostSettled = zeros();
-  const hostTerminal = zeros();
+  const hostSettlementExposure = zeros();
   const hostFriction = zeros();
   const hostExecUnits = zeros();
   const hostCacheRead = zeros();
@@ -1189,8 +1195,8 @@ function buildWindowTrends(
 
   for (const r of terminalAttemptBuckets) {
     hostSettled[r.b] += r.settled;
-    hostTerminal[r.b] += r.terminal;
-    hostFriction[r.b] += r.friction;
+    hostSettlementExposure[r.b] += r.settled + r.hostFailed;
+    hostFriction[r.b] += r.hostFriction;
     hostExecUnits[r.b] += r.terminal;
     if (r.appId) {
       const a = ensureApp(r.appId);
@@ -1210,8 +1216,6 @@ function buildWindowTrends(
   }
 
   for (const r of wfBuckets) {
-    hostFriction[r.b] += r.errors;
-    hostExecUnits[r.b] += r.total;
     if (r.appId) {
       const a = ensureApp(r.appId);
       a.wfDone[r.b] += r.done;
@@ -1315,7 +1319,7 @@ function buildWindowTrends(
       goodDirection: "up",
       bucketStarts,
       numerators: hostSettled,
-      denominators: hostTerminal,
+      denominators: hostSettlementExposure,
       extraDenominator: unresolvedRecoveryCount,
     }),
     prepLatencyP95: prepTrend,
@@ -2108,15 +2112,24 @@ export function readObservabilitySummary(
       .get(start, end) as { finished: number; errors: number };
 
     const hostTerminalPredicate = terminalAttemptWindowPredicateSql("?", "?");
+    const hostFailurePredicate = hostAttemptFailurePredicateSql();
+    const hostPreemptionPredicate = hostAttemptPreemptionPredicateSql();
     const hostTerminalRow = db
       .prepare(
         `SELECT
            COUNT(*) AS terminal,
-           COUNT(CASE WHEN state = 'failed' THEN 1 END) AS failed
+           COUNT(CASE WHEN ${hostFailurePredicate} THEN 1 END) AS hostFailed,
+           COUNT(CASE WHEN ${hostPreemptionPredicate} THEN 1 END) AS preempted,
+           COUNT(CASE WHEN state = 'failed' THEN 1 END) AS appAndHostFailed
          FROM app_task_attempts
          WHERE ${hostTerminalPredicate}`,
       )
-      .get(end, start, end) as { terminal: number; failed: number };
+      .get(end, start, end) as {
+      terminal: number;
+      hostFailed: number;
+      preempted: number;
+      appAndHostFailed: number;
+    };
 
     const hostFailoverRow = db
       .prepare(
@@ -2128,7 +2141,10 @@ export function readObservabilitySummary(
       .get(start, end) as { failovers: number };
     const hostAttemptRow = {
       terminal: hostTerminalRow.terminal,
-      failed: hostTerminalRow.failed,
+      hostFailed: hostTerminalRow.hostFailed,
+      preempted: hostTerminalRow.preempted,
+      failed: hostTerminalRow.hostFailed,
+      allFailed: hostTerminalRow.appAndHostFailed,
       failovers: hostFailoverRow.failovers,
     };
 
@@ -2555,6 +2571,8 @@ export function readObservabilitySummary(
         workflowFinishedWindow: hostWorkflowRow.finished,
         workflowErrorsWindow: hostWorkflowRow.errors,
         terminalTaskAttemptsWindow: hostAttemptRow.terminal,
+        hostFailedAttemptsWindow: hostAttemptRow.hostFailed,
+        preemptedAttemptsWindow: hostAttemptRow.preempted,
         failedTaskAttemptsWindow: hostAttemptRow.failed,
       },
       recovery: {

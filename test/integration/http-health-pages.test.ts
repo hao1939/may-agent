@@ -682,14 +682,19 @@ describe("served workflow and metric health pages", () => {
           await page.setViewport({ width, height: 900 });
           for (const [route, selector] of [["/", "#workflow-overview"], ["/metrics", "#metrics-workflows"]]) {
             await page.goto(base + route, { waitUntil: "domcontentloaded" });
-            await page.waitForSelector(selector + " .health-card");
-            const cards = await page.$$eval(selector + " .health-card", cards => cards.map(card => {
-              const style = getComputedStyle(card);
-              const label = getComputedStyle(card.querySelector(".health-label")!);
-              const value = getComputedStyle(card.querySelector(".health-value")!);
-              return { border: parseFloat(style.borderTopWidth), padding: parseFloat(style.paddingTop),
-                labelSize: parseFloat(label.fontSize), valueSize: parseFloat(value.fontSize), weight: Number(value.fontWeight) };
-            }));
+            const handle = await page.waitForFunction((sel) => {
+              const found = Array.from(document.querySelectorAll(sel + " .health-card"));
+              if (!found.length || document.styleSheets.length === 0) return null;
+              return found.map(card => {
+                const style = getComputedStyle(card);
+                const label = getComputedStyle(card.querySelector(".health-label")!);
+                const value = getComputedStyle(card.querySelector(".health-value")!);
+                return { border: parseFloat(style.borderTopWidth), padding: parseFloat(style.paddingTop),
+                  labelSize: parseFloat(label.fontSize), valueSize: parseFloat(value.fontSize), weight: Number(value.fontWeight) };
+              });
+            }, {}, selector);
+            const cards = await handle.jsonValue();
+            await handle.dispose();
             expect(cards).toHaveLength(5);
             for (const card of cards) {
               expect(card.border).toBeGreaterThan(0);

@@ -1255,4 +1255,141 @@ describe("top-down Host vs. Apps observability summary", () => {
       r4Db.close();
     }
   });
+
+  test("separates Host settlement defects from graceful restart requeues and App handler failures across SQL collectors and summary", () => {
+    const liveNow = Date.now();
+    const boundaryDb = openDatabase(":memory:");
+    applyDbSchema(boundaryDb);
+    try {
+      const ins = boundaryDb.prepare(
+        `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+         VALUES (?, ?, ?, 1, ?, ?, ?)`,
+      );
+      // 1. Cleanly settled attempt
+      ins.run(
+        "alex",
+        "att-settled",
+        "t-ok",
+        "completed",
+        liveNow - 60_000,
+        JSON.stringify({ finishedAt: new Date(liveNow - 50_000).toISOString(), acceptedResult: { state: "converged" } }),
+      );
+      // 2. Graceful daemon restart requeue (interrupted) -> churn only, NOT settlement failure
+      ins.run(
+        "aks-rp-e2e",
+        "att-restart-requeue",
+        "t-k8s",
+        "interrupted",
+        liveNow - 55_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 45_000).toISOString(),
+          failureReason: "previous-runtime-attempt-requeued",
+        }),
+      );
+      // 3. Explicit human stop (interrupted) -> neither settlement failure nor involuntary harness churn
+      ins.run(
+        "may",
+        "att-owner-stop",
+        "t-chat",
+        "interrupted",
+        liveNow - 52_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 42_000).toISOString(),
+          failureReason: "owner-stopped",
+        }),
+      );
+      // 4. App/model handler execution failure & blocked result -> App spin/blocker, NOT Host defect
+      ins.run(
+        "alex",
+        "att-model-loop",
+        "t-loop",
+        "failed",
+        liveNow - 48_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 38_000).toISOString(),
+          failureReason: "HandlerExecutionFailed",
+          summary: "<end_of_image><end_of_image>",
+        }),
+      );
+      ins.run(
+        "alex",
+        "att-handler-blocked",
+        "t-blocked",
+        "failed",
+        liveNow - 46_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 36_000).toISOString(),
+          failureReason: "handler-blocked",
+        }),
+      );
+
+      const settlementSql = HOST_HARNESS_METRICS.find((m) => m.id === "host.settlement_integrity_ratio")!.sourceQuery!;
+      const burdenSql = HOST_HARNESS_METRICS.find((m) => m.id === "host.harness_burden_ratio")!.sourceQuery!;
+
+      // With 0 Host-owned failures: Host settlement integrity is 100% (1/1), while harness burden is 1/5 = 0.2 (the 1 restart requeue).
+      expect(boundaryDb.prepare(settlementSql).get()).toMatchObject({ value: 1, sampleSize: 1 });
+      expect(boundaryDb.prepare(burdenSql).get()).toMatchObject({ value: 0.2, sampleSize: 5 });
+
+      const healthyHostSummary = readObservabilitySummary(boundaryDb, {
+        query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+        projectsRoot: join(root, "projects"),
+        stateDir: root,
+        loadedApps: [
+          { id: "alex", owner: "alex" },
+          { id: "aks-rp-e2e", owner: "aks-explorer" },
+          { id: "may", owner: "may" },
+        ],
+        now: liveNow,
+      });
+      expect(healthyHostSummary.host.plumbing).toMatchObject({
+        terminalTaskAttemptsWindow: 5,
+        hostFailedAttemptsWindow: 0,
+        preemptedAttemptsWindow: 1,
+        failedTaskAttemptsWindow: 0,
+      });
+      expect(healthyHostSummary.host.trends.settlementIntegrity).toMatchObject({ current: 1, sampleSize: 1 });
+      expect(healthyHostSummary.host.trends.harnessBurdenRatio).toMatchObject({ current: 0.2, sampleSize: 5 });
+      // Meanwhile, App 'alex' truthfully records its 2 failed handler attempts and 2/3 = 0.6667 spin ratio!
+      const alexCard = healthyHostSummary.apps.find((a) => a.appId === "alex")!;
+      expect(alexCard.blockers.failedAttemptsWindow).toBe(2);
+      expect(alexCard.trends?.spinRatio).toMatchObject({ current: 0.6667, sampleSize: 3 });
+
+      // 5. Real Host settlement failure ('HandlerResultSettlementFailed') immediately lowers Host settlement integrity to 1/2 = 0.5!
+      ins.run(
+        "alex",
+        "att-settlement-bug",
+        "t-settle-err",
+        "failed",
+        liveNow - 30_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 20_000).toISOString(),
+          failureReason: "HandlerResultSettlementFailed",
+        }),
+      );
+      expect(boundaryDb.prepare(settlementSql).get()).toMatchObject({ value: 0.5, sampleSize: 2 });
+      expect(boundaryDb.prepare(burdenSql).get()).toMatchObject({ value: 2 / 6, sampleSize: 6 });
+
+      const degradedHostSummary = readObservabilitySummary(boundaryDb, {
+        query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+        projectsRoot: join(root, "projects"),
+        stateDir: root,
+        loadedApps: [
+          { id: "alex", owner: "alex" },
+          { id: "aks-rp-e2e", owner: "aks-explorer" },
+          { id: "may", owner: "may" },
+        ],
+        now: liveNow,
+      });
+      expect(degradedHostSummary.host.plumbing).toMatchObject({
+        terminalTaskAttemptsWindow: 6,
+        hostFailedAttemptsWindow: 1,
+        preemptedAttemptsWindow: 1,
+        failedTaskAttemptsWindow: 1,
+      });
+      expect(degradedHostSummary.host.trends.settlementIntegrity).toMatchObject({ current: 0.5, sampleSize: 2 });
+      expect(degradedHostSummary.host.trends.harnessBurdenRatio).toMatchObject({ current: 0.3333, sampleSize: 6 });
+    } finally {
+      boundaryDb.close();
+    }
+  });
 });
