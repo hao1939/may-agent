@@ -28,6 +28,29 @@ execution place. Unbound direct execution fails closed, while saved
 terminal-result reads remain free. Definition inspection is still a read of
 trusted source; this is neither a code sandbox nor an online activation barrier.
 
+## Shared preparation and Task ownership
+
+Standalone and hosted calls format the canonical `{ prompt, data? }` assignment
+through the SDK's `formatExecutionInput`. Hosted preparation also delegates
+readonly tool filtering to the shared SDK. Host adapters add the current Task
+context and controls; they do not define a second helper input or tool policy.
+`workflow-input-parity.test.ts` and `test/integration/helper-model-parity.test.ts`
+cover the assignment, effective tools, real reads and corrective finish feedback.
+
+A Task binding supplies identity, fencing and background to bounded helpers.
+Only the owning Task invocation receives its reconciliation tool from the
+managed-agent adapter. A helper's generic `finish` returns its contribution to
+its caller; it does not settle the owning Task. Invocation-specific tool bindings
+are neither captured definitions nor capabilities inherited by helper calls.
+
+Session observations refresh the claim without replacing its recorded executing
+process. A workflow's helper remains a helper even without a parent agent session.
+The Task runtime and reconciler tests cover these ownership boundaries. Apps
+decide how to interpret interrupted work using the existing Task requests and
+accepted results; this shared preparation adds no recovery ledger or scheduler.
+Host still has its own invocation supervision; these changes do not establish
+complete standalone/Host execution convergence.
+
 ## Shared execution environment
 
 Agents, App workflows, Task workers and native executors inherit the environment
