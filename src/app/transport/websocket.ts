@@ -164,7 +164,7 @@ export function createDaemonWebSocketTransport(options: {
         wake &&
         (
           (state.task?.appId === wake.appId && state.task.taskId === wake.taskId) ||
-          (isTaskDerivedViewWake(event) && state.taskApps.has(wake.appId))
+          (isTaskDerivedViewWake(event) && (state.taskApps.has("*") || state.taskApps.has(wake.appId)))
         )
       ) {
         sendWake({ type: "app.task.updated", data: wake });

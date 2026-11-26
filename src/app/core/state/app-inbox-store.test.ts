@@ -29,6 +29,8 @@ describe("App inbox store", () => {
     // Model an existing installation before the page indexes are installed.
     db.exec("DROP INDEX IF EXISTS idx_app_inbox_conversation_recent");
     db.exec("DROP INDEX IF EXISTS idx_app_inbox_topic_recent");
+    db.exec("DROP INDEX IF EXISTS idx_app_inbox_conversation_origin_recent");
+    db.exec("DROP INDEX IF EXISTS idx_app_inbox_conversation_origin_topic_recent");
     let sequence = 100;
     for (const [id, appId, conversationId, topicId, now] of [
       ["old", "reader", "primary", "selected", 100],
@@ -46,9 +48,12 @@ describe("App inbox store", () => {
         input: { kind: "message", data: { text: id } },
       });
     }
+    createAppInboxItem(db, { id: "cross-app", appId: "worker", conversationAppId: "reader", conversationId: "primary",
+      conversationSequence: 123, topicId: "selected", now: 350,
+      source: { kind: "human", id: "cross-app" }, input: { kind: "message", data: { text: "Cross-App reply" } } });
     const pages = [
-      { topicId: undefined, ids: ["no-topic", "new", "tie-z"] },
-      { topicId: "selected", ids: ["tie-z", "tie-a", "old"] },
+      { topicId: undefined, ids: ["no-topic", "cross-app", "new"] },
+      { topicId: "selected", ids: ["cross-app", "tie-z", "tie-a"] },
     ];
     const before = pages.map(({ topicId }) => listAppInboxConversationItems(db, "reader", "primary", 3, topicId));
     applyDbSchema(db);
@@ -75,8 +80,8 @@ describe("App inbox store", () => {
       expect(after.map((item) => item.id)).toEqual(ids);
     }
     expect(plans).toHaveLength(2);
-    expect(plans[0]?.some((step) => step.includes("idx_app_inbox_conversation_recent"))).toBe(true);
-    expect(plans[1]?.some((step) => step.includes("idx_app_inbox_topic_recent"))).toBe(true);
+    expect(plans[0]?.some((step) => step.includes("idx_app_inbox_conversation_origin_recent"))).toBe(true);
+    expect(plans[1]?.some((step) => step.includes("idx_app_inbox_conversation_origin_topic_recent"))).toBe(true);
     expect(plans.flat().some((step) => step.includes("TEMP B-TREE") || step.startsWith("SCAN app_inbox_items"))).toBe(false);
   });
 

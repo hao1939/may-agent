@@ -30,7 +30,9 @@ function record(value: unknown, field: string): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-export function validateCurrentApproval(input: EventInput, db: SqliteDb): void {
+export function validateCurrentApproval(
+  input: EventInput, db: SqliteDb, options: { proposalOnly?: boolean } = {},
+): void {
   const appId = text(input.target?.appId, "project.approval.submitted target.appId");
   const taskId = text(input.target?.taskId, "project.approval.submitted target.taskId");
   const proposal = record(input.data.proposal, "project.approval.submitted data.proposal");
@@ -88,6 +90,9 @@ export function validateCurrentApproval(input: EventInput, db: SqliteDb): void {
       }
     }
   }
+  // Legacy explicit proposal feedback must still name the exact current proposal.
+  // It is not a decision and cannot acquire approval authority.
+  if (options.proposalOnly) return;
   const stamp = record(input.data.hostApproval, "project.approval.submitted data.hostApproval");
   if (!matchesAppTaskCondition(condition, { ...input, source: stamp.ingressSource })) {
     throw new ApprovalValidationError(`Decision is not allowed by Condition ${conditionId}`);

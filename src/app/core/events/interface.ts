@@ -555,11 +555,11 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
     const item = db
       .prepare(
         `SELECT id, status FROM app_inbox_items
-         WHERE app_id = ? AND (origin_event_id = ? OR idempotency_key = ?)
+         WHERE origin_event_id = ? OR (app_id = ? AND idempotency_key = ?)
          ORDER BY CASE WHEN origin_event_id = ? THEN 0 ELSE 1 END
          LIMIT 1`,
       )
-      .get(appId, eventId, idempotencyKey, eventId) as { id?: unknown; status?: unknown } | undefined;
+      .get(eventId, appId, idempotencyKey, eventId) as { id?: unknown; status?: unknown } | undefined;
     if (typeof item?.id === "string") {
       addLink({
         kind: "request",

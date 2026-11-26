@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   target_task_generation INTEGER,
   topic_id            TEXT,
   continues_request_id TEXT,
+  conversation_app_id TEXT,
   conversation_id     TEXT,
   conversation_seq    INTEGER,
   channel             TEXT,
@@ -84,6 +85,11 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation
 -- Recent pages use creation order, independently of admission sequence.
 CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation_recent
   ON app_inbox_items(app_id, conversation_id, created_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation_origin_recent
+  ON app_inbox_items(COALESCE(conversation_app_id, app_id), conversation_id, created_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation_origin_topic_recent
+  ON app_inbox_items(COALESCE(conversation_app_id, app_id), conversation_id, topic_id, created_at DESC, id DESC)
+  WHERE topic_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_app_inbox_topic_recent
   ON app_inbox_items(app_id, conversation_id, topic_id, created_at DESC, id DESC)
   WHERE topic_id IS NOT NULL;

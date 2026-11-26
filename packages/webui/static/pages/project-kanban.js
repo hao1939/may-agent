@@ -252,7 +252,7 @@ function filterProjectTasks(value) {
 }
 
 function projectTaskSteeringHtml() {
-  return `<h4>Send feedback to this Task</h4><textarea id="kanban-steer-text" class="kanban-steer-text" placeholder="Send a message or guidance for this Task..." oninput="delete this.dataset.idempotencyKey"></textarea>
+  return `<h4>Send feedback to this Task</h4><p>Generation-fenced feedback, not an exact question answer or approval. For those actions, open <code>/task &lt;ref&gt;</code> then <code>/reply &lt;ref&gt; &lt;text&gt;</code> in Console, or reply to the exact Telegram question/proposal card. Refresh stale cards; feedback does not complete work or amend its scope.</p><textarea id="kanban-steer-text" class="kanban-steer-text" placeholder="Send a message or guidance for this Task..." oninput="delete this.dataset.idempotencyKey"></textarea>
     <div class="kanban-steer-actions"><button onclick="sendProjectSteering()">Send message</button></div>
     <div id="kanban-steer-status" class="kanban-steer-status"></div>`;
 }

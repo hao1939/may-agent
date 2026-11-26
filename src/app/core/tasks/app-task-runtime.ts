@@ -966,7 +966,7 @@ export function attachLoadedAppTask(input: {
         ...input,
         taskId,
         agent: config.agent,
-      }) as AgentEvent,
+      }, config.resourceStore.db) as AgentEvent,
     );
     const eventId = event[EVENT_ROW_ID];
     if (!Number.isSafeInteger(eventId) || Number(eventId) <= 0)

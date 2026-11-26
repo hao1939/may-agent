@@ -1,3 +1,4 @@
+import { getAppInboxItem, inputConversationAppId } from "../state/app-inbox-store.js";
 import {
   ExecutionDeferredError,
   taskAgentResultSchema as appTaskAgentResultSchema,
@@ -256,9 +257,13 @@ function runtimeTaskAttempt(
   // Finish fallible context reads before acquiring subscriptions. If preparation
   // fails, no abandoned observer remains outside the attempt cleanup boundary.
   const inputs = readTaskInputs(appTaskConfig(descriptor), claim);
-  const conversationIds = [
-    ...new Set(inputs.flatMap((input) => (input.communication ? [input.communication.conversationId] : []))),
-  ];
+  const conversationAppForInput = (input: (typeof inputs)[number]) => {
+    const item = getAppInboxItem(descriptor.resourceStore.db, input.id);
+    return item ? inputConversationAppId(descriptor.resourceStore.db, item) : descriptor.id;
+  };
+  const conversationAddresses = [...new Map(inputs.flatMap(input => input.communication
+    ? [[JSON.stringify([conversationAppForInput(input), input.communication.conversationId]),
+        { appId: conversationAppForInput(input), id: input.communication.conversationId }] as const] : [])).values()];
   const taskReadOptions = {
     getDb: () => descriptor.resourceStore.db,
     taskStateConfig: appTaskConfig(descriptor),
@@ -293,9 +298,10 @@ function runtimeTaskAttempt(
         if (closed) throw new Error("Task attempt is closed");
         const config = appTaskConfig(descriptor);
         const item = readTaskCommunicationInput(config, claim, inputId);
+        const appId = inputConversationAppId(config.resourceStore.db, item);
         return query
-          ? readConversationContext(config.resourceStore.db, item.appId, item.conversationId!, query)
-          : readAppConversationResource(config.resourceStore.db, item.appId, item.conversationId!, { limit: 40 });
+          ? readConversationContext(config.resourceStore.db, appId, item.conversationId!, query)
+          : readAppConversationResource(config.resourceStore.db, appId, item.conversationId!, { limit: 40 });
       },
       contract: async (appId) => readInstalledAppContract(configuredRegistryEntries(opts), appId),
       tasks: taskReads,
@@ -324,12 +330,12 @@ function runtimeTaskAttempt(
     events: {
       ...readAppTaskReconciliationEvents(descriptor.resourceStore, claim),
       inputs: inputs.map(({ input: _payload, ...context }) => context),
-      ...(conversationIds.length
+      ...(conversationAddresses.length
         ? {
-            communication: conversationIds.map((id) => {
-              const selected = inputs.filter((input) => input.communication?.conversationId === id);
+            communication: conversationAddresses.map(({ appId, id }) => {
+              const selected = inputs.filter((input) => input.communication?.conversationId === id && conversationAppForInput(input) === appId);
               const current = selected.filter(({ source }) => source.kind === "human").at(-1) ?? selected.at(-1)!;
-              const resource = readAppConversationResource(descriptor.resourceStore.db, descriptor.id, id, {
+              const resource = readAppConversationResource(descriptor.resourceStore.db, appId, id, {
                 limit: 40,
               });
               return boundedAppRequestConversation(
@@ -339,7 +345,7 @@ function runtimeTaskAttempt(
                   requests: [
                     ...listConversationInputRequests(
                       descriptor.resourceStore.db,
-                      descriptor.id,
+                      appId,
                       id,
                       selected.map(({ id }) => id),
                     ),

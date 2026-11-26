@@ -1,3 +1,8 @@
+import { attachTelegramBot } from "../../src/app/transport/telegram.js";
+import { HumanTaskService } from "../../src/app/human-task-service.js";
+import { readAppConversationResource } from "../../src/app/core/state/conversations.js";
+import { applyTaskCommunication } from "../../src/app/core/tasks/task-communication.js";
+import { stateTransaction } from "../../src/lib/db/transaction.js";
 import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -8,10 +13,10 @@ import { startAppInboxRuntime } from "../../src/app/composition/app-inbox-runtim
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import { createEventInterface, findEventPublication } from "../../src/app/core/events/interface.js";
-import { createAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
+import { createAppInboxItem, inputConversationAppId } from "../../src/app/core/state/app-inbox-store.js";
 import { createAppTaskEvents } from "../../src/app/core/tasks/app-task-emitter.js";
 import { createAppTaskCapability } from "../../src/app/core/tasks/app-task-capability.js";
-import { appTaskContext, observeAppTaskIntent } from "../../src/app/core/tasks/app-task-reconciler.js";
+import { appTaskContext, claimObservedAppTask, observeAppTaskIntent } from "../../src/app/core/tasks/app-task-reconciler.js";
 import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../../src/app/core/tasks/app-task-runtime.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
@@ -163,3 +168,263 @@ test("public targeted input retains its receipt, attaches once and reaches only 
     rmSync(root, { recursive: true, force: true });
   }
 }, 10_000);
+
+// Real configured Conversation admission and owning Task receipts, without a
+// model call. The start gate blocks execution, not journal/admission writes.
+for (const ownerApp of ["interface", "worker"]) {
+  test(`displayed question reaches its ${ownerApp} owner; passive views stay Conversation`, async () => {
+    const root = mkdtempSync(join(tmpdir(), "human-question-ingress-"));
+    const persistDir = join(root, "state");
+    for (const appId of ["interface", "worker"]) {
+      mkdirSync(join(root, `${appId}.app/tasks`), { recursive: true });
+      writeFileSync(join(root, `${appId}.app/tasks/seed.json`), JSON.stringify({
+        root_task_id: "root", groups: { root: { id: "root", parent_id: null } },
+        resources: {
+          question: {
+            metadata: { id: "question", generation: 1, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: "Choose a fixture environment", acceptance: ["Choice considered"] },
+            status: { phase: "waiting", observedGeneration: 1, conditionIds: ["environment"], updatedAt: new Date().toISOString() },
+          },
+        },
+        conditions: {
+          environment: {
+            metadata: { id: "environment", generation: 1, resourceVersion: 1 },
+            spec: { type: "fixture.choice", subject: "environment", owner: "human", requestedAction: "Choose an environment" },
+            status: { state: "unknown", observedGeneration: 0 },
+          },
+        },
+      }));
+      writeFileSync(join(root, `${appId}.app/app.js`), `export default {
+        id: ${JSON.stringify(appId)}, version: 1, agent: "owner", tasks: {},
+        inputSchema: { type: "object", required: ["kind", "data"], properties: {
+          kind: { const: "message" }, data: { type: "object" }
+        } },
+        ${appId === "interface" ? 'conversation: { mode: "task", inputKinds: ["message"], conversationId: "primary" },' : ""}
+        task() { throw new Error("An exact reply must bypass mapping"); }
+      };`);
+    }
+    const db = getDb(persistDir);
+    const bus = new EventBus();
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const registry = new AppRegistry(discoverAppDefinitions(root));
+    await registry.reload();
+    const gate = Promise.withResolvers<void>();
+    await installAppTaskRuntimes({
+      projectRoot: root, projectsRoot: root, persistDir, bus,
+      appRegistrySnapshot: registry.snapshot(), startAfter: gate.promise,
+    }, { deferRecovery: true });
+    const capability = createAppTaskCapability({ bus, db });
+    const runtime = await startAppInboxRuntime({
+      registry, db, bus, scanIntervalMs: 60_000,
+      attachTask: capability.attach, admitConversation: capability.admitConversation,
+      admitTaskEvent: capability.admitEvent, hasTaskTarget: capability.has,
+      previewTaskEvent: capability.previewEvent, previewTaskEventRoutes: capability.previewEventRoutes,
+    });
+    const events = createEventInterface({
+      bus, db, hasApp: id => runtime.host.hasApp(id),
+      validateAppInput: (id, input) => runtime.host.assertAcceptsInput(id, input),
+    });
+    const receipts: AgentEvent[] = [];
+    const unlisten = bus.listen(event => { if (event.type === "app.task.requested") receipts.push(event); });
+    const publish = (id: string, extra: Record<string, unknown> = {}, source = "control-socket") => events.publish({
+      type: "conversation.message.created", target: { appId: "interface" }, idempotencyKey: id,
+      data: { conversationId: "primary", author: { kind: "human", id }, text: "Use the isolated fixture", ...extra },
+    }, { source });
+    const waitFor = async (count: number) => {
+      const deadline = Date.now() + 2_000;
+      while (receipts.length < count && Date.now() < deadline) await Bun.sleep(5);
+      expect(receipts).toHaveLength(count);
+    };
+    try {
+      const target = { appId: ownerApp, taskId: "question" };
+      const condition = { taskGeneration: 1, conditionId: "environment", conditionGeneration: 1 };
+      const taskReply = { target, taskGeneration: 1, condition };
+      // Older passive clients, explicit single/multi-Task views, and no view all
+      // admit once to the real retained Conversation executor, never the watch.
+      for (const [index, context] of [
+        {}, { focusedTask: { appId: "interface", taskId: "question" } },
+        { focusedTask: { appId: "worker", taskId: "question" } },
+        { taskRefs: [{ appId: "interface", taskId: "question" }, { appId: "worker", taskId: "question" }] },
+        { focusedTask: target, displayedHumanCondition: condition },
+        { focusedTask: target, displayedHumanCondition: condition, ingress: { provider: "telegram", replyToMessageId: 7 } },
+      ].entries()) {
+        const first = publish(`passive-${index}`, { context });
+        expect(publish(`passive-${index}`, { context }).eventId).toBe(first.eventId);
+      }
+      const rows = db.prepare("SELECT target_task_id, execution_task_id FROM app_inbox_items").all();
+      expect(rows).toHaveLength(6);
+      for (const row of rows) {
+        expect(row.target_task_id).toBeNull();
+        expect(typeof row.execution_task_id).toBe("string");
+      }
+      const before = receipts.length;
+      // Simulate a committed owner admission with an unconfirmed outer HTTP
+      // receipt. Retrying must run the retained route, not today's card lookup.
+      bus.setDeliveryRecorder((event, result) => {
+        if (event.type === "conversation.message.created" && event.data.idempotencyKey === "deliberate") return;
+        writer.recordDelivery(event, result);
+      });
+      const admitted = publish("deliberate", { replyTo: "shown-question", taskReply });
+      expect(admitted.delivery).toBe("recorded");
+      await waitFor(before + 1);
+      const received = receipts.at(-1)!;
+      expect(received.source).toBe("human");
+      expect(received.target).toEqual({ project: ownerApp, taskId: "question" });
+      expect(received.data).toMatchObject({ ...condition, request: {
+        source: { kind: "human", id: "deliberate" }, input: { data: { message: "Use the isolated fixture" } },
+      } });
+      const requestId = (received.data.request as { id: string }).id;
+      const shown = readAppConversationResource(db, "interface", "primary");
+      expect(shown.messages.filter(message => message.id === "deliberate")).toHaveLength(1);
+      if (ownerApp !== "interface") expect(readAppConversationResource(db, ownerApp, "primary").messages
+        .some(message => message.id === "deliberate")).toBe(false);
+      expect(events.get(admitted.eventId)!.links).toContainEqual({ kind: "request", id: requestId, state: "handling" });
+      const store = AppTaskResourceStore.activeFromDb(db, ownerApp)!;
+      const item = runtime.host.get(requestId)!;
+      // The durable envelope retains the address even after journal retention.
+      expect(inputConversationAppId(db, { ...item, originEventId: undefined })).toBe("interface");
+      const retained = store.readTaskContext({ taskIds: [], admissionIds: [item.taskAdmissionKey!] })
+        .appTaskAdmissions![item.taskAdmissionKey!]!;
+      expect(retained.inputEvent?.data).toMatchObject({ ...condition, request: { source: { kind: "human", id: "deliberate" } } });
+      // Input is not a decision, automatic Condition fulfillment or external completion.
+      const task = store.readTask("question")!;
+      const question = store.readTaskContext({ taskIds: ["question"] }).conditions!.environment!;
+      expect(question.status.state).toBe("unknown");
+      expect(question.metadata.generation).toBe(1);
+      expect(store.commit({
+        fences: [{ taskId: "question", resourceVersion: task.metadata.resourceVersion }],
+        conditions: [{ ...question, metadata: { ...question.metadata, generation: 2, resourceVersion: 2 } }],
+      })).toBe(true);
+      const count = db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()!.n;
+      // Reusing the original HTTP identity after a lost response must retain the
+      // saved route/receipt, even though its question has since been replaced.
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      const retried = publish("deliberate", { replyTo: "shown-question", taskReply });
+      expect(retried.eventId).toBe(admitted.eventId);
+      expect(retried.delivery).toBe("accepted");
+      expect(db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()!.n).toBe(count);
+      // A new send to that stale card stays an honest ordinary Conversation turn.
+      publish("stale", { replyTo: "shown-question", taskReply });
+      expect(db.prepare("SELECT target_task_id, execution_task_id FROM app_inbox_items WHERE source_id = 'stale'").get())
+        .toMatchObject({ target_task_id: null, execution_task_id: rows[0]!.execution_task_id });
+      expect(receipts.filter(event => event.target?.taskId === "question")).toHaveLength(1);
+      // The old complete native-question format remains deliberate evidence.
+      const legacy = publish("legacy-telegram", { context: {
+        focusedTask: target, displayedHumanCondition: { ...condition, conditionGeneration: 2 },
+        ingress: { provider: "telegram", replyToMessageId: 7 },
+      } }, "telegram");
+      expect(legacy.delivery).toBe("accepted");
+      await waitFor(before + 2);
+      expect(receipts.at(-1)!.data).toMatchObject({ ...condition, conditionGeneration: 2 });
+      // Exercise the shipped native adapter, not self-asserted HTTP provider metadata.
+      const previousFetch = globalThis.fetch;
+      const previousToken = process.env.TELEGRAM_BOT_TOKEN;
+      const previousChat = process.env.TELEGRAM_CHAT_ID;
+      let poll: ((updates: unknown[]) => void) | undefined;
+      const sent: Array<{ text: string; messageId: number }> = [];
+      globalThis.fetch = (async (url, init) => {
+        const method = String(url).split("/").at(-1);
+        if (method === "getMe") return Response.json({ ok: true, result: { username: "fixture" } });
+        if (method === "getUpdates") return Response.json({ ok: true,
+          result: await new Promise<unknown[]>(resolve => { poll = resolve; }) });
+        if (method === "sendMessage") {
+          const body = JSON.parse(String(init?.body)) as { text: string };
+          const messageId = 1000 + sent.length;
+          sent.push({ text: body.text, messageId });
+          return Response.json({ ok: true, result: { message_id: messageId } });
+        }
+        return Response.json({ ok: true, result: true });
+      }) as typeof fetch;
+      process.env.TELEGRAM_BOT_TOKEN = "fixture-token";
+      process.env.TELEGRAM_CHAT_ID = "42";
+      const service = new HumanTaskService(db, registry);
+      const bot = attachTelegramBot({ persistDir, bus, interfaceAgent: "owner", conversationAppId: "interface",
+        conversationId: "primary", humanTasks: service,
+        getAppConversation: (appId, conversationId, options) => readAppConversationResource(db, appId, conversationId, options),
+        publishEvent: (input, approvalAuthorization) => events.publish(input, { source: "telegram", approvalAuthorization }),
+      });
+      const until = async (test: () => boolean) => {
+        const end = Date.now() + 2000;
+        while (!test() && Date.now() < end) await Bun.sleep(5);
+        expect(test()).toBe(true);
+      };
+      const deliver = async (message: Record<string, unknown>, id: number) => {
+        await until(() => Boolean(poll));
+        const resolve = poll!; poll = undefined;
+        resolve([{ update_id: id, message: { message_id: id, chat: { id: 42 }, from: { id: 7 }, ...message } }]);
+      };
+      try {
+        const ref = service.getTask(target)!.ref;
+        await deliver({ text: `/task ${ref}` }, 100);
+        await until(() => sent.some(message => message.text.startsWith(`Task ${ref}`)));
+        const card = sent.find(message => message.text.startsWith(`Task ${ref}`))!;
+        await until(() => Boolean(db.prepare("SELECT 1 FROM notification_messages WHERE chat_id = '42' AND telegram_msg_id = ?")
+          .get(card.messageId)));
+        const message = { text: "Use the native fixture", reply_to_message: { message_id: card.messageId, text: card.text } };
+        await deliver(message, 101);
+        await waitFor(before + 3);
+        const native = receipts.at(-1)!;
+        expect(native.source).toBe("human");
+        expect(native.target).toEqual({ project: ownerApp, taskId: "question" });
+        expect(native.data).toMatchObject({ ...condition, conditionGeneration: 2, request: {
+          source: { kind: "human", id: "telegram:42:101" }, input: { data: { message: "Use the native fixture" } },
+        } });
+        const nativeCount = db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()!.n;
+        await deliver(message, 101); // Provider redelivery reuses the saved admission.
+        await until(() => Boolean(poll));
+        expect(db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()!.n).toBe(nativeCount);
+        expect(readAppConversationResource(db, "interface", "primary").messages.filter(message => message.id === "telegram:42:101"))
+          .toHaveLength(1);
+      } finally {
+        bot.close(); globalThis.fetch = previousFetch;
+        if (previousToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN; else process.env.TELEGRAM_BOT_TOKEN = previousToken;
+        if (previousChat === undefined) delete process.env.TELEGRAM_CHAT_ID; else process.env.TELEGRAM_CHAT_ID = previousChat;
+      }
+      const config = appTaskContext({
+        appDir: join(root, `${ownerApp}.app`), projectDir: join(root, `${ownerApp}.app`),
+        agent: "owner", maxConcurrent: 1, resourceStore: store,
+      });
+      const claim = claimObservedAppTask(config, { taskId: "question", appAgent: "owner", handler: "agent" });
+      if (claim.kind !== "claimed") throw new Error("Expected owning Task claim");
+      const communication = createAppTaskEvents({ bus, db, appId: ownerApp, claim, communication: true });
+      stateTransaction(db, () => applyTaskCommunication(config, claim, [{
+        id: "answer-human", inputId: requestId, message: "The owner received your choice; verification is still needed.",
+      }], communication));
+      const answer = db.prepare("SELECT data FROM events WHERE event_type = 'conversation.message.created' AND json_extract(data, '$.communication.id') = 'answer-human'")
+        .get() as { data: string };
+      expect(JSON.parse(answer.data)).toMatchObject({
+        appId: "interface", conversationId: "primary", replyTo: "deliberate",
+        metadata: { taskRefs: [{ appId: ownerApp, taskId: "question" }] },
+      });
+      if (ownerApp !== "interface") expect(() => stateTransaction(db, () => applyTaskCommunication(config, claim, [{
+        id: "not-a-promise-transfer", inputId: requestId,
+        requestUpdates: [{ id: "caller-promise", expectedRevision: 0, disposition: "open", scope: "Not transferred" }],
+      }], communication))).toThrow("cannot update another App");
+      // Journal retention cannot erase the saved originating Conversation or
+      // relabel another App's same-named Task history after a storage reopen.
+      db.prepare("DELETE FROM events WHERE id = ?").run(admitted.eventId);
+      expect(readAppConversationResource(db, "interface", "primary").messages.filter(message => message.id === "deliberate"))
+        .toHaveLength(1);
+      runtime.close();
+      const stopped = closeInstalledAppTaskRuntimes(bus);
+      gate.resolve();
+      await stopped;
+      closeDb(persistDir);
+      const reopened = getDb(persistDir);
+      expect(readAppConversationResource(reopened, "interface", "primary").messages.filter(message => message.id === "deliberate"))
+        .toHaveLength(1);
+      if (ownerApp !== "interface") expect(readAppConversationResource(reopened, ownerApp, "primary").messages
+        .some(message => message.id === "deliberate")).toBe(false);
+    } finally {
+      unlisten();
+      runtime.close();
+      const drained = closeInstalledAppTaskRuntimes(bus);
+      gate.resolve();
+      await drained;
+      closeDb(persistDir);
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 15_000);
+}

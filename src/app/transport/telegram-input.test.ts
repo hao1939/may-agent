@@ -272,7 +272,7 @@ describe("Telegram durable input and natural follow-up", () => {
     const f = durableTelegramFixture();
     const blocked = Promise.withResolvers<void>();
     try {
-      f.hold((body) => body.text.includes("Selected App") ? blocked.promise : Promise.resolve());
+      f.hold((body) => body.text.includes("Read-only App view") ? blocked.promise : Promise.resolve());
       f.send([
         { update_id: 100, message: { message_id: 100, chat: { id: 123 }, text: "/apps sample" } },
         { update_id: 101, message: { message_id: 101, chat: { id: 123 }, text: "Review this" } },
@@ -280,7 +280,7 @@ describe("Telegram durable input and natural follow-up", () => {
       ]);
       await waitFor(() => f.polls().includes(103));
       expect(f.inputs()).toHaveLength(2);
-      expect(f.inputs()[0].data.context).toMatchObject({ focusedApp: "sample" });
+      expect(f.inputs()[0].data.context).toMatchObject({ focusedApp: "may" });
       expect(f.inputs()[1].data.metadata).toMatchObject({ channelTargetId: "456" });
     } finally { blocked.resolve(); await f.close(); }
   });
@@ -310,7 +310,7 @@ describe("Telegram durable input and natural follow-up", () => {
         f.sends().some((call) => call.body.message_thread_id === 8));
       expect(surfaceSends()).toHaveLength(1);
       expect(f.admitted).toEqual(["Continue this work"]);
-      expect(f.inputs()[0].data.context.focusedApp).toBe("sample");
+      expect(f.inputs()[0].data.context.focusedApp).toBe("may");
 
       if (outcome === "close") {
         f.bot.close();
@@ -328,7 +328,7 @@ describe("Telegram durable input and natural follow-up", () => {
         expect.stringContaining("Optional shortcuts"),
         expect.stringContaining("Optional shortcuts"),
         expect.stringContaining("Unknown command: /unknown"),
-        expect.stringContaining("Selected App: sample"),
+        expect.stringContaining("Read-only App view"),
       ]);
       expect(surfaceSends()[1].body.reply_parameters.message_id).toBe(101);
       expect(surfaceSends()[2].body.parse_mode).toBe("Markdown");
@@ -479,7 +479,7 @@ describe("Telegram durable input and natural follow-up", () => {
             text: expect.stringContaining("can't read this attachment") });
       }
       expect(f.sends().find((call) => call.body.chat_id === "999")?.body.text).toContain("Unauthorized");
-      expect(f.sends().at(-1)!.body.text).toContain("Reply to an update to follow up");
+      expect(f.sends().at(-1)!.body.text).toContain("reply to an exact question card");
     } finally { await f.close(); }
   });
 
@@ -863,7 +863,7 @@ describe("Telegram durable input and natural follow-up", () => {
         { includeDone: false, limit: 10 },
         { includeDone: false, limit: 10, cursor: "cursor-2" },
       ]);
-      expect(sent).toContainEqual(expect.stringContaining("Selected App: evaluation"));
+      expect(sent).toContainEqual(expect.stringContaining("Read-only App view"));
       expect(sent).toContainEqual(expect.stringContaining("11111111"));
       expect(sent).toContainEqual(expect.stringContaining("/tasks more"));
       expect(sent).toContainEqual(expect.stringContaining("22222222"));
@@ -1047,7 +1047,7 @@ describe("Telegram durable input and natural follow-up", () => {
       } as any,
     });
     try {
-      await waitFor(() => sent.some((text) => text.includes("Needs you for evaluation")));
+      await waitFor(() => sent.some((text) => text.includes("Needs you across all Apps")));
       expect(taskListReads.some((options) => options.humanActionOnly === true && options.limit === 50)).toBe(true);
       expect(sent).toContainEqual(expect.stringContaining("Approve or reject deployment."));
       await waitFor(() =>
@@ -1351,7 +1351,7 @@ describe("Telegram durable input and natural follow-up", () => {
           (event) =>
             event.type === "conversation.message.created" &&
             event.data?.text === "Prioritize exact facts" &&
-            event.data?.context?.focusedApp === "evaluation" &&
+            event.data?.context?.focusedApp === "may" &&
             event.data?.context?.focusedTask?.taskId === "review/docs",
         ),
       );

@@ -7,6 +7,7 @@ import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { EVENT_ROW_ID, EventBus } from "../../src/app/core/events/bus.js";
 import { createAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { admitConversationTaskInput } from "../../src/app/core/state/conversation-task-turns.js";
 import { admitTaskInput } from "../../src/app/core/state/inbox.js";
 import {
   claimObservedAppTask,
@@ -187,6 +188,7 @@ describe("telegram reply e2e", () => {
           version: 1,
           agent: "may",
           inputSchema: { type: "object" },
+          conversation: { mode: "task" as const, inputKinds: ["message"] },
           task: (input: any) => {
             const focusedTask = input.input?.data?.context?.focusedTask;
             if (!focusedTask || focusedTask.appId !== "may" || typeof focusedTask.taskId !== "string") {
@@ -263,6 +265,9 @@ describe("telegram reply e2e", () => {
       db,
       bus,
       attachTask: ({ appDir: _appDir, ...input }) => admitTaskInput(config, input),
+      admitConversation: input => admitConversationTaskInput(config, { ...input,
+        intent: { parentId: "root", outcome: "Discuss fixture work", acceptance: ["Answered"] },
+      }),
       scanIntervalMs: 10_000,
     });
     const service = new HumanTaskService(db, registry);
@@ -283,9 +288,16 @@ describe("telegram reply e2e", () => {
       return row ? JSON.parse(row.data) : null;
     };
 
+    const ordinaryReply = (messageId: number) => {
+      const row = db.prepare("SELECT id, target_task_id, execution_task_id FROM app_inbox_items WHERE channel_message_id = ?")
+        .get(messageId) as { id: string; target_task_id: string | null; execution_task_id: string | null } | null;
+      expect(row?.target_task_id).toBeNull();
+      expect(typeof row?.execution_task_id).toBe("string");
+      return runtime.host.get(row!.id)!;
+    };
     try {
       await waitFor(() =>
-        expect(sentMessages.some((message) => String(message.text).includes("Selected App"))).toBe(true),
+        expect(sentMessages.some((message) => String(message.text).includes("Read-only App view"))).toBe(true),
       );
       notify("answer");
       await waitFor(() => expect(notifications()).toHaveLength(1));
@@ -339,59 +351,10 @@ describe("telegram reply e2e", () => {
           reply_to_message: { message_id: answerMessageId, text: notifications()[0]!.text },
         },
       });
-      await waitFor(() =>
-        expect(
-          db
-            .prepare(
-              "SELECT status, waiting_on_kind, waiting_on_id FROM app_inbox_items WHERE target_task_id = 'answer' ORDER BY created_at LIMIT 1",
-            )
-            .get(),
-        ).toEqual({ status: "handling", waiting_on_kind: "task", waiting_on_id: "answer" }),
-      );
-      expect(store.readTaskContext({ taskIds: ["answer"] }).conditions?.["answer-choice"]?.status.state).toBe(
-        "unknown",
-      );
-      const staleAnswerClaim = claimObservedAppTask(config, { taskId: "answer", appAgent: "may", handler: "agent" });
-      if (staleAnswerClaim.kind !== "claimed") throw new Error("Expected stale-answer reconsideration");
-      const staleEvent = staleAnswerClaim.events.find(({ event }) => event.type === "app.task.requested")?.event;
-      expect(staleEvent?.data).toMatchObject({
-        conditionId: "answer-choice",
-        conditionGeneration: 1,
-        taskGeneration: 1,
-      });
-      const staleRequest = staleEvent?.data.request as any;
-      expect(staleRequest.input.data).toMatchObject({
-        message: "blue",
-        context: {
-          focusedTask: { appId: "may", taskId: "answer" },
-          displayedHumanCondition: { taskGeneration: 1, conditionId: "answer-choice", conditionGeneration: 1 },
-        },
-      });
-      expect(() =>
-        completeAppTask(config, staleAnswerClaim, {
-          summary: "Reject stale answer correlation",
-          facts: ["answer:stale"],
-          actions: [
-            {
-              kind: "retire-condition",
-              conditionId: "answer-choice",
-              expectedConditionGeneration: 1,
-              reason: "The displayed answer was supplied",
-            },
-          ],
-          acceptedLiveEventIds: staleAnswerClaim.events
-            .map(({ event }) => Number(event.eventId))
-            .filter(Number.isSafeInteger),
-        }),
-      ).toThrow("Condition answer-choice generation changed");
-      deferAppTask(config, staleAnswerClaim, {
-        disposition: "waiting",
-        summary: "The old answer did not answer the corrected question",
-        facts: ["answer:stale"],
-        acceptedLiveEventIds: staleAnswerClaim.events
-          .map(({ event }) => Number(event.eventId))
-          .filter(Number.isSafeInteger),
-      });
+      await waitFor(() => expect(ordinaryReply(11).input.data).toMatchObject({ message: "blue" }));
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'answer'").get())
+        .toEqual({ count: 0 });
+      expect(store.readTaskContext({ taskIds: ["answer"] }).conditions?.["answer-choice"]?.status.state).toBe("unknown");
 
       recordAppTaskTrigger(config, "answer", { type: "test.reconsider", eventId: 82, data: {} });
       const runningAnswer = claimObservedAppTask(config, { taskId: "answer", appAgent: "may", handler: "agent" });
@@ -406,11 +369,7 @@ describe("telegram reply e2e", () => {
           reply_to_message: { message_id: answerMessageId, text: notifications()[0]!.text },
         },
       });
-      await waitFor(() =>
-        expect(
-          db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'answer'").get(),
-        ).toEqual({ count: 2 }),
-      );
+      await waitFor(() => expect(ordinaryReply(12).input.data).toMatchObject({ message: "blue again" }));
       deferAppTask(config, runningAnswer, {
         disposition: "waiting",
         summary: "The concurrently arriving old answer is still stale",
@@ -434,7 +393,7 @@ describe("telegram reply e2e", () => {
       await waitFor(() =>
         expect(
           db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'answer'").get(),
-        ).toEqual({ count: 3 }),
+        ).toEqual({ count: 1 }),
       );
       expect(store.readTaskContext({ taskIds: ["answer"] }).conditions?.["answer-choice"]?.status.state).toBe(
         "unknown",
@@ -570,25 +529,11 @@ describe("telegram reply e2e", () => {
           reply_to_message: { message_id: ambiguousMessageId, text: ambiguousNotice.text },
         },
       });
-      await waitFor(() =>
-        expect(
-          db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'external'").get(),
-        ).toEqual({ count: 2 }),
-      );
-      const ambiguousClaim = claimObservedAppTask(config, { taskId: "external", appAgent: "may", handler: "agent" });
-      if (ambiguousClaim.kind !== "claimed") throw new Error("Expected ambiguous reply claim");
-      const ambiguousRequest = ambiguousClaim.events.find(({ event }) => event.type === "app.task.requested")?.event
-        .data.request as any;
-      expect(ambiguousRequest.input.data.context).toMatchObject({ focusedTask: { appId: "may", taskId: "external" } });
-      expect(ambiguousRequest.input.data.context).not.toHaveProperty("displayedHumanCondition");
-      deferAppTask(config, ambiguousClaim, {
-        disposition: "waiting",
-        summary: "An uncorrelated reply does not select either open Condition",
-        facts: ["reply:ambiguous"],
-        acceptedLiveEventIds: ambiguousClaim.events
-          .map(({ event }) => Number(event.eventId))
-          .filter(Number.isSafeInteger),
-      });
+      await waitFor(() => expect(ordinaryReply(15).input.data).toMatchObject({
+        message: "later", context: { focusedTask: { appId: "may", taskId: "external" } },
+      }));
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'external'").get())
+        .toEqual({ count: 1 });
       const openConditions = store.readTaskContext({ taskIds: ["external"] }).resources?.external?.status.conditionIds;
       expect(openConditions).toEqual(["deployment-proof", "rollout-window"]);
 
@@ -669,26 +614,11 @@ describe("telegram reply e2e", () => {
           reply_to_message: { message_id: mixedWatch.telegram_msg_id, text: mixedNotice.text },
         },
       });
-      await waitFor(() =>
-        expect(
-          db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'mixed'").get(),
-        ).toEqual({ count: 1 }),
-      );
-      const mixedClaim = claimObservedAppTask(config, { taskId: "mixed", appAgent: "may", handler: "agent" });
-      if (mixedClaim.kind !== "claimed") throw new Error("Expected mixed-condition reply claim");
-      const mixedRequest = mixedClaim.events.find(({ event }) => event.type === "app.task.requested")?.event.data
-        .request as any;
-      expect(mixedRequest.input.data).toMatchObject({
-        message: "Prefer proposal a",
-        context: { focusedTask: { appId: "may", taskId: "mixed" } },
-      });
-      expect(mixedRequest.input.data.context).not.toHaveProperty("displayedHumanCondition");
-      deferAppTask(config, mixedClaim, {
-        disposition: "waiting",
-        summary: "The ordinary reply remains Task input without selecting a Condition",
-        facts: ["reply:mixed"],
-        acceptedLiveEventIds: mixedClaim.events.map(({ event }) => Number(event.eventId)).filter(Number.isSafeInteger),
-      });
+      await waitFor(() => expect(ordinaryReply(17).input.data).toMatchObject({
+        message: "Prefer proposal a", context: { focusedTask: { appId: "may", taskId: "mixed" } },
+      }));
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'mixed'").get())
+        .toEqual({ count: 0 });
     } finally {
       bot.close();
       runtime.close();

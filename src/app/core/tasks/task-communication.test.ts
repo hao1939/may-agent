@@ -23,7 +23,7 @@ import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { AppRegistry } from "../apps/registry.js";
 import { EventBus, type AgentEvent } from "../events/bus.js";
-import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
+import { createAppInboxItem, getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { readConversationRequest } from "../state/conversation-requests.js";
 import {
@@ -192,6 +192,37 @@ async function fixture(
     },
   };
 }
+
+test("an owning attempt reads and answers the originating Conversation, not its same-named local Conversation", async () => {
+  const executed = Promise.withResolvers<void>();
+  const f = await fixture(async attempt => {
+    try {
+      const history = attempt.events.communication?.flatMap(view => view.messages.map(message => message.text)) ?? [];
+      expect(history).toContain("Originating history");
+      expect(history).not.toContain("Wrong local history");
+      const current = await attempt.read.communication("ask");
+      expect(current.messages.map(message => message.text)).toContain("Originating history");
+      expect(current.messages.map(message => message.text)).not.toContain("Wrong local history");
+      await expect(attempt.apply({ communication: [{ id: "no-transfer", inputId: "ask",
+        requestUpdates: [{ id: "foreign-promise", expectedRevision: 0, disposition: "open", scope: "No authority transfer" }],
+      }] })).rejects.toThrow("cannot update another App");
+      return { state: "converged", summary: "Handled exact human input", facts: [], response: "Answer on the original human route" };
+    } finally { executed.resolve(); }
+  });
+  try {
+    for (const [appId, text] of [["sample", "Wrong local history"], ["origin", "Originating history"]]) {
+      createAppInboxItem(f.db, { id: `prior-${appId}`, appId, conversationId: "discussion", conversationSequence: 1,
+        source: { kind: "human", id: `prior-${appId}` }, input: { kind: "message", data: { message: text } }, now: 1 });
+    }
+    f.inbox.host.admit({ id: "ask", appId: "sample", conversationAppId: "origin", conversationId: "discussion",
+      conversationSequence: 2, source: { kind: "human", id: "human-ask" }, input: { kind: "message", data: { message: "Exact feedback" } } });
+    await f.run(); await executed.promise;
+    expect(listAppConversationMessages(f.db, "origin", "discussion").map(message => message.text))
+      .toContain("Answer on the original human route");
+    expect(listAppConversationMessages(f.db, "sample", "discussion").map(message => message.text))
+      .not.toContain("Answer on the original human route");
+  } finally { await f.close(); }
+});
 
 const progress: TaskCommunication = {
   id: "progress",

@@ -1,7 +1,7 @@
 import type { TaskChangeReceipt, TaskCommunication, TaskReconcileResult } from "@may-agent/sdk/app";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { getAppInboxItem } from "../state/app-inbox-store.js";
+import { getAppInboxItem, inputConversationAppId } from "../state/app-inbox-store.js";
 import {
   applyConversationRequestUpdates,
   linkConversationRequestInputs,
@@ -99,10 +99,15 @@ export function applyTaskCommunication(
       return receipt;
     }
     const conversationId = item.conversationId!;
+    const conversationAppId = inputConversationAppId(db, item);
+    // Exact cross-App feedback can answer its human, but does not transfer the
+    // Conversation owner's accepted promises to this Task.
+    if (conversationAppId !== item.appId && change.requestUpdates?.length)
+      throw new Error("Cross-App feedback cannot update another App's Conversation Requests");
     let topicId = readConversationInputTopicId(db, item);
     if (change.topic?.kind === "none") topicId = undefined;
     if (change.topic?.kind === "existing") {
-      if (!readConversationTopic(db, item.appId, conversationId, change.topic.id))
+      if (!readConversationTopic(db, conversationAppId, conversationId, change.topic.id))
         throw new Error("Topic does not belong to this Conversation");
       topicId = change.topic.id;
     }
@@ -113,7 +118,7 @@ export function applyTaskCommunication(
       topicId = `task-topic:${identity}`;
       createConversationTopic(db, {
         id: topicId,
-        appId: item.appId,
+        appId: conversationAppId,
         conversationId,
         title: change.topic.title,
         openedBy: "agent",
@@ -127,7 +132,7 @@ export function applyTaskCommunication(
          VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(app_id, conversation_id, input_id) DO UPDATE SET
            topic_id = excluded.topic_id, selected_at = excluded.selected_at`,
-        [item.appId, conversationId, item.id, topicId ?? null, Date.now()],
+        [conversationAppId, conversationId, item.id, topicId ?? null, Date.now()],
       );
     let messageId = change.message ? `task-message:${identity}` : undefined;
     if (change.replyId) {
@@ -217,9 +222,9 @@ export function applyTaskCommunication(
     if (change.message)
       events.publish(localKey, {
         type: "conversation.message.created",
-        target: { appId: item.appId },
+        target: { appId: conversationAppId },
         data: {
-          appId: item.appId,
+          appId: conversationAppId,
           conversationId,
           communication: { id: change.id, inputId: change.inputId },
           messageId,
@@ -297,7 +302,10 @@ export function taskResultCommunication(
   if (!inputs.length) return changes;
   if (changes?.some((change) => change.message))
     throw new Error("Use response or explicit communication messages for this result, not both");
-  if (new Set(inputs.map((input) => input.communication!.conversationId)).size !== 1)
+  if (new Set(inputs.map((input) => {
+    const item = getAppInboxItem(config.resourceStore.db, input.id)!;
+    return JSON.stringify([inputConversationAppId(config.resourceStore.db, item), input.communication!.conversationId]);
+  })).size !== 1)
     throw new Error("Multiple reply destinations require explicit communication inputId");
   const input = inputs.filter(({ source }) => source.kind === "human").at(-1) ?? inputs.at(-1)!;
   const id = `response-${createHash("sha256").update(input.key).digest("hex").slice(0, 32)}`;

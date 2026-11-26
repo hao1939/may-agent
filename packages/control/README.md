@@ -54,11 +54,24 @@ The transport preserves and labels that content; it does not invent a rationale
 or choose on the App's behalf.
 
 An incomplete proposal binding leaves the message as conversation and records
-no approval. For feedback, use the same reply gesture with ordinary text, for example
-`/reply <ref> Please simplify this before I approve.` Feedback remains
-conversation for the App to interpret. A qualified or ambiguous reply is likewise
-feedback rather than approval; exact supported decisions keep their displayed
-Task, generation, Condition and proposal correlation.
+no approval. For exact feedback, Console's `/task <ref>` followed by
+`/reply <ref> Please simplify this before I approve.` sends a deliberate
+`data.taskReply: { target: { appId, taskId }, taskGeneration, condition? }`
+with the displayed detail's identity. `condition`, when present, is the exact
+`{ taskGeneration, conditionId, conditionGeneration }` ordinary-question anchor
+returned as `humanConditionAnchor` in that detail. This is separate from
+`approvalReply`; feedback never grants approval or revises creator-owned scope.
+
+Passive `context.focusedTask`, quoted discussion, lists and watch refreshes
+remain Conversation context. They do not address background work. The Host
+revalidates deliberate replies before routing to the same- or cross-App owning
+Task and again before projecting question fields into its receipt. A stale,
+missing or ambiguous question stays ordinary Conversation input with refresh
+guidance; it never binds to a newer Condition. Original human provenance and
+the journaled return address survive exact admission and uncertain-ack retries.
+Admission proves receipt only, not a sufficient answer, Condition fulfillment
+or an external action. Older complete Telegram question bindings and explicit
+proposal replies remain supported; incomplete older frames degrade to discussion.
 
 The Host recognizes exact decisions, preserves the input and proposal, then
 publishes the existing decision event from its durable Conversation route. Its
@@ -333,3 +346,41 @@ admission with both the selected App and Conversation. An explicit
 `interface` option can supply the same binding to clients outside the daemon's
 environment. Ordinary agents need only the desired message and recipient; the
 adapter owns transport and saved Conversation references.
+
+## Human adapter inspection and exact action
+
+Ordinary Console and Telegram text always addresses the configured Conversation.
+There is no persistent App recipient selector. Console uses a stable `you>` / `may>`
+prompt; connection/turn notices and Task attribution are separate from that prompt.
+`/apps [app]` is read-only, including the legacy single-App form. `/tasks [all|app]
+[history]` and `/todo [all|app]` default to bounded global reads. Their respective
+`more` commands retain the previous query and opaque cursor; filtering one view
+never changes subsequent chat or the other list. Only actual open human-owned
+Conditions belong in `/todo`; idle, failed or attention work alone is not a human
+obligation or evidence of a standing duty. Retained disabled-App work remains
+available through canonical Task reads.
+
+Assignments display their owner and Task but do not start or replace a watch.
+Use `/watch <ref>` (or Telegram Follow updates) to opt into detail. `/unwatch`,
+Unfollow and closing a client change presentation only. Esc/Stop targets only the
+observed Conversation turn. `/cancel <ref>` requires an explicit Task reference;
+bare cancel performs no action, and disconnected Console controls are not queued.
+A successful admission is neither completion nor an amendment of creator scope.
+Console's bounded offline text queue is volatile and lost on exit; uncertain HTTP
+input acknowledgment retains the original event identity for reconnect retry.
+
+WebUI's May entry uses the configured interface agent's existing route, leaving
+Overview, metrics, domain and operator routes intact. Its human-action view reads
+bounded canonical global Task pages with honest shown/total labels. Its separate
+Task feedback box remains generation-fenced feedback, not an ordinary-question
+receipt or formal approval. For those exact actions use Console's displayed
+`/task` then `/reply`, or reply to a complete Telegram question/proposal card;
+the browser does not claim unsupported approval authority.
+
+Console's global semantic subscription uses `/ws` `taskApps: ["*"]`. This emits
+identity-only Task wakes for semantic changes, not all executor progress or a
+per-Task polling loop. Older explicit App filters retain their meaning. Reconnect
+and overflow require canonical rereads. Exact cross-App human replies retain a
+separate originating Conversation App on the admitted inbox record; older rows
+without that field keep their historical App identity. Both schema entry points
+add the nullable field and origin-history index without rewriting old identities.

@@ -60,7 +60,8 @@ import { conversationTaskId } from "../core/state/conversation-identity.js";
 import { listConversationTaskLinks } from "../core/state/conversation-task-links.js";
 import { readPendingConversationTaskChangePage, type ConversationTaskChangeCursor, type ConversationTaskChangeRef } from "../core/state/retained-conversation-task-returns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
-import { hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
+import { getAppInboxItem, inputConversationAppId } from "../core/state/app-inbox-store.js";
+import { currentHumanTaskReply, readHumanTaskReply } from "../core/events/task-reply.js";
 import { observationDemandReader, readTaskObservationInterests } from "../core/state/observation-demand.js";
 
 export type AppRegistryReloadPreparation = (input: {
@@ -886,18 +887,33 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               ? { conversationTopicId: metadata.topicId.trim() }
               : {}),
           };
-          const focusedTask = record(context.focusedTask);
-          const focusedAppId =
-            typeof focusedTask.appId === "string" ? focusedTask.appId.trim().replace(/\.app$/, "") : "";
-          const focusedTaskId = typeof focusedTask.taskId === "string" ? focusedTask.taskId.trim() : "";
-          const focusedConversationTask = Boolean(
-          focusedAppId === appId && focusedTaskId && hasConversationExecutionTask(options.db, appId, focusedTaskId),
-          );
+          // Inbox keys are App-scoped. Resolve the saved journal route before
+          // revalidating a card, so a lost acknowledgment cannot admit the same
+          // human message to its owner and then to the Conversation as well.
+          const prior = persistedEventId ? options.db.prepare(
+            "SELECT id FROM app_inbox_items WHERE origin_event_id = ? ORDER BY created_at, id LIMIT 1",
+          ).get(persistedEventId) as { id: string } | undefined : undefined;
+          if (prior) {
+            const item = getAppInboxItem(options.db, prior.id)!;
+            host.recoverAdmission(item.id);
+            notifyConversationUpdated(inputConversationAppId(options.db, item), item.conversationId);
+            return { accepted: true, by: `conversation:${conversationId}:app-inbox:${item.appId}` };
+          }
+          const suppliedReply = readHumanTaskReply(data, event.source === "telegram");
+          const reply = suppliedReply && host.hasApp(suppliedReply.target.appId) &&
+            currentHumanTaskReply(options.db, suppliedReply) ? suppliedReply : null;
+          // Display context is evidence for discussion, never a receipt. Only
+          // a revalidated deliberate action may project exact question fields.
+          delete context.taskReply;
+          if (reply) context.taskReply = reply;
+          else if (data.taskReply || suppliedReply) context.taskReplyNotice =
+            "The displayed Task/question is unavailable or changed. Text retained as ordinary conversation; inspect it again to act.";
           const admitted = receiveInput({
-            appId,
-            ...(focusedAppId === appId && focusedTaskId && !focusedConversationTask
-              ? { targetTaskId: focusedTaskId }
-              : {}),
+            appId: reply?.target.appId ?? appId,
+            ...(reply ? {
+              targetTaskId: reply.target.taskId,
+              targetTaskGeneration: reply.taskGeneration,
+            } : {}),
             source: { kind: "human", id: authorId },
             input: {
               kind: "message",
@@ -907,6 +923,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               },
             },
             originEventId: persistedEventId,
+            ...(reply && reply.target.appId !== appId ? { conversationAppId: appId } : {}),
             conversationId,
             conversationSequence: persistedEventId ?? fallbackSequence,
             channel: typeof metadata.channel === "string" ? metadata.channel : undefined,
@@ -920,7 +937,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
                 : eventIdentity(event),
           });
 
-          notifyConversationUpdated(admitted.item.appId, admitted.item.conversationId);
+          notifyConversationUpdated(inputConversationAppId(options.db, admitted.item), admitted.item.conversationId);
           return { accepted: true, by: `conversation:${conversationId}:app-inbox:${admitted.item.appId}` };
         }
         if (data.transient !== true) notifyConversationUpdated(appId, conversationId);

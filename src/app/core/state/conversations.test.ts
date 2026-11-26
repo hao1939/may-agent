@@ -462,6 +462,24 @@ describe("Conversation store", () => {
     ]);
   });
 
+  it("keeps independent results for identical Task IDs in different Apps on their originating Conversation", () => {
+    for (const [n, appId] of ["first", "second"].entries()) {
+      const id = `input-${appId}`;
+      createAppInboxItem(db, { id, appId, conversationAppId: "interface", conversationId: "primary",
+        targetTaskId: "same-task-id", source: { kind: "human", id: `human-${appId}` },
+        conversationSequence: n + 1, input: { kind: "message", data: { message: `Question for ${appId}` } }, now: n + 100 });
+      const claim = claimAppInboxItem(db, id, "worker", 1000, n + 102)!;
+      expect(completeAppInboxClaim(db, claim, { summary: "Internal handling", response: `Independent answer from ${appId}` }, n + 105))
+        .toBe(true);
+    }
+    const messages = readAppConversationResource(db, "interface", "primary").messages;
+    expect(messages.filter(message => message.author.kind === "human")).toHaveLength(2);
+    expect(messages.filter(message => message.author.kind === "agent").map(message => message.text).sort())
+      .toEqual(["Independent answer from first", "Independent answer from second"]);
+    expect(readAppConversationResource(db, "first", "primary").messages).toHaveLength(0);
+    expect(readAppConversationResource(db, "second", "primary").messages).toHaveLength(0);
+  });
+
   it("uses an explicitly published response as the one canonical Conversation message", () => {
     createAppInboxItem(db, {
       id: "request-with-message",

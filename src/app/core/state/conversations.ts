@@ -6,7 +6,7 @@ import type {
   AppInput,
 } from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../../lib/db.js";
-import { listAppInboxConversationItems, readActiveAppTurn, type AppInboxItem } from "./app-inbox-store.js";
+import { inputConversationAppId, listAppInboxConversationItems, readActiveAppTurn, type AppInboxItem } from "./app-inbox-store.js";
 import { conversationTaskLinksSql } from "./conversation-task-links.js";
 import { displayTaskReferences } from "./task-reference-index.js";
 import {
@@ -224,7 +224,7 @@ export function listAppConversationMessages(
     );
     const resultTaskId =
       item.waitingOn?.kind === "task" ? item.waitingOn.id : (item.targetTaskId ?? inferredCreatedTaskId);
-    const resultIdentity = resultTaskId ?? `request:${item.id}`;
+    const resultIdentity = JSON.stringify([item.appId, resultTaskId ?? `request:${item.id}`]);
     // Several human turns may feed one Task, but its accepted result has one
     // public owner in the Conversation. Rows are newest-first, so the result
     // stays beside the feedback that most recently shaped that Task.
@@ -535,7 +535,7 @@ export function findConversationTopics(
       lower(t.title) LIKE ? ESCAPE '\\'
       OR EXISTS (
         SELECT 1 FROM app_inbox_items i
-        WHERE i.app_id = t.app_id AND i.conversation_id = t.conversation_id AND i.topic_id = t.id
+        WHERE COALESCE(i.conversation_app_id, i.app_id) = t.app_id AND i.conversation_id = t.conversation_id AND i.topic_id = t.id
           AND lower(i.input_data) LIKE ? ESCAPE '\\'
       )
       OR EXISTS (
@@ -575,7 +575,7 @@ export function readConversationMessageTopicId(
   const inbox = db
     .prepare(
       `SELECT topic_id FROM app_inbox_items
-       WHERE app_id = ? AND conversation_id = ? AND (source_id = ? OR 'result:' || id = ? OR 'failure:' || id = ?)
+       WHERE COALESCE(conversation_app_id, app_id) = ? AND conversation_id = ? AND (source_id = ? OR 'result:' || id = ? OR 'failure:' || id = ?)
        ORDER BY created_at DESC LIMIT 1`,
     )
     .get(appId, conversationId, id, id, id) as { topic_id?: unknown } | undefined;
@@ -613,13 +613,14 @@ export function hasConversationInputTopicSelection(db: SqliteDb, item: AppInboxI
         `SELECT 1 FROM conversation_input_topic_selections
          WHERE app_id = ? AND conversation_id = ? AND input_id = ?`,
       )
-      .get(item.appId, item.conversationId, item.id),
+      .get(inputConversationAppId(db, item), item.conversationId, item.id),
   );
 }
 
 /** Retain explicit Conversation context without asking the agent to repeat its identity. */
 export function readConversationInputTopicId(db: SqliteDb, item: AppInboxItem): string | undefined {
   if (!item.conversationId) return undefined;
+  const conversationAppId = inputConversationAppId(db, item);
   const data = item.input.data;
   const raw =
     data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).context : undefined;
@@ -628,27 +629,27 @@ export function readConversationInputTopicId(db: SqliteDb, item: AppInboxItem): 
       ? (raw as Record<string, unknown>).conversationTopicId
       : undefined;
   const replied = item.replyToSourceId
-    ? readConversationMessageTopicId(db, item.appId, item.conversationId, item.replyToSourceId)
+    ? readConversationMessageTopicId(db, conversationAppId, item.conversationId, item.replyToSourceId)
     : undefined;
   const selected = db
     .prepare(
       `SELECT topic_id FROM conversation_input_topic_selections
        WHERE app_id = ? AND conversation_id = ? AND input_id = ?`,
     )
-    .get(item.appId, item.conversationId, item.id) as { topic_id?: unknown } | undefined;
+    .get(conversationAppId, item.conversationId, item.id) as { topic_id?: unknown } | undefined;
   // A saved explicit selection supersedes the input's initial reply anchor.
   // An explicit `none` is represented by a durable selection row plus a null
   // inbox Topic, so it must also suppress reply and adapter fallbacks.
   if (selected) {
     if (typeof selected.topic_id !== "string" || !selected.topic_id.trim()) return undefined;
-    return readConversationTopic(db, item.appId, item.conversationId, selected.topic_id)?.id;
+    return readConversationTopic(db, conversationAppId, item.conversationId, selected.topic_id)?.id;
   }
   // Before an explicit decision, a reply anchors the initial discussion. The
   // inbox Topic is only its committed input correlation, and adapter context
   // remains the final fallback.
   for (const candidate of [replied, item.topicId, hint]) {
     if (typeof candidate !== "string" || !candidate.trim()) continue;
-    const topic = readConversationTopic(db, item.appId, item.conversationId, candidate);
+    const topic = readConversationTopic(db, conversationAppId, item.conversationId, candidate);
     if (topic) return topic.id;
   }
   return undefined;

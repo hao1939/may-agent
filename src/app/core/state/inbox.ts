@@ -13,6 +13,7 @@ import { linkConversationRequestTask } from "./conversation-requests.js";
 import { linkConversationTopicTask } from "./conversations.js";
 import { assertResourceCreator } from "./resource-creator.js";
 import { AppTaskAdmissionError } from "./task-admission-error.js";
+import { currentHumanTaskReply, readHumanTaskReply } from "../events/task-reply.js";
 
 export class AppTaskRevisionAdmissionError extends AppTaskAdmissionError {
   readonly name = "AppTaskRevisionAdmissionError";
@@ -185,43 +186,32 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
     appAgent: config.agent,
     admissionKey: idempotencyKey,
     trigger: {
-      ...taskInputRequestEvent({ ...input, taskId: intent.id, agent: config.agent }),
+      ...taskInputRequestEvent({ ...input, taskId: intent.id, agent: config.agent }, config.resourceStore.db),
       ...(input.inputEventId !== undefined ? { eventId: input.inputEventId } : {}),
     },
   });
 }
 
-/** Pure canonical request shared by atomic admission and its journal publication. */
+/** Canonical request shared by atomic admission and its journal publication.
+ * Question receipt authority is revalidated against owning state, not display context. */
 export function taskInputRequestEvent(input: {
   appId: string;
   taskId: string;
   agent: string;
   idempotencyKey: string;
   inputContext: Readonly<AppInputContext>;
-}) {
+  inboxInputId?: string;
+}, db: SqliteDb) {
   const idempotencyKey = input.idempotencyKey.trim();
   const data = input.inputContext.input.data;
-  const context =
-    data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).context : undefined;
-  const displayed =
-    context && typeof context === "object" && !Array.isArray(context)
-      ? (context as Record<string, unknown>).displayedHumanCondition
-      : undefined;
-  const displayedHumanCondition =
-    displayed && typeof displayed === "object" && !Array.isArray(displayed)
-      ? (displayed as Record<string, unknown>)
-      : undefined;
-  const correlatedHumanCondition =
-    input.inputContext.source.kind === "human" &&
-    typeof displayedHumanCondition?.conditionId === "string" &&
-    Number.isSafeInteger(displayedHumanCondition.conditionGeneration) &&
-    Number.isSafeInteger(displayedHumanCondition.taskGeneration)
-      ? {
-          conditionId: displayedHumanCondition.conditionId,
-          conditionGeneration: displayedHumanCondition.conditionGeneration,
-          taskGeneration: displayedHumanCondition.taskGeneration,
-        }
-      : {};
+  const context = data && typeof data === "object" && !Array.isArray(data)
+    ? (data as Record<string, unknown>).context : undefined;
+  const reply = readHumanTaskReply(context && typeof context === "object" ? context as Record<string, unknown> : {});
+  const item = input.inboxInputId ? getAppInboxItem(db, input.inboxInputId) : null;
+  const correlatedHumanCondition = input.inputContext.source.kind === "human" && reply?.condition &&
+    item?.targetTaskId === input.taskId && item.targetTaskGeneration === reply.taskGeneration &&
+    reply.target.appId === input.appId && reply.target.taskId === input.taskId && currentHumanTaskReply(db, reply)
+      ? reply.condition : {};
   return {
     type: "app.task.requested",
     source:

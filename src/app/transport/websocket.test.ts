@@ -171,7 +171,7 @@ describe("daemon WebSocket wakes", () => {
     expect(fixture.listeners.size).toBe(0);
   });
 
-  test("forwards correlated reload results and derives Task wakes for ordinary Console filters", async () => {
+  test.each(["alex", "*"])("forwards reload and bounded semantic Task wakes for %s Console filters", async (appScope) => {
     const fixture = eventFixture();
     const sent: Record<string, unknown>[] = [];
     const peer: DaemonWebSocketPeer = {
@@ -186,7 +186,7 @@ describe("daemon WebSocket wakes", () => {
       type: "subscribe",
       sessions: [],
       conversations: ["may:primary"],
-      taskApps: ["alex"],
+      taskApps: [appScope],
       task: { appId: "gym", taskId: "run/1" },
     }));
 

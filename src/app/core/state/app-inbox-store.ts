@@ -60,6 +60,8 @@ export type AppInboxItem = {
   topicId?: string;
   /** Human feedback linked to an existing root request, not separate work. */
   continuesRequestId?: string;
+  /** Trusted originating Conversation App; work may belong to another App. */
+  conversationAppId?: string;
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;
@@ -101,6 +103,8 @@ export type CreateAppInboxItem = {
   /** Host envelope fence for exact Task attachment, retained through recovery. */
   targetTaskGeneration?: number;
   topicId?: string;
+  /** Trusted originating Conversation App; work may belong to another App. */
+  conversationAppId?: string;
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;
@@ -163,6 +167,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     targetTaskGeneration: optionalNumber(row.target_task_generation),
     topicId: optionalText(row.topic_id),
     continuesRequestId: optionalText(row.continues_request_id),
+    conversationAppId: optionalText(row.conversation_app_id),
     conversationId: optionalText(row.conversation_id),
     conversationSequence: optionalNumber(row.conversation_seq),
     channel: optionalText(row.channel),
@@ -218,6 +223,10 @@ function validateCreate(input: CreateAppInboxItem): void {
   if (input.topicId !== undefined) requiredText(input.topicId, "topicId");
   if (!(["human", "app", "system"] as const).includes(input.source.kind)) {
     throw new Error(`Invalid App inbox source kind: ${input.source.kind}`);
+  }
+  if (input.conversationAppId !== undefined) {
+    requiredText(input.conversationAppId, "conversationAppId");
+    if (!input.conversationId) throw new Error("App inbox conversationAppId requires conversationId");
   }
   const hasConversation = input.conversationId !== undefined;
   const hasSequence = input.conversationSequence !== undefined;
@@ -490,6 +499,20 @@ export function listAppInboxItemsWaitingOnTask(
     .map(rowToItem);
 }
 
+/** The original journal owns a cross-App human reply's return address.
+ * Older App inputs without that ingress retain their historical App address. */
+export function inputConversationAppId(db: SqliteDb, item: AppInboxItem): string {
+  if (item.conversationAppId) return item.conversationAppId;
+  if (item.source.kind !== "human" || !item.originEventId) return item.appId;
+  const row = db.prepare("SELECT event_type, data FROM events WHERE id = ?").get(item.originEventId) as
+    { event_type: string; data: string } | undefined;
+  if (row?.event_type !== "conversation.message.created") return item.appId;
+  const data = JSON.parse(row.data) as Record<string, unknown>;
+  const author = data.author as { kind?: string; id?: string } | undefined;
+  return author?.kind === "human" && author.id === item.source.id && data.conversationId === item.conversationId &&
+    typeof data.appId === "string" && data.appId.trim() ? data.appId : item.appId;
+}
+
 /** Bounded request facts used to project Conversation messages. */
 export function listAppInboxConversationItems(
   db: SqliteDb,
@@ -507,7 +530,7 @@ export function listAppInboxConversationItems(
   return db
     .prepare(
       `SELECT * FROM app_inbox_items
-       WHERE app_id = ? AND conversation_id = ?${exactTopicId ? " AND topic_id = ?" : ""}
+       WHERE COALESCE(conversation_app_id, app_id) = ? AND conversation_id = ?${exactTopicId ? " AND topic_id = ?" : ""}
        ORDER BY created_at DESC, id DESC
        LIMIT ?`,
     )
@@ -571,11 +594,11 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
   const id = input.id ?? `app_${randomUUID()}`;
   const result = db.run(
     `INSERT OR IGNORE INTO app_inbox_items (
-       id, app_id, parent_id, target_task_id, target_task_generation, topic_id, conversation_id, conversation_seq,
+       id, app_id, parent_id, target_task_id, target_task_generation, topic_id, conversation_app_id, conversation_id, conversation_seq,
        channel, channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id,
        source_kind, source_id, creator_json, input_kind, input_data, status,
        available_at, origin_event_id, idempotency_key, created_at, changed_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
     [
       id,
       input.appId,
@@ -583,6 +606,7 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
       input.targetTaskId ?? null,
       input.targetTaskGeneration ?? null,
       input.topicId ?? null,
+      input.conversationAppId ?? null,
       input.conversationId ?? null,
       input.conversationSequence ?? null,
       input.channel ?? null,
@@ -632,6 +656,7 @@ export function readAppInboxSubmission(db: SqliteDb, input: CreateAppInboxItem):
   if (item.conversationId !== undefined) {
     input = {
       ...input,
+      conversationAppId: input.conversationAppId === undefined ? item.conversationAppId : input.conversationAppId,
       conversationId: input.conversationId === undefined ? item.conversationId : input.conversationId,
       conversationSequence:
         input.conversationSequence === undefined ? item.conversationSequence : input.conversationSequence,
@@ -647,6 +672,7 @@ export function readAppInboxSubmission(db: SqliteDb, input: CreateAppInboxItem):
     item.parentId !== input.parentId ||
     item.targetTaskId !== input.targetTaskId ||
     item.targetTaskGeneration !== input.targetTaskGeneration ||
+    item.conversationAppId !== input.conversationAppId ||
     item.conversationId !== input.conversationId ||
     item.conversationSequence !== input.conversationSequence ||
     item.topicId !== input.topicId ||
