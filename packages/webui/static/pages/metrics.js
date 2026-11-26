@@ -205,6 +205,11 @@ function renderAppDrillDown(detail, days) {
   </section>`;
 }
 
+function formatAlertDeclaration(alert) {
+  const owner = alert.declaredOwner || alert.handler || 'system:host';
+  return alert.declaredHandler ? `Owner: ${owner} · Handler: ${alert.declaredHandler}` : `Owner: ${owner}`;
+}
+
 function renderOpenAlertsStrip(alerts) {
   if (!Array.isArray(alerts) || !alerts.length) return '';
   return `<div class="td-alerts-strip" data-active-alerts>
@@ -217,12 +222,12 @@ function renderOpenAlertsStrip(alerts) {
         : '';
       return `<div class="td-alert-card ${p1 ? 'p1' : ''}">
         <div class="td-alert-main">
-          <span class="td-scope-tag ${scopeClass}">${esc(scopeLabel)} → ${esc(a.handler || 'owner')}</span>
+          <span class="td-scope-tag ${scopeClass}">${esc(scopeLabel)} · ${esc(formatAlertDeclaration(a))}</span>
           <a href="/metrics/${encodeURIComponent(a.metricId)}"><strong>${esc(a.name || a.metricId)}</strong></a>
           <span class="health-note">${esc(a.message || '')}</span>
         </div>
         <div class="td-alert-status">
-          <span class="td-alert-handler">${esc(a.handlingStatus || 'Pending triage')}</span>${taskLink}
+          <span class="td-alert-handler">${esc(a.handlingStatus || 'No recorded handling')}</span>${taskLink}
           <span>· ${esc(formatAgo(a.createdAt))}</span>
         </div>
       </div>`;
@@ -353,11 +358,16 @@ function renderTopDownObservability(data, options = {}) {
   const diskWarn = disk && disk.usedPercent >= 90;
   const authBad = auth.state === 'expired';
   const promptTaxText = ht.promptTaxRatio != null ? `Prompt tax: ${Math.round(ht.promptTaxRatio * 100)}%` : 'Prompt tax: —';
+  const workflowNoteParts = [];
+  if (host.improvementWorkflow) workflowNoteParts.push(`Host: <code>${esc(host.improvementWorkflow)}</code>`);
+  const appWorkflows = [...new Set((data.apps || []).map(a => a.improvementWorkflow).filter(Boolean))];
+  if (appWorkflows.length === 1) workflowNoteParts.push(`Apps: <code>${esc(appWorkflows[0])}</code>`);
+  const workflowNoteHtml = workflowNoteParts.length ? ` ${workflowNoteParts.join(' · ')}.` : '';
 
   return `<div class="td-header">
       <div>
         <h2>Host &amp; Apps · Trend Observing &amp; Scoring</h2>
-        <p class="health-note" style="margin:0.15rem 0 0">12-bucket trend trajectories (${esc(windowLabel)} window; gaps indicate 0 exposure, never fake zeros). Host: <code>alex/develop-host-change</code> · Apps: <code>alex/develop-change</code>.</p>
+        <p class="health-note" style="margin:0.15rem 0 0">12-bucket trend trajectories (${esc(windowLabel)} window; gaps indicate 0 exposure, never fake zeros).${workflowNoteHtml}</p>
       </div>
       <div class="td-window-switch" role="group" aria-label="Observation time window">
         ${[1, 7, 30].map(d => `<button type="button" class="td-window-btn ${days === d ? 'active' : ''}" aria-pressed="${days === d ? 'true' : 'false'}" onclick="setTopDownDays(${d}, ${onMetricsTab})">${d === 1 ? '24h' : d + 'd'}</button>`).join('')}
@@ -696,8 +706,8 @@ async function loadMetricsTab() {
       document.getElementById('metrics-alerts').innerHTML = `<p>${data.alertsTruncated ? 'More than ' : ''}${data.alerts.length} open alerts; ${failures.length} measurements with a failure after the last sample${data.truncated ? ' among ' + data.metrics.length + ' shown definitions (partial list)' : ''}. No alerts is not proof of health.</p>
         ${data.alerts.slice(0, 20).map(a => {
           const scopeLabel = a.scope?.kind === 'app' ? `App:${a.scope.appId}` : 'Host';
-          const handlerBadge = a.handler ? ` [${scopeLabel} → ${a.handler} · ${a.handlingStatus || 'Pending'}]` : '';
-          return `<div class="health-warning"><a href="/metrics/${encodeURIComponent(a.metricId)}">${esc(a.name || a.metricId)}</a>${esc(handlerBadge)}: ${esc(a.message)} · opened ${esc(healthTime(a.createdAt))}</div>`;
+          const badge = ` [${scopeLabel} · ${formatAlertDeclaration(a)} · ${a.handlingStatus || 'No recorded handling'}]`;
+          return `<div class="health-warning"><a href="/metrics/${encodeURIComponent(a.metricId)}">${esc(a.name || a.metricId)}</a>${esc(badge)}: ${esc(a.message)} · opened ${esc(healthTime(a.createdAt))}</div>`;
         }).join('')}${data.alerts.length > 20 ? '<p>Showing newest 20 alerts; use metric detail for a selected definition.</p>' : ''}
         ${failures.map(m => `<div class="health-warning"><a href="/metrics/${encodeURIComponent(m.id)}">${esc(m.name || m.id)}</a>: ${esc(m.collectionFailure.reason)} · <a href="/events/${m.collectionFailure.eventId}">event</a></div>`).join('')}`;
     }

@@ -83,14 +83,17 @@ export function readMetricObservations(
       parsedConfig.lastNoExposureAt > 0
         ? parsedConfig.lastNoExposureAt
         : null;
-    const observed =
+    const hasSnapshot =
       row.sampleId !== null && row.value !== null && Number.isFinite(row.value) && row.measured_at !== null;
+    const supersededByNoExposure =
+      lastNoExposureAt !== null && (!hasSnapshot || lastNoExposureAt > row.measured_at!);
+    const observed = hasSnapshot && !supersededByNoExposure;
     const staleAfterMs =
       row.measure_interval && row.measure_interval > 0 ? row.measure_interval * STALE_INTERVALS : null;
     const lastCheckedAt =
-      observed && lastNoExposureAt !== null
+      hasSnapshot && lastNoExposureAt !== null
         ? Math.max(row.measured_at!, lastNoExposureAt)
-        : observed
+        : hasSnapshot
           ? row.measured_at!
           : lastNoExposureAt;
     const freshness =
@@ -126,7 +129,7 @@ export function readMetricObservations(
     return {
       ...row,
       scope: classifyMetricScope({ ...row, config: parsedConfig }, appCatalog),
-      noExposure: !observed && lastNoExposureAt !== null,
+      noExposure: supersededByNoExposure,
       current: observed ? row.value : null,
       updated_at: observed ? row.measured_at : null,
       observation: observed
@@ -149,7 +152,7 @@ export function readMetricObservations(
               eventId: row.failureId,
               at: row.failedAt!,
               reason,
-              afterLastSample: !observed || row.failedAt! >= row.measured_at!,
+              afterLastSample: lastCheckedAt === null || row.failedAt! >= lastCheckedAt,
             }
           : null,
     };

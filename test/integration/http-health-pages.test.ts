@@ -1005,14 +1005,27 @@ describe("served workflow and metric health pages", () => {
         }),
       );
 
+      const metricsSvc = createMetricService({ getDb: () => db });
+      metricsSvc.define({ id: "quality.success", owner: "research", measureInterval: 300_000 });
+      metricsSvc.record("quality.success", 0.98, { measuredAt: now - 300 });
+
       const summaryRes = await fetch(`${base}/api/observability?days=1`);
       expect(summaryRes.status).toBe(200);
       const summary = await summaryRes.json();
-      expect(summary.host.improvementWorkflow).toBe("alex/develop-host-change");
-      expect(summary.apps.find((a: { appId: string }) => a.appId === "research")?.scorecard).toMatchObject({
+      expect(summary.host.improvementWorkflow).toBeNull();
+      const researchSummary = summary.apps.find((a: { appId: string }) => a.appId === "research");
+      expect(researchSummary?.improvementWorkflow).toBeNull();
+      expect(researchSummary?.metrics.defined).toBe(1);
+      expect(researchSummary?.scorecard).toMatchObject({
         status: "scored",
         sampleSize: 1,
         confidence: "low-sample",
+      });
+      const metricsListRes = await fetch(`${base}/api/metrics?id=quality.success`);
+      expect(metricsListRes.status).toBe(200);
+      expect((await metricsListRes.json()).metrics[0]?.scope).toEqual({
+        kind: "app",
+        appId: "research",
       });
 
       const browser = await puppeteer.launch({
@@ -1038,18 +1051,21 @@ describe("served workflow and metric health pages", () => {
         await page.goto(base, { waitUntil: "domcontentloaded" });
         await page.waitForSelector('#top-down-overview [data-host-summary]');
         await page.waitForSelector('#top-down-overview [data-app-card="research"]');
-        expect(await page.$eval("#top-down-overview", (el) => el.textContent || "")).toContain("Host Platform (Agent Harness)");
+        const overviewText = await page.$eval("#top-down-overview", (el) => el.textContent || "");
+        expect(overviewText).toContain("Host Platform (Agent Harness)");
+        expect(overviewText).not.toContain("alex/develop-host-change");
         expect(await page.$$eval('#top-down-overview svg[data-trend-spark]', (svgs) => svgs.length)).toBeGreaterThanOrEqual(10);
         expect(await page.$eval('#top-down-overview [data-app-card="research"]', (el) => el.textContent || "")).toContain(
           "low-sample (n=1)",
         );
-        // R-01: Alert badge is a keyboard-focusable <a> link, and 4-tier handler ownership renders in strip.
+        // R-01 & alert declaration: badge is a keyboard-focusable <a> link, and unjudged alerts never claim routing.
         expect(
           await page.$eval('#top-down-overview [data-host-summary] a.breach-badge', (el) => el.getAttribute("href")),
         ).toBe("/metrics");
-        expect(await page.$eval("#top-down-overview [data-active-alerts]", (el) => el.textContent || "")).toContain(
-          "Host →",
-        );
+        const stripText = await page.$eval("#top-down-overview [data-active-alerts]", (el) => el.textContent || "");
+        expect(stripText).toContain("Host · Owner: system:host");
+        expect(stripText).toContain("No recorded handling");
+        expect(stripText).not.toContain("Routed to");
 
         metricsRequests.length = 0;
         await page.goto(base + "/metrics", { waitUntil: "domcontentloaded" });
@@ -1074,6 +1090,11 @@ describe("served workflow and metric health pages", () => {
         const drillText = await page.$eval('#metrics-top-down [data-app-drilldown="research"]', (el) => el.textContent || "");
         expect(drillText).toContain("1. Contributing Tasks");
         expect(drillText).toContain("worker");
+        // quality.success (different ID prefix from owner 'research') remains visible under research drill-down!
+        await page.waitForSelector("#metrics-by-owner [data-metric-search]");
+        expect(await page.$$eval("#metrics-by-owner [data-metric-search]:not([hidden])", (rows) => rows.map((r) => r.textContent || "").join("\n"))).toContain(
+          "quality.success",
+        );
         expect(await page.$("#metrics-top-down img")).toBeNull();
         expect(
           await page.evaluate(() => (window as unknown as { healthInjected?: boolean }).healthInjected),
@@ -1081,6 +1102,8 @@ describe("served workflow and metric health pages", () => {
         expect(errors).toEqual([]);
       } finally {
         db.prepare("DELETE FROM metric_alerts WHERE id = 901").run();
+        db.prepare("DELETE FROM metric_snapshots WHERE metric_id = 'quality.success'").run();
+        db.prepare("DELETE FROM metrics WHERE id = 'quality.success'").run();
         await browser.close();
       }
     },

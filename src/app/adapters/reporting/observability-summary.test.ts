@@ -1,46 +1,53 @@
+import { execFileSync } from "node:child_process";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createExecutionUsage } from "@may-agent/sdk/runtime";
 import { observeReply, preparationFixture, usageReply } from "../../../../test/fixtures/execution-usage.js";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { saveExecutionUsage } from "../../../lib/db/execution-usage.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { createMetricService } from "../../../lib/metrics.js";
+import { EventBus } from "../../core/events/bus.js";
 import {
   classifyMetricScope,
+  describeOpenAlert,
   observabilitySummaryQuery,
   probeAzureCliAuthHeadroom,
   readAgentCapabilityRollups,
   readObservabilitySummary,
   resolveAppCatalog,
+  resolveObservabilityCatalog,
+  runBoundedDiskCacheHygiene,
 } from "./observability-summary.js";
-import { readMetricObservations } from "./metric-observations.js";
-import { STALE_ACTIVE_SOURCE_QUERY } from "../../metric-source-measurement.js";
-import { HOST_HARNESS_METRICS, buildAppEvolutionMetrics } from "./evolution-metrics.js";
+import { readMetricHistory, readMetricObservations } from "./metric-observations.js";
+import {
+  attachMetricSourceMeasurement,
+  measureSourceMetrics,
+  STALE_ACTIVE_SOURCE_QUERY,
+} from "../../metric-source-measurement.js";
+import { HOST_AUTH_REMAINING_METRIC_ID, HOST_HARNESS_METRICS, buildAppEvolutionMetrics } from "./evolution-metrics.js";
 
 describe("top-down Host vs. Apps observability summary", () => {
   let db: SqliteDb;
   let root: string;
   let projectsRoot: string;
   const now = 2_000_000_000_000;
+  const defaultLoadedApps = [
+    { id: "may", owner: "may" },
+    { id: "alex", owner: "alex" },
+    { id: "aks-rp-e2e", owner: "aks-explorer" },
+    { id: "scout-knowledge-lib", owner: "scout" },
+  ];
 
   beforeEach(() => {
     db = openDatabase(":memory:");
     applyDbSchema(db);
     root = mkdtempSync(join(tmpdir(), "may-obs-summary-"));
     projectsRoot = join(root, "projects");
-    for (const [appId, agent] of [
-      ["may", "may"],
-      ["alex", "alex"],
-      ["aks-rp-e2e", "aks-explorer"],
-      ["scout-knowledge-lib", "scout"],
-    ] as const) {
-      const dir = join(projectsRoot, `${appId}.app`);
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(dir + "/app.ts", `export default { id: "${appId}", agent: "${agent}" };\n`);
-    }
+    mkdirSync(projectsRoot, { recursive: true });
   });
 
   afterEach(() => {
@@ -49,7 +56,7 @@ describe("top-down Host vs. Apps observability summary", () => {
   });
 
   test("classifies metrics from declarations and catalog without Host hardcoding", () => {
-    const catalog = resolveAppCatalog({ projectsRoot });
+    const catalog = resolveAppCatalog({ projectsRoot, loadedApps: defaultLoadedApps });
     expect(classifyMetricScope({ id: "may.daemon-sql-time-percent", owner: "may" }, catalog)).toEqual({
       kind: "host",
     });
@@ -299,6 +306,9 @@ describe("top-down Host vs. Apps observability summary", () => {
       query: observabilitySummaryQuery(new URLSearchParams("days=1"), now),
       projectsRoot,
       stateDir: root,
+      loadedApps: defaultLoadedApps,
+      hostImprovementWorkflow: "alex/develop-host-change",
+      appImprovementWorkflows: { "aks-rp-e2e": "alex/develop-change" },
       now,
       envProbes: {
         disk: { totalBytes: 100_000_000_000, availableBytes: 8_000_000_000, usedPercent: 92 },
@@ -390,6 +400,7 @@ describe("top-down Host vs. Apps observability summary", () => {
       query: observabilitySummaryQuery(new URLSearchParams("days=1&appId=aks-rp-e2e"), now),
       projectsRoot,
       stateDir: root,
+      loadedApps: defaultLoadedApps,
       now,
       envProbes: {
         disk: { totalBytes: 100_000_000_000, availableBytes: 8_000_000_000, usedPercent: 92 },
@@ -409,6 +420,7 @@ describe("top-down Host vs. Apps observability summary", () => {
       query: observabilitySummaryQuery(new URLSearchParams("days=1&appId=scout-knowledge-lib"), now),
       projectsRoot,
       stateDir: root,
+      loadedApps: defaultLoadedApps,
       now,
     });
     expect(scoutAfterClose.apps[0]?.outcomes).toMatchObject({
@@ -471,18 +483,7 @@ describe("top-down Host vs. Apps observability summary", () => {
 
   test("covers PR #627 regressions: catalog parity, disabled Apps, rubric validation, multi-App dedup, attempt owner, recovery stages, single lease, and workflow-only offload", () => {
     const metrics = createMetricService({ getDb: () => db, now: () => now });
-    // Disabled App on disk with retained active DB Task rows is excluded from active cards (R-10),
-    // and nested subscription/task `id:` literals before `defineApp({...})` never masquerade as App IDs.
-    writeFileSync(
-      join(projectsRoot, "may.app", "app.ts"),
-      `const sub = { id: "evaluation-intake", agent: "sub-agent" };\nexport default defineApp({ subscriptions: [sub], id: "may", agent: "may" });\n`,
-    );
-    expect(resolveAppCatalog({ projectsRoot }).installedIds).toEqual([
-      "aks-rp-e2e",
-      "alex",
-      "may",
-      "scout-knowledge-lib",
-    ]);
+    // Disabled App on disk with retained active DB Task rows is excluded from active cards (R-10).
     const disabledDir = join(projectsRoot, "retired-app.app");
     mkdirSync(disabledDir, { recursive: true });
     writeFileSync(join(disabledDir, "app.ts"), 'export default { id: "retired-app", agent: "retired-owner" };\n');
@@ -500,7 +501,7 @@ describe("top-down Host vs. Apps observability summary", () => {
     ];
     metrics.define({ id: "quality.success", owner: "researcher", measureInterval: 300_000 });
     metrics.record("quality.success", 0.99, { measuredAt: now - 1_000 });
-    const catalog = resolveAppCatalog({ projectsRoot, loadedApps });
+    const catalog = resolveObservabilityCatalog(db, { projectsRoot, loadedApps });
     expect(readMetricObservations(db, now, ["quality.success"], catalog).metrics[0]?.scope).toEqual({
       kind: "app",
       appId: "research",
@@ -544,8 +545,11 @@ describe("top-down Host vs. Apps observability summary", () => {
     // Workflow-only App: 1 workflow attempt + 1 workflow_run + 0 agent calls => 0 agent invocations, 100% offload (R-14).
     db.prepare(
       `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
-       VALUES ('wf-only', 'att-wf-1', 'hygiene', 1, 'completed', ?, '{"owner":"wf-agent","handler":"workflow:hygiene"}')`,
-    ).run(now - 50_000);
+       VALUES ('wf-only', 'att-wf-1', 'hygiene', 1, 'completed', ?, ?)`,
+    ).run(
+      now - 50_000,
+      JSON.stringify({ owner: "wf-agent", handler: "workflow:hygiene", finishedAt: new Date(now - 40_000).toISOString() }),
+    );
     db.prepare(
       `INSERT INTO workflow_runs(runId, workflow, task, app_id, status, startedAt, endedAt, parentWorkflowRunId)
        VALUES ('wr-wf-1', 'wf-only/hygiene', 'clean', 'wf-only', 'done', ?, ?, NULL)`,
@@ -646,5 +650,251 @@ describe("top-down Host vs. Apps observability summary", () => {
       gated: true,
       score: 25,
     });
+  });
+
+  test("covers round-3 review regressions: async cache hygiene preserves owned checkouts, generic Host defaults, numeric->no_exposure->numeric, aligned finish-window cohorts, auth failure vs unconfigured, streak minSampleSize, and APP_ROOT discovery", async () => {
+    // 1. Bounded async cache hygiene prunes only disposable cache entries within maxEntries and NEVER deletes old clean Git checkouts.
+    const cacheDir = join(root, "go-cache");
+    mkdirSync(cacheDir, { recursive: true });
+    for (let i = 0; i < 6; i++) {
+      mkdirSync(join(cacheDir, `shard-${i}`), { recursive: true });
+      writeFileSync(join(cacheDir, `shard-${i}`, "blob"), "cached");
+    }
+    const worktreesDir = join(root, "workspace-worktrees");
+    const ownedCheckout = join(worktreesDir, "owned-task-wt");
+    mkdirSync(ownedCheckout, { recursive: true });
+    execFileSync("git", ["-C", ownedCheckout, "init", "-q"]);
+    execFileSync("git", ["-C", ownedCheckout, "config", "user.email", "test@example.com"]);
+    execFileSync("git", ["-C", ownedCheckout, "config", "user.name", "Test"]);
+    writeFileSync(join(ownedCheckout, "README.md"), "important task state\n");
+    execFileSync("git", ["-C", ownedCheckout, "add", "README.md"]);
+    execFileSync("git", ["-C", ownedCheckout, "commit", "-q", "-m", "init"]);
+    writeFileSync(join(ownedCheckout, ".gitignore"), "recovery.json\n");
+    execFileSync("git", ["-C", ownedCheckout, "add", ".gitignore"]);
+    execFileSync("git", ["-C", ownedCheckout, "commit", "-q", "-m", "ignore"]);
+    writeFileSync(join(ownedCheckout, "recovery.json"), '{"recoverable":true}\n');
+    const threeDaysAgo = new Date(Date.now() - 3 * 86_400_000);
+    utimesSync(ownedCheckout, threeDaysAgo, threeDaysAgo);
+
+    const hygiene = await runBoundedDiskCacheHygiene({
+      now,
+      cacheDir,
+      maxEntries: 3,
+      deadlineMs: 2_000,
+      ignoreCooldown: true,
+    });
+    expect(hygiene).toEqual({ prunedEntries: 3, stoppedByBudget: true });
+    expect(existsSync(join(ownedCheckout, "recovery.json"))).toBe(true); // Old, clean, owned checkout retained!
+
+    // 2. Host defaults stay generic (no alex/may hardcoding), unjudged system alerts don't claim routing, and absent Apps hide workflows.
+    for (const def of HOST_HARNESS_METRICS) {
+      expect(def.owner).toBe("system:host");
+      expect((def.config as { handler?: unknown } | undefined)?.handler).toBeUndefined();
+    }
+    expect(
+      describeOpenAlert({
+        alertId: 77,
+        metricId: "event.unhandled-signal-count-1h",
+        owner: "system:host",
+        message: "Unhandled signal",
+      }),
+    ).toMatchObject({
+      scope: { kind: "host" },
+      declaredOwner: "system:host",
+      declaredHandler: null,
+      handler: "system:host",
+      handlingStatus: "No recorded handling",
+      linkedTask: null,
+    });
+    const noAlexSummary = readObservabilitySummary(db, {
+      query: observabilitySummaryQuery(new URLSearchParams("days=1"), now),
+      projectsRoot,
+      stateDir: root,
+      loadedApps: [{ id: "billing", owner: "cashier" }],
+      hostImprovementWorkflow: "alex/develop-host-change",
+      appImprovementWorkflows: { billing: "alex/develop-change" },
+      now,
+    });
+    expect(noAlexSummary.host.improvementWorkflow).toBeNull();
+    expect(noAlexSummary.apps[0]?.improvementWorkflow).toBeNull();
+
+    // 3. numeric -> no_exposure -> numeric clears obsolete current value while preserving history and failure timestamps.
+    let clockTs = now - 300_000;
+    const ms = createMetricService({ getDb: () => db, now: () => clockTs });
+    ms.define({ id: "billing.spin_ratio_24h", owner: "cashier", project: "billing", measureInterval: 900_000 });
+    db.prepare(
+      `INSERT INTO events(event_type, source, owner, metric_id, timestamp, data)
+       VALUES ('metric.measurement.failed', 'test', 'system:host', 'billing.spin_ratio_24h', ?, '{"reason":"transient earlier"}')`,
+    ).run(now - 400_000);
+    ms.record("billing.spin_ratio_24h", 0.5, { sampleSize: 4, measuredAt: now - 300_000 });
+    expect(readMetricObservations(db, now - 250_000, ["billing.spin_ratio_24h"]).metrics[0]).toMatchObject({
+      current: 0.5,
+      noExposure: false,
+      freshness: "fresh",
+      collectionFailure: { afterLastSample: false },
+    });
+    // Newer no_exposure check supersedes current numeric sample without erasing historical snapshot or reviving old failure.
+    clockTs = now - 100_000;
+    db.run("UPDATE metrics SET config = json_set(COALESCE(config, '{}'), '$.lastNoExposureAt', ?) WHERE id = 'billing.spin_ratio_24h'", [
+      now - 100_000,
+    ]);
+    expect(readMetricObservations(db, now - 50_000, ["billing.spin_ratio_24h"]).metrics[0]).toMatchObject({
+      current: null,
+      observation: null,
+      noExposure: true,
+      freshness: "fresh",
+      collectionFailure: { afterLastSample: false },
+    });
+    expect(ms.get("billing.spin_ratio_24h")?.observation).toBeNull();
+    expect(readMetricHistory(db, "billing.spin_ratio_24h", { start: now - 500_000, end: now }).snapshots).toHaveLength(1);
+    // Subsequent numeric sample restores current observation.
+    clockTs = now - 10_000;
+    ms.record("billing.spin_ratio_24h", 0.25, { sampleSize: 8, measuredAt: now - 10_000 });
+    expect(readMetricObservations(db, now, ["billing.spin_ratio_24h"]).metrics[0]).toMatchObject({
+      current: 0.25,
+      noExposure: false,
+      freshness: "fresh",
+      collectionFailure: { afterLastSample: false },
+    });
+
+    // 4. Streak minSampleSize rejects [1, 1, 5] and only breaches after 3 consecutive >= 5 snapshots.
+    ms.define({
+      id: "test.sustained_exposure",
+      type: "gauge",
+      threshold: 0.8,
+      alertOp: "<",
+      config: { alert: { mode: "sustained", consecutive: 3, minSampleSize: 5 } },
+    });
+    for (const [idx, n] of [
+      [1, 1],
+      [2, 1],
+      [3, 5],
+    ] as const) {
+      clockTs = now - (10 - idx) * 1_000;
+      ms.record("test.sustained_exposure", 0.4, { sampleSize: n, measuredAt: clockTs });
+      expect(ms.evaluate("test.sustained_exposure")[0]?.status).toBe("unknown");
+    }
+    for (const idx of [4, 5] as const) {
+      clockTs = now - (10 - idx) * 1_000;
+      ms.record("test.sustained_exposure", 0.4, { sampleSize: 5, measuredAt: clockTs });
+    }
+    expect(ms.evaluate("test.sustained_exposure")[0]?.status).toBe("breached");
+
+    // 5. Shared Host finish-window cohort (started 25h ago, settled 1h ago) + strict `< end` cutoff exclusion.
+    const liveNow = Date.now();
+    const cohortDb = openDatabase(":memory:");
+    applyDbSchema(cohortDb);
+    try {
+      cohortDb
+        .prepare(
+          `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, accepted_result_state, started_at, attempt_json)
+           VALUES
+             ('billing', 'cross-boundary-settled', 't1', 1, 'completed', 'converged', ?, ?),
+             ('billing', 'at-cut-failed', 't1', 1, 'failed', NULL, ?, ?),
+             ('billing', 'after-cut-failed', 't1', 1, 'failed', NULL, ?, ?)`,
+        )
+        .run(
+          liveNow - 25 * 3_600_000,
+          JSON.stringify({ finishedAt: new Date(liveNow - 3_600_000).toISOString(), acceptedResult: { state: "converged" } }),
+          liveNow - 10_000,
+          JSON.stringify({ finishedAt: new Date(liveNow).toISOString() }),
+          liveNow - 10_000,
+          JSON.stringify({ finishedAt: new Date(liveNow + 60_000).toISOString() }),
+        );
+      const pinned = readObservabilitySummary(cohortDb, {
+        query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+        projectsRoot,
+        stateDir: root,
+        loadedApps: [{ id: "billing", owner: "cashier" }],
+        now: liveNow,
+      });
+      // Pinned window [liveNow - 24h, liveNow) includes cross-boundary settled and excludes both at-cut & after-cut failures!
+      expect(pinned.host.plumbing).toMatchObject({ terminalTaskAttemptsWindow: 1, failedTaskAttemptsWindow: 0 });
+      expect(pinned.host.trends.settlementIntegrity).toMatchObject({ current: 1, sampleSize: 1 });
+      expect(pinned.apps[0]?.outcomes.convergedMilestonesWindow).toBe(1);
+      expect(pinned.apps[0]?.blockers.failedAttemptsWindow).toBe(0);
+
+      // Remove at-cut row (which is < wall clock once 1ms elapses) and verify live SQL queries match Host tile (1 settled, after-cut excluded).
+      cohortDb.prepare("DELETE FROM app_task_attempts WHERE attempt_id = 'at-cut-failed'").run();
+      const settlementSql = HOST_HARNESS_METRICS.find((m) => m.id === "host.settlement_integrity_ratio")!.sourceQuery!;
+      const burdenSql = HOST_HARNESS_METRICS.find((m) => m.id === "host.harness_burden_ratio")!.sourceQuery!;
+      expect(cohortDb.prepare(settlementSql).get()).toMatchObject({ value: 1, sampleSize: 1 });
+      expect(cohortDb.prepare(burdenSql).get()).toMatchObject({ value: 0, sampleSize: 1 });
+    } finally {
+      cohortDb.close();
+    }
+
+    // 6. Configured auth sensor with unreadable/malformed cache records failure (not no_exposure), and APP_ROOT != STATE_DIR registers loaded Apps only.
+    const srvHost = join(root, "srv-host");
+    const dataState = join(root, "data-state");
+    const badAzureDir = join(root, "bad-azure");
+    mkdirSync(join(srvHost, "projects", "evaluation.app"), { recursive: true });
+    writeFileSync(
+      join(srvHost, "projects", "evaluation.app", "app.ts"),
+      'export default { id: "evaluation-canary", agent: "evaluator" };\n',
+    );
+    mkdirSync(join(srvHost, "projects", "broken.app"), { recursive: true });
+    writeFileSync(join(srvHost, "projects", "broken.app", "app.ts"), 'throw new Error("broken module");\n');
+    mkdirSync(dataState, { recursive: true });
+    mkdirSync(badAzureDir, { recursive: true });
+
+    const prevAppRoot = process.env.APP_ROOT;
+    const prevStateDir = process.env.STATE_DIR;
+    const prevProjectsRoot = process.env.PROJECTS_ROOT;
+    const prevAzureDir = process.env.AZURE_CONFIG_DIR;
+    process.env.APP_ROOT = srvHost;
+    process.env.STATE_DIR = dataState;
+    delete process.env.PROJECTS_ROOT;
+    process.env.AZURE_CONFIG_DIR = badAzureDir;
+    try {
+      const bus = new EventBus();
+      const collector = attachMetricSourceMeasurement({ bus, persistDir: dataState });
+      await collector.idle();
+      const stateDb = getDb(dataState);
+      const registeredIds = (stateDb.prepare("SELECT id FROM metrics ORDER BY id").all() as Array<{ id: string }>).map(
+        (r) => r.id,
+      );
+      expect(registeredIds).toContain("evaluation-canary.verified_outcomes_24h");
+      expect(registeredIds.some((id) => id.startsWith("evaluation."))).toBe(false);
+      expect(registeredIds.some((id) => id.startsWith("broken."))).toBe(false);
+
+      // Unconfigured Azure dir -> quiet no_exposure
+      const unconf = await measureSourceMetrics({
+        bus,
+        persistDir: dataState,
+        isDue: (m) => m.id === HOST_AUTH_REMAINING_METRIC_ID,
+      });
+      expect(unconf.failures).toEqual([]);
+      expect(unconf.skipped).toEqual([HOST_AUTH_REMAINING_METRIC_ID]);
+
+      // Malformed configured cache -> collection failure, does NOT advance lastNoExposureAt!
+      const beforeCfg = (
+        stateDb.prepare("SELECT config FROM metrics WHERE id = ?").get(HOST_AUTH_REMAINING_METRIC_ID) as { config: string }
+      ).config;
+      writeFileSync(join(badAzureDir, "msal_token_cache.json"), "{not-valid-json");
+      const brokenAuth = await measureSourceMetrics({
+        bus,
+        persistDir: dataState,
+        measuredAt: now + 60_000,
+        isDue: (m) => m.id === HOST_AUTH_REMAINING_METRIC_ID,
+      });
+      expect(brokenAuth.failures).toEqual([
+        { id: HOST_AUTH_REMAINING_METRIC_ID, reason: expect.stringContaining("malformed") },
+      ]);
+      const afterCfg = (
+        stateDb.prepare("SELECT config FROM metrics WHERE id = ?").get(HOST_AUTH_REMAINING_METRIC_ID) as { config: string }
+      ).config;
+      expect(afterCfg).toBe(beforeCfg);
+    } finally {
+      if (prevAppRoot === undefined) delete process.env.APP_ROOT;
+      else process.env.APP_ROOT = prevAppRoot;
+      if (prevStateDir === undefined) delete process.env.STATE_DIR;
+      else process.env.STATE_DIR = prevStateDir;
+      if (prevProjectsRoot === undefined) delete process.env.PROJECTS_ROOT;
+      else process.env.PROJECTS_ROOT = prevProjectsRoot;
+      if (prevAzureDir === undefined) delete process.env.AZURE_CONFIG_DIR;
+      else process.env.AZURE_CONFIG_DIR = prevAzureDir;
+      closeDb(dataState);
+    }
   });
 });

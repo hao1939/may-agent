@@ -334,18 +334,19 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
 
       // Minimum exposure gate (Prometheus-style minSampleSize): avoid noisy ratio/latency alerts on tiny denominators.
       const minSampleSize = alertConfig?.minSampleSize;
-      if (Number.isSafeInteger(minSampleSize) && minSampleSize > 0 && current !== null) {
+      const hasExposureGate = Number.isSafeInteger(minSampleSize) && minSampleSize > 0;
+      if (hasExposureGate && current !== null) {
         const latestSample = db
           .prepare(
             "SELECT sample_size FROM metric_snapshots WHERE metric_id = ? AND measured_at <= ? ORDER BY measured_at DESC, id DESC LIMIT 1",
           )
           .get(row.id, ts) as { sample_size: number | null } | null;
-        if (latestSample && latestSample.sample_size !== null && latestSample.sample_size < minSampleSize) {
+        if (!latestSample || latestSample.sample_size === null || latestSample.sample_size < minSampleSize) {
           results.push({
             metricId: row.id,
             status: "unknown",
             calculation,
-            message: `Insufficient exposure (${latestSample.sample_size} < ${minSampleSize})`,
+            message: `Insufficient exposure (${latestSample?.sample_size ?? "null"} < ${minSampleSize})`,
           });
           return;
         }
@@ -361,7 +362,8 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       let breached = false;
       const thresholdBreached = current !== null && metricThresholdBreached({ current, threshold, alert_op: row.alert_op });
       let rateBreached = false;
-      let ratePer: number | null = null;
+      let ratePer: number | null;
+      ratePer = null;
       let rateLimit: number | null = null;
       let rateDirection: "below" | "above" | null = null;
       let stallDetected = false;
@@ -370,14 +372,29 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       const consecutive = (metricType === "health" && alertConfig?.mode === "consecutive_failures") ||
         (metricType === "gauge" && alertConfig?.mode === "sustained");
       if (consecutive) {
-const configuredCount = alertConfig.count ?? alertConfig.consecutive;
+        const configuredCount = alertConfig.count ?? alertConfig.consecutive;
         const requiredCount =
           Number.isSafeInteger(configuredCount) && configuredCount > 0 ? configuredCount : 3;
-        const snapshots = db.prepare(`SELECT value FROM metric_snapshots WHERE metric_id = ? AND measured_at <= ?
-          ORDER BY measured_at DESC, id DESC LIMIT ?`).all(row.id, ts, requiredCount) as Array<{ value: number }>;
+        const snapshots = db.prepare(`SELECT value, sample_size FROM metric_snapshots WHERE metric_id = ? AND measured_at <= ?
+          ORDER BY measured_at DESC, id DESC LIMIT ?`).all(row.id, ts, requiredCount) as Array<{
+          value: number;
+          sample_size: number | null;
+        }>;
         if (thresholdBreached && snapshots.length < requiredCount) {
           results.push({ metricId: row.id, status: "unknown", calculation, message: "Insufficient samples for consecutive rule" });
           return;
+        }
+        if (thresholdBreached && hasExposureGate) {
+          const underExposed = snapshots.find((s) => s.sample_size === null || s.sample_size < minSampleSize);
+          if (underExposed) {
+            results.push({
+              metricId: row.id,
+              status: "unknown",
+              calculation,
+              message: `Insufficient exposure in consecutive window (${underExposed.sample_size ?? "null"} < ${minSampleSize})`,
+            });
+            return;
+          }
         }
         breached = thresholdBreached && snapshots.every((s) => metricThresholdBreached({ current: s.value, threshold, alert_op: row.alert_op }));
         if (breached) alertKind = alertConfig.mode;
@@ -531,12 +548,26 @@ const configuredCount = alertConfig.count ?? alertConfig.consecutive;
     const db = options.getDb();
     const metric = db.prepare("SELECT * FROM metrics WHERE id = ?").get(id) as Metric | null;
     if (!metric) return null;
+    const parsedCfg = parseConfig(metric.config);
+    const lastNoExposureAt =
+      typeof parsedCfg?.lastNoExposureAt === "number" &&
+      Number.isSafeInteger(parsedCfg.lastNoExposureAt) &&
+      parsedCfg.lastNoExposureAt > 0
+        ? parsedCfg.lastNoExposureAt
+        : null;
+    const ts = now();
     const sample = db
       .prepare(`SELECT value, measured_at AS measuredAt, sample_size AS sampleSize, note
         FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC, id DESC LIMIT 1`)
       .get(id) as Metric["observation"];
-    return { ...metric, observation: sample ?? null,
-      calculation: calculateMetric(db, { ...metric, config: parseConfig(metric.config) }, now()) };
+    const superseded =
+      lastNoExposureAt !== null && lastNoExposureAt <= ts && (!sample || lastNoExposureAt > sample.measuredAt);
+    return {
+      ...metric,
+      current: superseded ? null : metric.current,
+      observation: superseded ? null : (sample ?? null),
+      calculation: calculateMetric(db, { ...metric, config: parsedCfg }, ts),
+    };
   }
 
   return {

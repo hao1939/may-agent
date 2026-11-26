@@ -3,10 +3,24 @@ import type { MetricDefinition } from "../../../lib/metrics.js";
 export const EVOLUTION_MEASURE_INTERVAL_MS = 900_000; // 15 minutes
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
+export const ATTEMPT_FINISH_LOOKBACK_SLACK_MS = 30 * DAY_MS;
 const NOW_SQL = `CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER)`;
 
 export const HOST_DISK_USED_METRIC_ID = "host.disk_used_ratio";
 export const HOST_AUTH_REMAINING_METRIC_ID = "host.auth_remaining_seconds";
+
+export function attemptFinishMsSql(alias = ""): string {
+  const prefix = alias ? `${alias}.` : "";
+  return `CAST(unixepoch(json_extract(${prefix}attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER)`;
+}
+
+const HOST_FINISH_MS = attemptFinishMsSql();
+const HOST_TERMINAL_WINDOW_24H = `started_at >= ${NOW_SQL} - ${DAY_MS + ATTEMPT_FINISH_LOOKBACK_SLACK_MS}
+  AND started_at < ${NOW_SQL}
+  AND state IN ('completed', 'failed', 'interrupted')
+  AND ${HOST_FINISH_MS} IS NOT NULL
+  AND ${HOST_FINISH_MS} >= ${NOW_SQL} - ${DAY_MS}
+  AND ${HOST_FINISH_MS} < ${NOW_SQL}`;
 
 const UNRESOLVED_RECOVERY_SQL = `SELECT COUNT(DISTINCT i.id) AS unresolved
   FROM app_inbox_items i, json_each(COALESCE(i.recovery_json, '{}')) r
@@ -19,12 +33,14 @@ const UNRESOLVED_RECOVERY_SQL = `SELECT COUNT(DISTINCT i.id) AS unresolved
 /**
  * Canonical Host (Agent Harness) metrics using Prometheus base units (`ratio`, `seconds`)
  * and explicit `sampleSize` denominators (`value = NULL, sampleSize = 0` -> quiet no_exposure skip).
+ * Host defaults stay generic (`owner: "system:host"`); installations configure operational
+ * destinations via metric definitions or trusted installation configuration.
  */
 export const HOST_HARNESS_METRICS: MetricDefinition[] = [
   {
     id: "host.settlement_integrity_ratio",
     name: "Host settlement integrity (24h)",
-    owner: "alex",
+    owner: "system:host",
     type: "gauge",
     unit: "ratio",
     measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
@@ -33,18 +49,17 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     priority: "P2",
     config: {
       scope: "host",
-      handler: "alex",
       alert: { mode: "sustained", consecutive: 3, minSampleSize: 10 },
     },
     source: "Cleanly settled Task attempts vs. terminal attempts + unresolved input recovery boundaries (24h)",
     description:
-      "Ratio [0..1] of cleanly settled Task attempts over all terminal (completed, failed, interrupted) attempts plus unresolved input recovery boundaries in the rolling 24h window. Empty exposure (0/0) skips quietly rather than recording 0 or 1.",
+      "Ratio [0..1] of cleanly settled Task attempts over all terminal (completed, failed, interrupted) attempts finishing in the rolling 24h window plus unresolved input recovery boundaries. Empty exposure (0/0) skips quietly rather than recording 0 or 1.",
     sourceQuery: `WITH att AS (
         SELECT
           COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL THEN 1 END) AS settled,
-          COUNT(CASE WHEN state IN ('completed', 'failed', 'interrupted') THEN 1 END) AS terminal
+          COUNT(*) AS terminal
         FROM app_task_attempts
-        WHERE started_at >= ${NOW_SQL} - ${DAY_MS} AND started_at < ${NOW_SQL}
+        WHERE ${HOST_TERMINAL_WINDOW_24H}
       ),
       rec AS (${UNRESOLVED_RECOVERY_SQL})
       SELECT
@@ -121,13 +136,13 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     config: { scope: "host", alert: { disabled: true, mode: "sustained", consecutive: 3, minSampleSize: 5 } },
     source: "Mechanical attempt failures/interrupts + workflow errors + unresolved recoveries over total runs (24h)",
     description:
-      "Fraction [0..1] of Host execution units experiencing harness-level friction (failed/interrupted attempts, top-level workflow errors, or unresolved input recovery boundaries) in the rolling 24h window.",
+      "Fraction [0..1] of Host execution units experiencing harness-level friction (failed/interrupted terminal attempts, top-level workflow errors, or unresolved input recovery boundaries) in the rolling 24h window.",
     sourceQuery: `WITH att AS (
         SELECT
           COUNT(CASE WHEN state IN ('failed', 'interrupted') THEN 1 END) AS friction,
           COUNT(*) AS total
         FROM app_task_attempts
-        WHERE started_at >= ${NOW_SQL} - ${DAY_MS} AND started_at < ${NOW_SQL}
+        WHERE ${HOST_TERMINAL_WINDOW_24H}
       ),
       wf AS (
         SELECT
@@ -147,7 +162,7 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
   {
     id: HOST_DISK_USED_METRIC_ID,
     name: "Host disk usage ratio",
-    owner: "alex",
+    owner: "system:host",
     type: "gauge",
     unit: "ratio",
     measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
@@ -156,17 +171,16 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     priority: "P1",
     config: {
       scope: "host",
-      handler: "auto-hygiene → alex",
       alert: { mode: "sustained", consecutive: 2 },
     },
-    source: "statfs state volume used bytes / total bytes (runs mechanical cache/worktree auto-hygiene first at >= 92%)",
+    source: "statfs state volume used bytes / total bytes (schedules bounded async cache hygiene at >= 92%)",
     description:
-      "Host state filesystem usage ratio [0..1] sampled via statfs. Triggers deterministic cache/clean-worktree auto-hygiene at >= 0.92 and alerts Alex only if sustained pressure persists.",
+      "Host state filesystem usage ratio [0..1] sampled via statfs. Schedules bounded asynchronous build-cache hygiene off the event loop at >= 92% and alerts when sustained pressure persists.",
   },
   {
     id: HOST_AUTH_REMAINING_METRIC_ID,
     name: "Host shared Azure CLI auth remaining validity",
-    owner: "may",
+    owner: "system:host",
     type: "gauge",
     unit: "seconds",
     measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
@@ -175,12 +189,11 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     priority: "P2",
     config: {
       scope: "host",
-      handler: "may → human (az login)",
       alert: { mode: "sustained", consecutive: 2 },
     },
     source: "Local Azure CLI MSAL token expiry timestamp minus current time (no_exposure when unconfigured)",
     description:
-      "Remaining validity in seconds of local Azure CLI credentials when configured. Skips quietly when unconfigured; alerts May to request human az login when expired.",
+      "Remaining validity in seconds of local Azure CLI credentials when configured. Skips quietly when unconfigured; records a collection failure if configured credentials cannot be inspected.",
   },
 ];
 
@@ -195,11 +208,11 @@ function escapeSqlLiteral(value: string): string {
  */
 export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): MetricDefinition[] {
   const sqlApp = escapeSqlLiteral(appId);
-  const attemptTimeExpr = `COALESCE(CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), started_at)`;
-  // Bound `started_at` with 7d slack so SQLite uses `idx_app_task_attempts_started (started_at, app_id)`
-  // instead of scanning every historical `attempt_json` row for high-volume Apps (e.g., 14k+ rows on `may`).
-  const startedBound24h = `started_at >= ${NOW_SQL} - ${DAY_MS + WEEK_MS} AND started_at < ${NOW_SQL}`;
-  const startedBound7d = `started_at >= ${NOW_SQL} - ${2 * WEEK_MS} AND started_at < ${NOW_SQL}`;
+  const finishExpr = attemptFinishMsSql();
+  const startedBound24h = `started_at >= ${NOW_SQL} - ${DAY_MS + ATTEMPT_FINISH_LOOKBACK_SLACK_MS} AND started_at < ${NOW_SQL}`;
+  const startedBound7d = `started_at >= ${NOW_SQL} - ${WEEK_MS + ATTEMPT_FINISH_LOOKBACK_SLACK_MS} AND started_at < ${NOW_SQL}`;
+  const terminal24h = `state IN ('completed', 'failed', 'interrupted') AND ${finishExpr} IS NOT NULL AND ${finishExpr} >= ${NOW_SQL} - ${DAY_MS} AND ${finishExpr} < ${NOW_SQL}`;
+  const terminal7d = `state IN ('completed', 'failed', 'interrupted') AND ${finishExpr} IS NOT NULL AND ${finishExpr} >= ${NOW_SQL} - ${WEEK_MS} AND ${finishExpr} < ${NOW_SQL}`;
 
   return [
     {
@@ -216,10 +229,10 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
         "Count of settled domain outcomes (accepted converged Task milestones plus closed user Conversation Requests) in the rolling 24h window.",
       sourceQuery: `WITH att AS (
           SELECT
-            COUNT(CASE WHEN accepted_result_state = 'converged' THEN 1 END) AS conv,
+            COUNT(CASE WHEN state = 'completed' AND accepted_result_state = 'converged' THEN 1 END) AS conv,
             COUNT(*) AS total
           FROM app_task_attempts
-          WHERE +app_id = ${sqlApp} AND ${startedBound24h} AND ${attemptTimeExpr} >= ${NOW_SQL} - ${DAY_MS} AND ${attemptTimeExpr} < ${NOW_SQL}
+          WHERE +app_id = ${sqlApp} AND ${startedBound24h} AND ${terminal24h}
         ),
         req AS (
           SELECT COUNT(*) AS closed
@@ -258,7 +271,7 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
         ),
         outc AS (
           SELECT
-            (SELECT COUNT(*) FROM app_task_attempts WHERE +app_id = ${sqlApp} AND ${startedBound7d} AND accepted_result_state = 'converged' AND ${attemptTimeExpr} >= ${NOW_SQL} - ${WEEK_MS} AND ${attemptTimeExpr} < ${NOW_SQL}) +
+            (SELECT COUNT(*) FROM app_task_attempts WHERE +app_id = ${sqlApp} AND ${startedBound7d} AND state = 'completed' AND accepted_result_state = 'converged' AND ${terminal7d}) +
             (SELECT COUNT(*) FROM conversation_requests WHERE app_id = ${sqlApp} AND status = 'closed' AND updated_at >= ${NOW_SQL} - ${WEEK_MS} AND updated_at < ${NOW_SQL}) AS n
         )
         SELECT
@@ -286,8 +299,7 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
           FROM app_task_attempts
           WHERE +app_id = ${sqlApp}
             AND ${startedBound24h}
-            AND state != 'running'
-            AND ${attemptTimeExpr} >= ${NOW_SQL} - ${DAY_MS} AND ${attemptTimeExpr} < ${NOW_SQL}
+            AND ${terminal24h}
         )
         SELECT
           CAST(att.non_conv AS REAL) / NULLIF(att.total, 0) AS value,
@@ -334,11 +346,9 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
           FROM app_task_attempts a
           LEFT JOIN usage_attempts ua ON ua.attempt_id = a.attempt_id
           WHERE +a.app_id = ${sqlApp}
-            AND a.started_at >= ${NOW_SQL} - ${DAY_MS + WEEK_MS} AND a.started_at < ${NOW_SQL}
+            AND a.started_at >= ${NOW_SQL} - ${DAY_MS} AND a.started_at < ${NOW_SQL}
             AND ua.attempt_id IS NULL
             AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
-            AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) >= ${NOW_SQL} - ${DAY_MS}
-            AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) < ${NOW_SQL}
             AND NOT EXISTS (
               SELECT 1 FROM execution_usage u
               WHERE u.session_id = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
@@ -365,7 +375,7 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
         "Bounded ratio [0..1] of verified outcomes to (verified outcomes + human inputs) over 7d. 1.0 indicates 100% autonomous delivery with zero human touches; 0/0 emits no_exposure.",
       sourceQuery: `WITH outc AS (
           SELECT
-            (SELECT COUNT(*) FROM app_task_attempts WHERE +app_id = ${sqlApp} AND ${startedBound7d} AND accepted_result_state = 'converged' AND ${attemptTimeExpr} >= ${NOW_SQL} - ${WEEK_MS} AND ${attemptTimeExpr} < ${NOW_SQL}) +
+            (SELECT COUNT(*) FROM app_task_attempts WHERE +app_id = ${sqlApp} AND ${startedBound7d} AND state = 'completed' AND accepted_result_state = 'converged' AND ${terminal7d}) +
             (SELECT COUNT(*) FROM conversation_requests WHERE app_id = ${sqlApp} AND status = 'closed' AND updated_at >= ${NOW_SQL} - ${WEEK_MS} AND updated_at < ${NOW_SQL}) AS n
         ),
         hum AS (

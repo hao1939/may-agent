@@ -1,13 +1,15 @@
 import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_process";
-import { join } from "node:path";
-import { openReadOnlyDatabase } from "../lib/db.js";
+import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { openReadOnlyDatabase, type SqliteDb } from "../lib/db.js";
 import { readSqlQueryEvidence } from "../lib/db/query-performance.js";
-import { createMetricService } from "../lib/metrics.js";
-import { log } from "@may-agent/sdk/runtime";
+import { createMetricService, type MetricService } from "../lib/metrics.js";
+import { importRuntimeModule, log } from "@may-agent/sdk/runtime";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
 import { getDb } from "../lib/db/connection.js";
 import { withSqliteInitializationRetry } from "../lib/db/busy-retry.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
+import { listAppDefinitionFiles } from "./adapters/discovery/app-definitions.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
@@ -20,8 +22,7 @@ import {
 import {
   probeAzureCliAuthHeadroom,
   probeDiskHeadroom,
-  resolveAppCatalog,
-  runBoundedDiskAutoHygiene,
+  scheduleBoundedDiskCacheHygiene,
 } from "./adapters/reporting/observability-summary.js";
 import { readTaskChecks, resetTaskChecks } from "./core/tasks/task-check-observations.js";
 import { METRIC_QUERY_DURATION_METRIC, MetricQueryObservations } from "./adapters/reporting/metric-query-metrics.js";
@@ -280,20 +281,15 @@ export async function measureSourceMetrics(options: {
       } else if (row.id === HOST_DISK_USED_METRIC_ID) {
         completedAt = options.measuredAt ?? Date.now();
         measuredBy = "runtime:host-disk-probe";
-        let disk = probeDiskHeadroom(options.persistDir);
-        let hygieneResult: { prunedCount: number } | null = null;
-        if (disk && disk.usedPercent >= 92) {
-          hygieneResult = runBoundedDiskAutoHygiene(completedAt);
-          if (hygieneResult.prunedCount > 0) {
-            disk = probeDiskHeadroom(options.persistDir) ?? disk;
-          }
-        }
+        const disk = probeDiskHeadroom(options.persistDir);
+        const hygieneScheduled =
+          disk !== null && disk.usedPercent >= 92 ? scheduleBoundedDiskCacheHygiene(completedAt) : false;
         sample = disk
           ? {
               kind: "sample",
               value: Math.round((disk.usedPercent / 100) * 10000) / 10000,
               sampleSize: 1,
-              note: JSON.stringify({ ...disk, ...(hygieneResult ? { autoHygienePruned: hygieneResult.prunedCount } : {}) }),
+              note: JSON.stringify({ ...disk, ...(hygieneScheduled ? { cacheHygieneScheduled: true } : {}) }),
             }
           : null;
       } else if (row.id === HOST_AUTH_REMAINING_METRIC_ID) {
@@ -310,7 +306,7 @@ export async function measureSourceMetrics(options: {
             note: JSON.stringify({ provider: auth.provider, state: auth.state, expiresAt: auth.expiresAt }),
           };
         } else {
-          sample = { kind: "no_exposure", sampleSize: 0, measuredAt: completedAt, note: "azure-cli expiry unavailable" };
+          throw new Error(auth.reason ?? "Configured Azure CLI credentials could not be inspected");
         }
       } else if (row.source_query) {
         // SQLite prepare executes the first statement and ignores SQL tail; it
@@ -405,9 +401,77 @@ export type MetricPassRuntime = {
   idle(): Promise<void>;
 };
 
+function upsertAppEvolutionMetrics(
+  db: SqliteDb,
+  metricService: Pick<MetricService, "define">,
+  apps: ReadonlyArray<{ id: string; owner?: string }>,
+): void {
+  if (!apps.length) return;
+  withSqliteInitializationRetry("register App evolution metrics", () => {
+    for (const app of apps) {
+      const appId = typeof app.id === "string" ? app.id.trim() : "";
+      if (!appId) continue;
+      const ownerAgent = typeof app.owner === "string" && app.owner.trim() ? app.owner.trim() : appId;
+      for (const appMetric of buildAppEvolutionMetrics(appId, ownerAgent)) {
+        if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(appMetric.id)) {
+          metricService.define(appMetric);
+        } else {
+          db.run(
+            `UPDATE metrics
+               SET owner = ?, project = ?, source = ?, source_query = ?, measure_interval = ?, description = ?
+             WHERE id = ?`,
+            [
+              appMetric.owner ?? ownerAgent,
+              appMetric.project ?? appId,
+              appMetric.source ?? null,
+              appMetric.sourceQuery ?? null,
+              appMetric.measureInterval ?? null,
+              appMetric.description ?? null,
+              appMetric.id,
+            ],
+          );
+        }
+      }
+    }
+  });
+}
+
+function resolveMeasurementProjectsRoot(persistDir: string, explicitProjectsRoot?: string): string | null {
+  if (explicitProjectsRoot?.trim()) return resolve(explicitProjectsRoot.trim());
+  if (process.env.PROJECTS_ROOT?.trim() || process.env.APP_ROOT?.trim() || process.env.PROJECT_ROOT?.trim()) {
+    return resolveRuntimeRoots(import.meta.url).projectsRoot;
+  }
+  const roots = resolveRuntimeRoots(import.meta.url);
+  if (resolve(persistDir) === roots.persistDir) {
+    return roots.projectsRoot;
+  }
+  const adjacent = join(persistDir, "projects");
+  return existsSync(adjacent) ? adjacent : null;
+}
+
+async function loadAppsFromProjectsRoot(projectsRoot: string): Promise<Array<{ id: string; owner: string }>> {
+  const apps: Array<{ id: string; owner: string }> = [];
+  for (const modulePath of listAppDefinitionFiles(projectsRoot)) {
+    try {
+      const mod = await importRuntimeModule<{ default?: unknown; app?: unknown }>(modulePath);
+      const exported = (mod.default ?? mod.app) as { id?: unknown; agent?: unknown } | undefined;
+      if (!exported || typeof exported !== "object") continue;
+      const id = typeof exported.id === "string" ? exported.id.trim() : "";
+      if (!id) continue;
+      const owner = typeof exported.agent === "string" && exported.agent.trim() ? exported.agent.trim() : id;
+      apps.push({ id, owner });
+    } catch {
+      /* Ignore broken or unvalidated App modules; only loaded definitions get metrics. */
+    }
+  }
+  return apps;
+}
+
 export function attachMetricSourceMeasurement(options: {
   bus: EventBus;
   persistDir: string;
+  projectsRoot?: string;
+  listLoadedApps?: () => ReadonlyArray<{ id: string; owner?: string }>;
 }): MetricPassRuntime {
   const db = getDb(options.persistDir);
   const metricService = createMetricService({ getDb: () => db });
@@ -445,32 +509,8 @@ export function attachMetricSourceMeasurement(options: {
         );
       }
     }
-    const projectsRoot =
-      process.env.PROJECTS_ROOT?.trim() ||
-      (options.persistDir.endsWith("/.state") || options.persistDir.endsWith("\\.state")
-        ? join(options.persistDir, "..", "projects")
-        : join(options.persistDir, "projects"));
-    const catalog = resolveAppCatalog({ projectsRoot });
-    for (const appId of catalog.installedIds) {
-      const ownerAgent = catalog.ownerByAppId.get(appId) ?? appId;
-      for (const appMetric of buildAppEvolutionMetrics(appId, ownerAgent)) {
-        if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(appMetric.id)) {
-          metricService.define(appMetric);
-        } else {
-          db.run(
-            `UPDATE metrics
-               SET source = ?, source_query = ?, measure_interval = ?, description = ?
-             WHERE id = ?`,
-            [
-              appMetric.source ?? null,
-              appMetric.sourceQuery ?? null,
-              appMetric.measureInterval ?? null,
-              appMetric.description ?? null,
-              appMetric.id,
-            ],
-          );
-        }
-      }
+    if (options.listLoadedApps) {
+      upsertAppEvolutionMetrics(db, metricService, options.listLoadedApps());
     }
     const subscriberFailureSource = {
       source: "rolling one-hour subscriber.failed event count",
@@ -573,8 +613,26 @@ export function attachMetricSourceMeasurement(options: {
     });
   });
 
+  const standaloneProjectsRoot = options.listLoadedApps
+    ? null
+    : resolveMeasurementProjectsRoot(options.persistDir, options.projectsRoot);
+  let bootstrapAppsPromise: Promise<void> | undefined = standaloneProjectsRoot
+    ? new Promise<void>((resolveTick) => setTimeout(resolveTick, 0))
+        .then(() => loadAppsFromProjectsRoot(standaloneProjectsRoot))
+        .then((apps) => upsertAppEvolutionMetrics(db, metricService, apps))
+        .catch((error) => log("warn", `[metrics:app-discovery] ${measurementError(error)}`))
+        .finally(() => {
+          bootstrapAppsPromise = undefined;
+        })
+    : undefined;
+
   const nextDueAt = new Map<string, number>();
-  return attachMetricPass(options.bus, METRIC_SOURCE_MEASUREMENT_EVENT, "metric-source-measurement", async (current) => {
+  const pass = attachMetricPass(options.bus, METRIC_SOURCE_MEASUREMENT_EVENT, "metric-source-measurement", async (current) => {
+    if (options.listLoadedApps) {
+      upsertAppEvolutionMetrics(db, metricService, options.listLoadedApps());
+    } else if (bootstrapAppsPromise) {
+      await bootstrapAppsPromise;
+    }
     await measureSourceMetrics({
       ...options,
       triggerEventId: current.triggerEventId,
@@ -585,6 +643,13 @@ export function attachMetricSourceMeasurement(options: {
       },
     });
   });
+  return {
+    request: pass.request,
+    async idle() {
+      if (bootstrapAppsPromise) await bootstrapAppsPromise;
+      await pass.idle();
+    },
+  };
 }
 
 /** Recalculate retained evidence without running any collectors. */

@@ -2,7 +2,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { METRIC_LIST_LIMIT, readMetricObservations } from "../adapters/reporting/metric-observations.js";
-import { describeOpenAlert, resolveAppCatalog } from "../adapters/reporting/observability-summary.js";
+import { describeOpenAlert, resolveObservabilityCatalog } from "../adapters/reporting/observability-summary.js";
 import { listConfiguredAgentNames } from "@may-agent/sdk/runtime";
 import type { SqliteDb } from "./read-model/state-db.js";
 
@@ -255,9 +255,11 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
   function handleMetrics(url: URL): Response {
     const db = _db();
     const metricId = url.searchParams.get("id");
-    const appCatalog = resolveAppCatalog({
+    const filterAppId = url.searchParams.get("appId")?.trim() || null;
+    const appCatalog = resolveObservabilityCatalog(db, {
       projectsRoot: PROJECTS_ROOT,
       loadedApps: options.listLoadedApps?.() ?? null,
+      filterAppId,
     });
     const observations = readMetricObservations(
       db,

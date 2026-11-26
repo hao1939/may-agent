@@ -1,9 +1,10 @@
-import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, rmSync, statSync, statfsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, statfsSync } from "node:fs";
+import { opendir, rm } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { SqliteDb } from "../../../lib/db.js";
 import { taskViewPhaseSql } from "../../core/state/task-view-phase.js";
+import { ATTEMPT_FINISH_LOOKBACK_SLACK_MS, attemptFinishMsSql } from "./evolution-metrics.js";
 import { METRIC_LIST_LIMIT, readMetricObservations } from "./metric-observations.js";
 import { healthWindow } from "./workflow-health.js";
 
@@ -12,14 +13,18 @@ export type MetricScope = { kind: "host" } | { kind: "app"; appId: string };
 export type AppCatalogEntry = {
   id: string;
   owner: string;
+  improvementWorkflow?: string | null;
 };
 
 export type AppCatalog = {
   installedIds: string[];
   installedSet: Set<string>;
+  trulyInstalledSet?: Set<string>;
+  visibleAppIds?: string[];
   disabledSet: Set<string>;
   ownerByAppId: Map<string, string>;
   appIdByOwner: Map<string, string>;
+  improvementWorkflowByAppId?: Map<string, string>;
 };
 
 const HOST_METRIC_PREFIXES = [
@@ -54,97 +59,52 @@ function normalizeAppKey(raw: string | null | undefined): string {
     .replace(/\.app$/i, "");
 }
 
-function extractAppDeclarationBlock(source: string): string {
-  const defineIdx = source.search(/\bdefineApp\s*\(\s*\{/);
-  const exportIdx = source.search(/\bexport\s+default\s*\{/);
-  const startIdx = defineIdx >= 0 ? defineIdx : exportIdx;
-  if (startIdx < 0) return "";
-  const openBrace = source.indexOf("{", startIdx);
-  if (openBrace < 0) return "";
-  // Extract only top-level properties of the App literal (depth === 1) so nested
-  // subscription/task/workflow `id:` fields can never masquerade as the App ID.
-  let depth = 0;
-  let topLevel = "";
-  let inSingle = false;
-  let inDouble = false;
-  let inTemplate = false;
-  for (let i = openBrace; i < source.length; i++) {
-    const ch = source[i]!;
-    const prev = i > 0 ? source[i - 1] : "";
-    if (prev !== "\\") {
-      if (!inDouble && !inTemplate && ch === "'") inSingle = !inSingle;
-      else if (!inSingle && !inTemplate && ch === '"') inDouble = !inDouble;
-      else if (!inSingle && !inDouble && ch === "`") inTemplate = !inTemplate;
-    }
-    if (inSingle || inDouble || inTemplate) {
-      if (depth === 1) topLevel += ch;
-      continue;
-    }
-    if (ch === "{" || ch === "[") {
-      depth += 1;
-      if (depth === 1) continue;
-      topLevel += " ";
-      continue;
-    }
-    if (ch === "}" || ch === "]") {
-      depth -= 1;
-      if (depth <= 0) break;
-      continue;
-    }
-    if (depth === 1) topLevel += ch;
-  }
-  return topLevel;
-}
-
-function parseAppModuleMetadata(dir: string, fallbackId: string): AppCatalogEntry | null {
+function readDisabledAppIdFromFile(dir: string): string | null {
   for (const file of ["app.ts", "app.js"]) {
     const candidate = join(dir, file);
     if (!existsSync(candidate)) continue;
     try {
       const source = readFileSync(candidate, "utf8");
-      const block = extractAppDeclarationBlock(source);
-      const idMatch = block.match(/(?:^|[,;\n])\s*id\s*:\s*["']([^"']+)["']/);
-      const ownerMatch = block.match(/(?:^|[,;\n])\s*(?:agent|owner)\s*:\s*["']([^"']+)["']/);
-      const id = idMatch?.[1]?.trim() || fallbackId;
-      const owner = ownerMatch?.[1]?.trim() || id;
-      return { id, owner };
+      const defineIdx = source.search(/\bdefineApp\s*\(\s*\{/);
+      const exportIdx = source.search(/\bexport\s+default\s*\{/);
+      const startIdx = defineIdx >= 0 ? defineIdx : exportIdx;
+      if (startIdx < 0) continue;
+      const tail = source.slice(startIdx, startIdx + 2_000);
+      const idMatch = tail.match(/\bid\s*:\s*["']([^"']+)["']/);
+      if (idMatch?.[1]?.trim()) return normalizeAppKey(idMatch[1]);
     } catch {
-      return { id: fallbackId, owner: fallbackId };
+      /* Ignore unreadable disabled file. */
     }
   }
   return null;
 }
 
 /**
- * Resolves the authoritative App catalog from the daemon's loaded App registry when
- * available, falling back to non-disabled `.app` definitions on disk for standalone
- * read-only fixtures while always recording `.disabled` Apps so they are excluded from
- * active backlogs.
+ * Resolves the authoritative App catalog from the daemon's loaded App registry
+ * (`services.listApps()` / `HumanTaskService.listApps()`), never inventing installed
+ * Apps from filesystem directory stems or unvalidated module files, while recording
+ * `.disabled` Apps so retained DB rows for disabled Apps stay excluded from active backlogs.
  */
 export function resolveAppCatalog(options: {
   projectsRoot?: string;
-  loadedApps?: ReadonlyArray< Record<string, unknown> > | null;
+  loadedApps?: ReadonlyArray<Record<string, unknown>> | null;
+  disabledAppIds?: Iterable<string>;
 }): AppCatalog {
   const installedIds: string[] = [];
   const installedSet = new Set<string>();
   const disabledSet = new Set<string>();
   const ownerByAppId = new Map<string, string>();
   const appIdByOwner = new Map<string, string>();
+  const improvementWorkflowByAppId = new Map<string, string>();
 
-  const registerInstalled = (idRaw: string, ownerRaw?: string) => {
-    const id = normalizeAppKey(idRaw);
-    if (!id || disabledSet.has(id)) return;
-    if (!installedSet.has(id)) {
-      installedSet.add(id);
-      installedIds.push(id);
+  if (options.disabledAppIds) {
+    for (const raw of options.disabledAppIds) {
+      const id = normalizeAppKey(raw);
+      if (id) disabledSet.add(id);
     }
-    const owner = normalizeAppKey(ownerRaw) || id;
-    ownerByAppId.set(id, owner);
-    if (!appIdByOwner.has(owner)) appIdByOwner.set(owner, id);
-  };
+  }
 
   const projectsRoot = options.projectsRoot ?? "";
-  const diskEntries: AppCatalogEntry[] = [];
   if (projectsRoot && existsSync(projectsRoot)) {
     try {
       for (const entry of readdirSync(projectsRoot).sort()) {
@@ -153,13 +113,11 @@ export function resolveAppCatalog(options: {
         const dir = join(projectsRoot, entry);
         try {
           if (!statSync(dir).isDirectory()) continue;
-          const parsed = parseAppModuleMetadata(dir, stem);
           if (existsSync(join(dir, ".disabled"))) {
             disabledSet.add(stem);
-            if (parsed?.id) disabledSet.add(normalizeAppKey(parsed.id));
-            continue;
+            const declaredId = readDisabledAppIdFromFile(dir);
+            if (declaredId) disabledSet.add(declaredId);
           }
-          if (parsed) diskEntries.push(parsed);
         } catch {
           /* Skip unreadable directory entries. */
         }
@@ -172,23 +130,94 @@ export function resolveAppCatalog(options: {
   if (Array.isArray(options.loadedApps)) {
     for (const item of options.loadedApps) {
       if (!item || typeof item !== "object") continue;
-      const id = typeof item.id === "string" ? item.id.trim() : "";
-      if (!id) continue;
-      const owner = typeof item.owner === "string" && item.owner.trim() ? item.owner.trim() : id;
-      registerInstalled(id, owner);
-    }
-  } else {
-    for (const entry of diskEntries) {
-      registerInstalled(entry.id, entry.owner);
+      const idRaw = typeof item.id === "string" ? item.id : typeof item.appId === "string" ? item.appId : "";
+      const id = normalizeAppKey(idRaw);
+      if (!id || disabledSet.has(id)) continue;
+      if (!installedSet.has(id)) {
+        installedSet.add(id);
+        installedIds.push(id);
+      }
+      const ownerRaw = typeof item.owner === "string" ? item.owner : typeof item.agent === "string" ? item.agent : "";
+      const owner = normalizeAppKey(ownerRaw) || id;
+      ownerByAppId.set(id, owner);
+      if (!appIdByOwner.has(owner)) appIdByOwner.set(owner, id);
+      if (typeof item.improvementWorkflow === "string" && item.improvementWorkflow.trim()) {
+        improvementWorkflowByAppId.set(id, item.improvementWorkflow.trim());
+      }
     }
   }
 
   installedIds.sort((a, b) => a.localeCompare(b));
-  return { installedIds, installedSet, disabledSet, ownerByAppId, appIdByOwner };
+  return {
+    installedIds,
+    installedSet,
+    trulyInstalledSet: new Set(installedSet),
+    visibleAppIds: [...installedIds],
+    disabledSet,
+    ownerByAppId,
+    appIdByOwner,
+    improvementWorkflowByAppId,
+  };
 }
 
-export function discoverInstalledAppIds(projectsRoot: string): string[] {
-  return resolveAppCatalog({ projectsRoot }).installedIds;
+/**
+ * Shared catalog resolver used identically by `/api/metrics` and `/api/observability`
+ * so metric scope classification and App cards never diverge.
+ */
+export function resolveObservabilityCatalog(
+  db: SqliteDb,
+  options: {
+    projectsRoot?: string;
+    loadedApps?: ReadonlyArray<Record<string, unknown>> | null;
+    disabledAppIds?: Iterable<string>;
+    filterAppId?: string | null;
+  },
+): AppCatalog & { trulyInstalledSet: Set<string>; visibleAppIds: string[]; hasAuthoritativeApps: boolean } {
+  const base = resolveAppCatalog(options);
+  const hasAuthoritativeApps = Array.isArray(options.loadedApps);
+  const dbAppRows = db
+    .prepare(
+      `SELECT DISTINCT app_id AS appId FROM (
+         SELECT app_id FROM app_tasks
+         UNION
+         SELECT app_id FROM app_inbox_items
+         UNION
+         SELECT app_id FROM conversation_requests
+         UNION
+         SELECT app_id FROM execution_usage WHERE app_id IS NOT NULL AND app_id != ''
+         UNION
+         SELECT app_id FROM workflow_runs WHERE app_id IS NOT NULL AND app_id != ''
+       ) WHERE app_id IS NOT NULL AND trim(app_id) != ''`,
+    )
+    .all() as Array<{ appId: string }>;
+
+  const visibleAppIds = [...base.installedIds];
+  const visibleSet = new Set(visibleAppIds);
+  for (const { appId } of dbAppRows) {
+    const clean = normalizeAppKey(appId);
+    if (!clean || clean === "platform" || clean.startsWith("system:")) continue;
+    if (base.disabledSet.has(clean)) continue;
+    if (hasAuthoritativeApps && options.filterAppId !== clean) continue;
+    if (!visibleSet.has(clean)) {
+      visibleSet.add(clean);
+      visibleAppIds.push(clean);
+    }
+  }
+  visibleAppIds.sort((a, b) => a.localeCompare(b));
+  const classificationSet = hasAuthoritativeApps
+    ? new Set(base.installedSet)
+    : new Set([...base.installedSet, ...visibleSet]);
+  if (options.filterAppId && visibleSet.has(options.filterAppId)) {
+    classificationSet.add(options.filterAppId);
+  }
+
+  return {
+    ...base,
+    installedSet: classificationSet,
+    trulyInstalledSet: new Set(base.installedSet),
+    visibleAppIds,
+    hasAuthoritativeApps,
+  };
 }
 
 function resolveCatalogAppId(candidate: string | null | undefined, catalog?: AppCatalog): string {
@@ -281,52 +310,64 @@ export function classifyMetricScope(
 
 let lastAutoHygieneAt = 0;
 const AUTO_HYGIENE_COOLDOWN_MS = 3_600_000; // 1 hour
+const DEFAULT_HYGIENE_MAX_ENTRIES = 32;
+const DEFAULT_HYGIENE_DEADLINE_MS = 2_000;
+let inFlightCacheHygiene: Promise<{ prunedEntries: number; stoppedByBudget: boolean }> | null = null;
+
+export type DiskCacheHygieneOptions = {
+  now?: number;
+  cacheDir?: string;
+  maxEntries?: number;
+  deadlineMs?: number;
+  ignoreCooldown?: boolean;
+};
 
 /**
- * Tier-1 mechanical self-heal for `host.disk_used_ratio >= 0.92` (`0` LLM calls):
- * prunes Go build cache and clean (`dirty === 0`) scratch worktrees older than 24h.
+ * Bounded asynchronous build-cache hygiene (`0` Git subprocesses, `0` workspace/worktree
+ * deletions, off the synchronous metric sampling path). Removes at most `maxEntries`
+ * disposable entries under `cacheDir` within `deadlineMs`, yielding between removals.
  */
-export function runBoundedDiskAutoHygiene(now = Date.now()): { prunedCount: number } {
-  if (now - lastAutoHygieneAt < AUTO_HYGIENE_COOLDOWN_MS) return { prunedCount: 0 };
+export async function runBoundedDiskCacheHygiene(
+  opts: DiskCacheHygieneOptions = {},
+): Promise<{ prunedEntries: number; stoppedByBudget: boolean }> {
+  const now = opts.now ?? Date.now();
+  if (!opts.ignoreCooldown && now - lastAutoHygieneAt < AUTO_HYGIENE_COOLDOWN_MS) {
+    return { prunedEntries: 0, stoppedByBudget: false };
+  }
   lastAutoHygieneAt = now;
-  let prunedCount = 0;
-  const goCache = join(homedir(), ".cache", "go-build");
-  if (existsSync(goCache)) {
-    try {
-      for (const entry of readdirSync(goCache)) {
-        rmSync(join(goCache, entry), { recursive: true, force: true });
+  const cacheDir = opts.cacheDir ?? join(homedir(), ".cache", "go-build");
+  const maxEntries = Math.max(1, opts.maxEntries ?? DEFAULT_HYGIENE_MAX_ENTRIES);
+  const deadlineMs = Math.max(25, opts.deadlineMs ?? DEFAULT_HYGIENE_DEADLINE_MS);
+  const startedAt = performance.now();
+  let prunedEntries = 0;
+  let stoppedByBudget = false;
+  try {
+    const dirHandle = await opendir(cacheDir);
+    for await (const dirent of dirHandle) {
+      if (prunedEntries >= maxEntries || performance.now() - startedAt >= deadlineMs) {
+        stoppedByBudget = true;
+        break;
       }
-      prunedCount += 1;
-    } catch {
-      /* Best-effort cache cleanup. */
+      await rm(join(cacheDir, dirent.name), { recursive: true, force: true });
+      prunedEntries += 1;
+      await new Promise<void>((resolveTick) => setTimeout(resolveTick, 0));
     }
+  } catch {
+    /* Missing or unreadable disposable cache dir is a safe no-op. */
   }
-  const scratchRoot = join(homedir(), "workspace-worktrees");
-  if (existsSync(scratchRoot)) {
-    try {
-      for (const entry of readdirSync(scratchRoot)) {
-        const wt = join(scratchRoot, entry);
-        try {
-          const st = statSync(wt);
-          if (!st.isDirectory() || now - st.mtimeMs < 86_400_000) continue;
-          const porcelain = execFileSync("git", ["-C", wt, "status", "--porcelain"], {
-            encoding: "utf8",
-            timeout: 5_000,
-            stdio: ["ignore", "pipe", "ignore"],
-          }).trim();
-          if (porcelain === "") {
-            rmSync(wt, { recursive: true, force: true });
-            prunedCount += 1;
-          }
-        } catch {
-          /* Never delete an unverified worktree. */
-        }
-      }
-    } catch {
-      /* Ignore unreadable scratch root. */
-    }
-  }
-  return { prunedCount };
+  return { prunedEntries, stoppedByBudget };
+}
+
+export function scheduleBoundedDiskCacheHygiene(
+  now = Date.now(),
+  opts: Omit<DiskCacheHygieneOptions, "now"> = {},
+): boolean {
+  if (inFlightCacheHygiene) return false;
+  if (!opts.ignoreCooldown && now - lastAutoHygieneAt < AUTO_HYGIENE_COOLDOWN_MS) return false;
+  inFlightCacheHygiene = runBoundedDiskCacheHygiene({ ...opts, now }).finally(() => {
+    inFlightCacheHygiene = null;
+  });
+  return true;
 }
 
 export type DiskHeadroom = {
@@ -339,6 +380,7 @@ export type AuthHeadroom = {
   provider: "azure-cli";
   state: "valid" | "expired" | "unconfigured" | "unknown";
   expiresAt: number | null;
+  reason?: string;
 };
 
 export type EnvironmentProbes = {
@@ -370,14 +412,26 @@ export function probeAzureCliAuthHeadroom(now = Date.now(), azureDir?: string): 
     return { provider: "azure-cli", state: "unconfigured", expiresAt: null };
   }
   if (!existsSync(cachePath)) {
-    return { provider: "azure-cli", state: "unknown", expiresAt: null };
+    return {
+      provider: "azure-cli",
+      state: "unknown",
+      expiresAt: null,
+      reason: "Azure CLI profile exists without readable msal_token_cache.json",
+    };
   }
   try {
     const parsed = JSON.parse(readFileSync(cachePath, "utf8")) as {
       AccessToken?: Record<string, { expires_on?: string | number }>;
     };
     const entries = Object.values(parsed?.AccessToken ?? {});
-    if (!entries.length) return { provider: "azure-cli", state: "unknown", expiresAt: null };
+    if (!entries.length) {
+      return {
+        provider: "azure-cli",
+        state: "unknown",
+        expiresAt: null,
+        reason: "Azure CLI msal_token_cache.json contains no access token entries",
+      };
+    }
     let latestExpiresAt: number | null = null;
     for (const entry of entries) {
       const sec = Number(entry?.expires_on);
@@ -386,14 +440,26 @@ export function probeAzureCliAuthHeadroom(now = Date.now(), azureDir?: string): 
         if (latestExpiresAt === null || ms > latestExpiresAt) latestExpiresAt = ms;
       }
     }
-    if (latestExpiresAt === null) return { provider: "azure-cli", state: "unknown", expiresAt: null };
+    if (latestExpiresAt === null) {
+      return {
+        provider: "azure-cli",
+        state: "unknown",
+        expiresAt: null,
+        reason: "Azure CLI msal_token_cache.json is missing numeric expires_on metadata",
+      };
+    }
     return {
       provider: "azure-cli",
       state: latestExpiresAt > now ? "valid" : "expired",
       expiresAt: latestExpiresAt,
     };
   } catch {
-    return { provider: "azure-cli", state: "unknown", expiresAt: null };
+    return {
+      provider: "azure-cli",
+      state: "unknown",
+      expiresAt: null,
+      reason: "Azure CLI msal_token_cache.json is unreadable or malformed JSON",
+    };
   }
 }
 
@@ -865,9 +931,40 @@ function buildWindowTrends(
     return Math.min(TREND_BUCKETS - 1, Math.max(0, raw));
   };
 
-  // 1. Attempt bucket facts (Host + per-App).
-  const lookbackStart = start - 7 * 86_400_000;
-  const attemptBuckets = db
+  // 1a. Terminal Attempt bucket facts (Host + per-App) aligned on shared finish-time cohort `[start, end)`.
+  const finishMsExpr = attemptFinishMsSql("a");
+  const terminalLookbackStart = start - ATTEMPT_FINISH_LOOKBACK_SLACK_MS;
+  const terminalAttemptBuckets = db
+    .prepare(
+      `SELECT
+         a.app_id AS appId,
+         MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((${finishMsExpr} - ?) / ? AS INTEGER))) AS b,
+         COUNT(*) AS terminal,
+         COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state IS NOT NULL THEN 1 END) AS settled,
+         COUNT(CASE WHEN a.state IN ('failed', 'interrupted') THEN 1 END) AS friction,
+         COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state = 'converged' THEN 1 END) AS converged,
+         COUNT(CASE WHEN COALESCE(a.accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged
+       FROM app_task_attempts a
+       WHERE a.started_at >= ? AND a.started_at < ?
+         AND a.state IN ('completed', 'failed', 'interrupted')
+         AND ${finishMsExpr} IS NOT NULL
+         AND ${finishMsExpr} >= ?
+         AND ${finishMsExpr} < ?
+       GROUP BY a.app_id, b`,
+    )
+    .all(start, bucketWidth, terminalLookbackStart, end, start, end) as Array<{
+    appId: string;
+    b: number;
+    terminal: number;
+    settled: number;
+    friction: number;
+    converged: number;
+    nonConverged: number;
+  }>;
+
+  // 1b. Started disjoint non-workflow Attempt bucket facts (for workflow offload denominator).
+  const usageLookbackStart = start - 7 * 86_400_000;
+  const startedAttemptBuckets = db
     .prepare(
       `WITH usage_attempts AS MATERIALIZED (
          SELECT DISTINCT app_id, attempt_id
@@ -877,14 +974,7 @@ function buildWindowTrends(
        )
        SELECT
          a.app_id AS appId,
-         MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) - ?) / ? AS INTEGER))) AS b,
-         COUNT(*) AS total,
-         COUNT(CASE WHEN a.state IN ('completed', 'failed', 'interrupted') THEN 1 END) AS terminal,
-         COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state IS NOT NULL THEN 1 END) AS settled,
-         COUNT(CASE WHEN a.state IN ('failed', 'interrupted') THEN 1 END) AS friction,
-         COUNT(CASE WHEN a.state != 'running' THEN 1 END) AS finishedNonRunning,
-         COUNT(CASE WHEN a.accepted_result_state = 'converged' THEN 1 END) AS converged,
-         COUNT(CASE WHEN a.state != 'running' AND COALESCE(a.accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged,
+         MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((a.started_at - ?) / ? AS INTEGER))) AS b,
          COUNT(CASE WHEN ua.attempt_id IS NULL
            AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
            AND NOT EXISTS (
@@ -895,20 +985,11 @@ function buildWindowTrends(
        FROM app_task_attempts a
        LEFT JOIN usage_attempts ua ON ua.app_id = a.app_id AND ua.attempt_id = a.attempt_id
        WHERE a.started_at >= ? AND a.started_at < ?
-         AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) >= ?
-         AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) < ?
        GROUP BY a.app_id, b`,
     )
-    .all(lookbackStart, end, start, bucketWidth, lookbackStart, end, start, end) as Array<{
+    .all(usageLookbackStart, end, start, bucketWidth, start, end) as Array<{
     appId: string;
     b: number;
-    total: number;
-    terminal: number;
-    settled: number;
-    friction: number;
-    finishedNonRunning: number;
-    converged: number;
-    nonConverged: number;
     disjointAgentAttempts: number;
   }>;
 
@@ -1044,18 +1125,23 @@ function buildWindowTrends(
   };
   for (const id of appIds) ensureApp(id);
 
-  for (const r of attemptBuckets) {
+  for (const r of terminalAttemptBuckets) {
     hostSettled[r.b] += r.settled;
     hostTerminal[r.b] += r.terminal;
     hostFriction[r.b] += r.friction;
-    hostExecUnits[r.b] += r.total;
+    hostExecUnits[r.b] += r.terminal;
     if (r.appId) {
       const a = ensureApp(r.appId);
       a.outcomes[r.b] += r.converged;
-      a.outcomeExposure[r.b] += r.total;
+      a.outcomeExposure[r.b] += r.terminal;
       a.nonConverged[r.b] += r.nonConverged;
-      a.finishedAttempts[r.b] += r.finishedNonRunning;
-      a.agentExecutions[r.b] += r.disjointAgentAttempts;
+      a.finishedAttempts[r.b] += r.terminal;
+    }
+  }
+
+  for (const r of startedAttemptBuckets) {
+    if (r.appId) {
+      ensureApp(r.appId).agentExecutions[r.b] += r.disjointAgentAttempts;
     }
   }
 
@@ -1287,10 +1373,8 @@ function buildAppDrillDown(
   appScorecardFacts: RawScorecardFact[],
 ) {
   const taskPhaseExpr = taskViewPhaseSql("t");
-  const attemptTimeExpr = `COALESCE(
-    CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
-    a.started_at
-  )`;
+  const finishMsExpr = attemptFinishMsSql("a");
+  const terminalLookbackStart = start - ATTEMPT_FINISH_LOOKBACK_SLACK_MS;
 
   const taskRows = db
     .prepare(
@@ -1319,12 +1403,14 @@ function buildAppDrillDown(
          t.updated_at AS updatedAt,
          (SELECT COUNT(*) FROM app_task_attempts a
           WHERE a.app_id = t.app_id AND a.task_id = t.task_id
-            AND a.accepted_result_state = 'converged'
-            AND ${attemptTimeExpr} >= ? AND ${attemptTimeExpr} < ?) AS convergedWindow,
+            AND a.started_at >= ? AND a.started_at < ?
+            AND a.state = 'completed' AND a.accepted_result_state = 'converged'
+            AND ${finishMsExpr} IS NOT NULL AND ${finishMsExpr} >= ? AND ${finishMsExpr} < ?) AS convergedWindow,
          (SELECT COUNT(*) FROM app_task_attempts a
           WHERE a.app_id = t.app_id AND a.task_id = t.task_id
+            AND a.started_at >= ? AND a.started_at < ?
             AND a.state = 'failed'
-            AND ${attemptTimeExpr} >= ? AND ${attemptTimeExpr} < ?) AS failedWindow
+            AND ${finishMsExpr} IS NOT NULL AND ${finishMsExpr} >= ? AND ${finishMsExpr} < ?) AS failedWindow
        FROM app_tasks t
        LEFT JOIN app_task_cancellations c ON c.app_id = t.app_id AND c.task_id = t.task_id
        WHERE t.app_id = ?
@@ -1336,7 +1422,7 @@ function buildAppDrillDown(
          t.updated_at DESC
        LIMIT 25`,
     )
-    .all(start, end, start, end, appId, start) as Array<{
+    .all(terminalLookbackStart, end, start, end, terminalLookbackStart, end, start, end, appId, start) as Array<{
     taskId: string;
     status: string;
     agent: string | null;
@@ -1407,7 +1493,7 @@ function buildAppDrillDown(
 
   // Attribute Task attempts to the resolved owner retained on each attempt (`$.owner`),
   // counting only non-workflow attempts not already represented in execution_usage / sessions.
-  const lookbackStart = start - 7 * 86_400_000;
+  const usageLookbackStart = start - 7 * 86_400_000;
   const attemptAgentRows = db
     .prepare(
       `WITH usage_attempts AS MATERIALIZED (
@@ -1423,29 +1509,51 @@ function buildAppDrillDown(
            NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
            NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
          ) AS agent,
-         COUNT(CASE WHEN ua.attempt_id IS NULL AND NOT EXISTS (
-           SELECT 1 FROM execution_usage u
-           WHERE u.session_id = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
-             AND u.app_id = a.app_id
-         ) THEN 1 END) AS disjointUsageAttempts,
-         COUNT(CASE WHEN NOT EXISTS (
-           SELECT 1 FROM sessions s
-           WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
-         ) THEN 1 END) AS disjointSessionAttempts,
-         COUNT(CASE WHEN a.state = 'failed' AND NOT EXISTS (
-           SELECT 1 FROM sessions s
-           WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '') AND s.status = 'error'
-         ) THEN 1 END) AS disjointFailedAttempts
+         COUNT(CASE WHEN a.started_at >= ? AND a.started_at < ?
+           AND ua.attempt_id IS NULL AND NOT EXISTS (
+             SELECT 1 FROM execution_usage u
+             WHERE u.session_id = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
+               AND u.app_id = a.app_id
+           ) THEN 1 END) AS disjointUsageAttempts,
+         COUNT(CASE WHEN a.started_at >= ? AND a.started_at < ?
+           AND NOT EXISTS (
+             SELECT 1 FROM sessions s
+             WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
+           ) THEN 1 END) AS disjointSessionAttempts,
+         COUNT(CASE WHEN a.state = 'failed'
+           AND ${finishMsExpr} IS NOT NULL AND ${finishMsExpr} >= ? AND ${finishMsExpr} < ?
+           AND NOT EXISTS (
+             SELECT 1 FROM sessions s
+             WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '') AND s.status = 'error'
+           ) THEN 1 END) AS disjointFailedAttempts
        FROM app_task_attempts a
        LEFT JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
        LEFT JOIN usage_attempts ua ON ua.attempt_id = a.attempt_id
        WHERE a.app_id = ?
          AND a.started_at >= ? AND a.started_at < ?
          AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
-         AND ${attemptTimeExpr} >= ? AND ${attemptTimeExpr} < ?
+         AND ((a.started_at >= ? AND a.started_at < ?)
+           OR (${finishMsExpr} IS NOT NULL AND ${finishMsExpr} >= ? AND ${finishMsExpr} < ?))
        GROUP BY 1`,
     )
-    .all(lookbackStart, end, appId, appId, lookbackStart, end, start, end) as Array<{
+    .all(
+      usageLookbackStart,
+      end,
+      appId,
+      start,
+      end,
+      start,
+      end,
+      start,
+      end,
+      appId,
+      terminalLookbackStart,
+      end,
+      start,
+      end,
+      start,
+      end,
+    ) as Array<{
     agent: string | null;
     disjointUsageAttempts: number;
     disjointSessionAttempts: number;
@@ -1610,6 +1718,8 @@ export type AlertHandlerSummary = {
   message: string | null;
   createdAt: number | null;
   scope: MetricScope;
+  declaredOwner: string;
+  declaredHandler: string | null;
   handler: string;
   handlingStatus: string;
   linkedTask: { appId: string; taskId: string } | null;
@@ -1635,29 +1745,15 @@ export function describeOpenAlert(
     catalog,
   );
   const cfg = parseMetricConfigObject(alert.config);
-  const configuredHandler = typeof cfg?.handler === "string" && cfg.handler.trim() ? cfg.handler.trim() : null;
-  let handler: string;
-  if (configuredHandler) {
-    handler = configuredHandler;
-  } else if (alert.metricId === "host.disk_used_ratio") {
-    handler = "auto-hygiene → alex";
-  } else if (alert.metricId === "host.auth_remaining_seconds") {
-    handler = "may → human (az login)";
-  } else if (scope.kind === "host") {
-    const ownerClean = normalizeAppKey(alert.owner);
-    handler = ownerClean && !ownerClean.startsWith("system:") && ownerClean !== "may" && ownerClean !== "may-agent"
-      ? ownerClean
-      : "alex (Host steward)";
-  } else {
-    handler = catalog?.ownerByAppId.get(scope.appId) ?? normalizeAppKey(alert.owner) ?? scope.appId;
-  }
+  const declaredHandler = typeof cfg?.handler === "string" && cfg.handler.trim() ? cfg.handler.trim() : null;
+  const rawOwner = typeof alert.owner === "string" && alert.owner.trim() ? alert.owner.trim() : null;
+  const declaredOwner =
+    rawOwner ??
+    (scope.kind === "app" ? (catalog?.ownerByAppId.get(scope.appId) ?? scope.appId) : "system:host");
+  const handler = declaredHandler ?? declaredOwner;
 
   const j = alert.latestJudgment;
-  let handlingStatus = handler.startsWith("auto-hygiene")
-    ? "Auto-hygiene active"
-    : handler.includes("human")
-      ? "Needs human action"
-      : `Routed to ${handler}`;
+  let handlingStatus = "No recorded handling";
   let linkedTask: { appId: string; taskId: string } | null = null;
   if (j && typeof j === "object") {
     const lt = j.linkedTask as Record<string, unknown> | undefined;
@@ -1669,7 +1765,9 @@ export function describeOpenAlert(
     }
     const disp = typeof j.disposition === "string" ? j.disposition : typeof j.verdict === "string" ? j.verdict : null;
     if (disp === "investigate") handlingStatus = "Investigating";
-    else if (disp) handlingStatus = `Triaged: ${disp}`;
+    else if (src?.kind === "accepted-task-result" && disp) handlingStatus = `Accepted: ${disp}`;
+    else if (disp) handlingStatus = `Judged: ${disp}`;
+    else handlingStatus = "Judged";
   }
 
   return {
@@ -1680,10 +1778,27 @@ export function describeOpenAlert(
     message: alert.message ?? null,
     createdAt: alert.createdAt ?? null,
     scope,
+    declaredOwner,
+    declaredHandler,
     handler,
     handlingStatus,
     linkedTask,
   };
+}
+
+function resolveOptionalWorkflowRef(
+  raw: string | null | undefined,
+  trulyInstalledSet: ReadonlySet<string>,
+  hasAuthoritativeApps: boolean,
+): string | null {
+  const trimmed = typeof raw === "string" ? raw.trim() : "";
+  if (!trimmed) return null;
+  const slash = trimmed.indexOf("/");
+  if (slash > 0 && hasAuthoritativeApps) {
+    const targetApp = normalizeAppKey(trimmed.slice(0, slash));
+    if (targetApp && !trulyInstalledSet.has(targetApp)) return null;
+  }
+  return trimmed;
 }
 
 export function readObservabilitySummary(
@@ -1693,15 +1808,20 @@ export function readObservabilitySummary(
     projectsRoot: string;
     stateDir: string;
     loadedApps?: ReadonlyArray<Record<string, unknown>> | null;
+    disabledAppIds?: Iterable<string>;
+    hostImprovementWorkflow?: string | null;
+    appImprovementWorkflows?: Readonly<Record<string, string | null | undefined>>;
     now?: number;
     envProbes?: EnvironmentProbes;
   },
 ) {
   const now = options.now ?? Date.now();
   const { start, end, appId: filterAppId } = options.query;
-  const catalog = resolveAppCatalog({
+  const catalog = resolveObservabilityCatalog(db, {
     projectsRoot: options.projectsRoot,
     loadedApps: options.loadedApps,
+    disabledAppIds: options.disabledAppIds,
+    filterAppId,
   });
 
   const envProbes: EnvironmentProbes = options.envProbes ?? {
@@ -1740,42 +1860,7 @@ export function readObservabilitySummary(
     }>;
     const alertsTruncated = openAlerts.length > METRIC_LIST_LIMIT;
     const visibleAlerts = openAlerts.slice(0, METRIC_LIST_LIMIT);
-
-    // Discover any additional non-disabled App IDs referenced in retained DB tables.
-    const dbAppRows = db
-      .prepare(
-        `SELECT DISTINCT app_id AS appId FROM (
-           SELECT app_id FROM app_tasks
-           UNION
-           SELECT app_id FROM app_inbox_items
-           UNION
-           SELECT app_id FROM conversation_requests
-           UNION
-           SELECT app_id FROM execution_usage WHERE app_id IS NOT NULL AND app_id != ''
-           UNION
-           SELECT app_id FROM workflow_runs WHERE app_id IS NOT NULL AND app_id != ''
-         ) WHERE app_id IS NOT NULL AND trim(app_id) != ''`,
-      )
-      .all() as Array<{ appId: string }>;
-
-    const allAppIds = [...catalog.installedIds];
-    const knownAppSet = new Set(allAppIds);
-    for (const { appId } of dbAppRows) {
-      if (appId === "platform" || appId.startsWith("system:")) continue;
-      if (catalog.disabledSet.has(appId)) continue;
-      // When the daemon supplied an authoritative loaded App list, only include
-      // uninstalled historical DB Apps when explicitly queried via ?appId=<id>.
-      if (Array.isArray(options.loadedApps) && filterAppId !== appId) continue;
-      if (!knownAppSet.has(appId)) {
-        knownAppSet.add(appId);
-        allAppIds.push(appId);
-      }
-    }
-
-    const fullCatalog: AppCatalog = {
-      ...catalog,
-      installedSet: new Set([...catalog.installedSet, ...knownAppSet]),
-    };
+    const allAppIds = catalog.visibleAppIds;
 
     let hostOpenAlerts = 0;
     const appOpenAlerts = new Map<string, number>();
@@ -1808,8 +1893,36 @@ export function readObservabilitySummary(
         } catch {
           /* Ignore malformed disposition. */
         }
+      } else {
+        const legacyRow = db
+          .prepare(
+            `SELECT id, owner, timestamp, data
+             FROM events
+             WHERE event_type = 'metric.alert_judged'
+               AND timestamp >= ?
+               AND (alert_id = CAST(? AS TEXT) OR (alert_id IS NULL AND metric_id = ?))
+             ORDER BY timestamp DESC, id DESC LIMIT 1`,
+          )
+          .get(alert.createdAt ?? 0, alert.alertId, alert.metricId) as {
+          id?: number;
+          owner?: string | null;
+          timestamp?: number;
+          data?: string | null;
+        } | null;
+        if (legacyRow) {
+          try {
+            latestJudgment = {
+              eventId: legacyRow.id ?? null,
+              owner: legacyRow.owner ?? null,
+              timestamp: legacyRow.timestamp ?? null,
+              ...(legacyRow.data ? (JSON.parse(legacyRow.data) as Record<string, unknown>) : {}),
+            };
+          } catch {
+            latestJudgment = { eventId: legacyRow.id ?? null, owner: legacyRow.owner ?? null };
+          }
+        }
       }
-      const summary = describeOpenAlert({ ...alert, latestJudgment }, fullCatalog);
+      const summary = describeOpenAlert({ ...alert, latestJudgment }, catalog);
       alertSummaries.push(summary);
       if (summary.scope.kind === "host") {
         hostOpenAlerts += 1;
@@ -1853,16 +1966,35 @@ export function readObservabilitySummary(
       )
       .get(start, end) as { finished: number; errors: number };
 
-    const hostAttemptRow = db
+    const hostFinishExpr = attemptFinishMsSql();
+    const hostTerminalLookbackStart = start - ATTEMPT_FINISH_LOOKBACK_SLACK_MS;
+    const hostTerminalRow = db
       .prepare(
         `SELECT
-           COUNT(CASE WHEN state IN ('completed', 'failed', 'interrupted') THEN 1 END) AS terminal,
-           COUNT(CASE WHEN state = 'failed' THEN 1 END) AS failed,
+           COUNT(*) AS terminal,
+           COUNT(CASE WHEN state = 'failed' THEN 1 END) AS failed
+         FROM app_task_attempts
+         WHERE started_at >= ? AND started_at < ?
+           AND state IN ('completed', 'failed', 'interrupted')
+           AND ${hostFinishExpr} IS NOT NULL
+           AND ${hostFinishExpr} >= ?
+           AND ${hostFinishExpr} < ?`,
+      )
+      .get(hostTerminalLookbackStart, end, start, end) as { terminal: number; failed: number };
+
+    const hostFailoverRow = db
+      .prepare(
+        `SELECT
            COUNT(CASE WHEN json_extract(attempt_json, '$.failoverFromAttemptId') IS NOT NULL THEN 1 END) AS failovers
          FROM app_task_attempts
          WHERE started_at >= ? AND started_at < ?`,
       )
-      .get(start, end) as { terminal: number; failed: number; failovers: number };
+      .get(start, end) as { failovers: number };
+    const hostAttemptRow = {
+      terminal: hostTerminalRow.terminal,
+      failed: hostTerminalRow.failed,
+      failovers: hostFailoverRow.failovers,
+    };
 
     const recoveryRow = db
       .prepare(
@@ -1942,9 +2074,9 @@ export function readObservabilitySummary(
       )
       .all(start, end) as Array<{ appId: string; closedTasksWindow: number }>;
 
-    // Per-App attempt outcomes in window (total attempts, converged milestones, failures).
-    const attemptLookbackStart = start - 7 * 86_400_000;
-    const appAttemptRows = db
+    // Per-App attempt outcomes in window: started counts use `[start, end)`, terminal counts require valid `finishedAt < end`.
+    const usageLookbackStart = start - 7 * 86_400_000;
+    const appStartedRows = db
       .prepare(
         `WITH usage_attempts AS MATERIALIZED (
            SELECT DISTINCT app_id, attempt_id
@@ -1961,23 +2093,65 @@ export function readObservabilitySummary(
                SELECT 1 FROM execution_usage u
                WHERE u.session_id = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
                  AND u.app_id = a.app_id
-             ) THEN 1 END) AS disjointAgentAttempts,
-           COUNT(CASE WHEN a.accepted_result_state = 'converged' THEN 1 END) AS convergedMilestones,
-           COUNT(CASE WHEN a.state = 'failed' THEN 1 END) AS failedAttempts
+             ) THEN 1 END) AS disjointAgentAttempts
          FROM app_task_attempts a
          LEFT JOIN usage_attempts ua ON ua.app_id = a.app_id AND ua.attempt_id = a.attempt_id
          WHERE a.started_at >= ? AND a.started_at < ?
-           AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) >= ?
-           AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) < ?
          GROUP BY a.app_id`,
       )
-      .all(attemptLookbackStart, end, attemptLookbackStart, end, start, end) as Array<{
+      .all(usageLookbackStart, end, start, end) as Array<{
       appId: string;
       totalAttempts: number;
       disjointAgentAttempts: number;
+    }>;
+
+    const appFinishExpr = attemptFinishMsSql("a");
+    const appTerminalRows = db
+      .prepare(
+        `SELECT
+           a.app_id AS appId,
+           COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state = 'converged' THEN 1 END) AS convergedMilestones,
+           COUNT(CASE WHEN a.state = 'failed' THEN 1 END) AS failedAttempts
+         FROM app_task_attempts a
+         WHERE a.started_at >= ? AND a.started_at < ?
+           AND a.state IN ('completed', 'failed', 'interrupted')
+           AND ${appFinishExpr} IS NOT NULL
+           AND ${appFinishExpr} >= ?
+           AND ${appFinishExpr} < ?
+         GROUP BY a.app_id`,
+      )
+      .all(hostTerminalLookbackStart, end, start, end) as Array<{
+      appId: string;
       convergedMilestones: number;
       failedAttempts: number;
     }>;
+
+    const appAttemptMap = new Map<
+      string,
+      { appId: string; totalAttempts: number; disjointAgentAttempts: number; convergedMilestones: number; failedAttempts: number }
+    >();
+    for (const r of appStartedRows) {
+      appAttemptMap.set(r.appId, {
+        appId: r.appId,
+        totalAttempts: r.totalAttempts,
+        disjointAgentAttempts: r.disjointAgentAttempts,
+        convergedMilestones: 0,
+        failedAttempts: 0,
+      });
+    }
+    for (const r of appTerminalRows) {
+      const existing = appAttemptMap.get(r.appId) ?? {
+        appId: r.appId,
+        totalAttempts: 0,
+        disjointAgentAttempts: 0,
+        convergedMilestones: 0,
+        failedAttempts: 0,
+      };
+      existing.convergedMilestones = r.convergedMilestones;
+      existing.failedAttempts = r.failedAttempts;
+      appAttemptMap.set(r.appId, existing);
+    }
+    const appAttemptRows = [...appAttemptMap.values()];
 
     // Per-App conversation requests (open backlog + closed in window).
     const requestRows = db
@@ -2095,7 +2269,7 @@ export function readObservabilitySummary(
       if (fact.payload.targetKind === "host" || fact.payload.rubricVersion === "host-rubric-v1") continue;
       const targetApp =
         typeof fact.payload.appId === "string" && fact.payload.appId.trim()
-          ? resolveCatalogAppId(fact.payload.appId, fullCatalog)
+          ? resolveCatalogAppId(fact.payload.appId, catalog)
           : fact.appId;
       if (!targetApp) continue;
       const list = appScorecardFactsByApp.get(targetApp) ?? [];
@@ -2165,11 +2339,21 @@ export function readObservabilitySummary(
       const executionTotal = workflowRuns + agentInvocations;
       const metricSummary = appMetricCounts.get(appId) ?? { total: 0, fresh: 0, staleOrMissing: 0 };
 
+      const rawAppWorkflow =
+        options.appImprovementWorkflows?.[appId] ??
+        catalog.improvementWorkflowByAppId?.get(appId) ??
+        process.env.MAY_APP_IMPROVEMENT_WORKFLOW ??
+        null;
+
       return {
         appId,
-        installed: catalog.installedSet.has(appId),
+        installed: catalog.trulyInstalledSet.has(appId),
         owner: catalog.ownerByAppId.get(appId) ?? appId,
-        improvementWorkflow: "alex/develop-change",
+        improvementWorkflow: resolveOptionalWorkflowRef(
+          rawAppWorkflow,
+          catalog.trulyInstalledSet,
+          catalog.hasAuthoritativeApps,
+        ),
         outcomes: {
           convergedMilestonesWindow: attempts?.convergedMilestones ?? 0,
           closedTasksWindow: closedTasksByApp.get(appId) ?? 0,
@@ -2223,7 +2407,11 @@ export function readObservabilitySummary(
       : null;
 
     const host = {
-      improvementWorkflow: "alex/develop-host-change",
+      improvementWorkflow: resolveOptionalWorkflowRef(
+        options.hostImprovementWorkflow ?? process.env.MAY_HOST_IMPROVEMENT_WORKFLOW ?? null,
+        catalog.trulyInstalledSet,
+        catalog.hasAuthoritativeApps,
+      ),
       plumbing: {
         unhandledSignals1h: metricValue("event.unhandled-signal-count-1h"),
         subscriberFailures1h: metricValue("infra.bus.subscriber-failed-count-1h"),

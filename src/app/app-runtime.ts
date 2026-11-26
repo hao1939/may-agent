@@ -512,7 +512,11 @@ export async function runAppRuntime(opts: {
 
   if (backgroundEnabled) {
     await appInboxRuntime.start();
-    daemonMetricTimers = attachDaemonMetricTimers({ bus, persistDir: opts.persistDir });
+    daemonMetricTimers = attachDaemonMetricTimers({
+      bus,
+      persistDir: opts.persistDir,
+      listLoadedApps: () => humanTasks.listApps(),
+    });
     startBackgroundRuntime({
       manager,
       bus,
