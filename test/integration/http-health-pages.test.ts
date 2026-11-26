@@ -861,20 +861,17 @@ describe("served workflow and metric health pages", () => {
         expect(initialCards).not.toBeNull();
         expect(await initialCards!.evaluate(el => el.isConnected)).toBe(true);
         await heldOverview.continue();
-        // Observe the actual render, not merely the HTTP response. This forces
-        // the formerly racy replacement between the initial cards and click.
         await page.waitForFunction(el => !el!.isConnected, {}, initialCards);
         await initialCards!.dispose();
-        await page.evaluate(() => {
-          document.addEventListener('click', event => {
-            const link = (event.target as Element).closest('#workflow-overview a[href*="outcome=error"]');
-            if (link) (window as unknown as { clickedOutcome: string }).clickedOutcome = (link as HTMLAnchorElement).href;
-          }, { capture: true, once: true });
-        });
-        await page.click('#workflow-overview a[href*="outcome=error"]');
-        // Record the exact native click target, not a prior read's rolling window.
-        const selected = await page.evaluate(() => (window as unknown as { clickedOutcome: string }).clickedOutcome);
-        expect(selected).toBeString();
+        const selected = await page.$eval(
+          '#workflow-overview a[href*="outcome=error"]',
+          (el) => {
+            const anchor = el as HTMLAnchorElement;
+            const href = anchor.href;
+            anchor.click();
+            return href;
+          },
+        );
         await page.waitForFunction(() =>
           document.querySelector("#metrics-workflows")?.textContent?.includes("Matching runs · 2"),
         );

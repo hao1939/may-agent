@@ -1614,12 +1614,14 @@ describe("May Console", () => {
     cleanups.push(() => child.kill("SIGKILL"));
 
     await waitFor(() => conversationReads === 1 && todoReads >= 1 && client !== null);
-    const priorTodoReads = todoReads;
     client!.write(`${JSON.stringify({ type: "overflow", action: "reread" })}\n`);
-    // WS and HTTP responses have no shared delivery order. Observe the overflow's
-    // canonical reread before releasing the held HTTP snapshot; otherwise the old
-    // response may legitimately arrive before the overflow itself.
-    await waitFor(() => todoReads > priorTodoReads);
+    // The following frame shares WebSocket FIFO with overflow. Observe its
+    // rendering before releasing HTTP; the reread itself waits for that HTTP.
+    client!.write(`${JSON.stringify({ type: "conversation.message.created", data: {
+      transient: true, metadata: { channel: "may-console" },
+      author: { kind: "system", id: "fixture" }, text: "overflow barrier observed",
+    } })}\n`);
+    await waitFor(() => output.includes("overflow barrier observed"));
     releaseFirstRead();
     await waitFor(() => conversationReads >= 2 && output.includes("fresh snapshot rendered"));
     expect(output).not.toContain("stale snapshot must not render");
