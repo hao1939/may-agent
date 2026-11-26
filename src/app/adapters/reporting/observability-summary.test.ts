@@ -1200,7 +1200,7 @@ describe("top-down Host vs. Apps observability summary", () => {
         const plan = (r4Db.prepare(`EXPLAIN QUERY PLAN ${m.sourceQuery}`).all() as Array<{ detail: string }>)
           .map((p) => p.detail)
           .join(" | ");
-        expect(plan).toContain("idx_app_task_attempts_terminal_finished_ms");
+        expect(plan).toContain("idx_app_task_attempts_finished_ms");
       }
       const refreshAzureDir = join(root, "refresh-azure");
       mkdirSync(refreshAzureDir, { recursive: true });

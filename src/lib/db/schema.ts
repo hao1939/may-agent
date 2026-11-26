@@ -41,13 +41,13 @@ CREATE INDEX IF NOT EXISTS idx_metric_disposition_attempts
     CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), attempt_id)
   WHERE instr(attempt_json, 'metric-disposition:') > 0;
 
-CREATE INDEX IF NOT EXISTS idx_app_task_attempts_terminal_finished_ms
+DROP INDEX IF EXISTS idx_app_task_attempts_terminal_finished_ms;
+CREATE INDEX IF NOT EXISTS idx_app_task_attempts_finished_ms
   ON app_task_attempts(
     CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
     app_id,
     task_id,
     state,
-    accepted_result_state,
     started_at
   )
   WHERE state IN ('completed', 'failed', 'interrupted');
