@@ -1,4 +1,4 @@
-import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { resolve } from "node:path";
 import {
   prepareAgentExecution as prepareSdkAgentExecution,
@@ -16,8 +16,6 @@ export type ToolPolicy = "full" | "readonly";
 export type AgentPreparationOptions = Omit<SdkAgentPreparationOptions, "toolPolicy"> & {
   taskContext?: TaskExecutionContext;
   taskDecisionContext?: () => Promise<AgentMessage>;
-  /** Trusted bindings for this invocation; replace matching names, then apply policy. */
-  toolBindings?: readonly AgentTool[];
   toolPolicy?: ToolPolicy;
 };
 
@@ -30,7 +28,6 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
     sourceRoot: suppliedSourceRoot,
     definition: registeredDefinition,
     createFinish,
-    toolBindings = [],
     ...sdkOptions
   } = options;
 
@@ -61,13 +58,9 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
 
   const originalFinish = registeredDefinition.tools.find((tool) => tool.name === "finish");
   const finishFactory = createFinish ?? (originalFinish ? () => originalFinish : undefined);
-  const boundNames = new Set(toolBindings.map(tool => tool.name));
   return prepareSdkAgentExecution({
     ...sdkOptions,
-    definition: {
-      ...registeredDefinition,
-      tools: [...registeredDefinition.tools.filter(tool => !boundNames.has(tool.name)), ...toolBindings],
-    },
+    definition: registeredDefinition,
     toolPolicy,
     sourceRoot,
     contextMessages,

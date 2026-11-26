@@ -44,6 +44,10 @@ Only the owning Task invocation receives its reconciliation tool from the
 managed-agent adapter. A helper's generic `finish` returns its contribution to
 its caller; it does not settle the owning Task. Invocation-specific tool bindings
 are neither captured definitions nor capabilities inherited by helper calls.
+Shared SDK preparation applies them after filesystem rebasing and before tool
+policy and completion validation, so rebasing cannot erase a scoped capability.
+Interrupted Responses recovery selects the captured completion tool by exact
+name before using the legacy finish fallback; its normal schema still applies.
 
 Session observations refresh the claim without replacing its recorded executing
 process. A workflow's helper remains a helper even without a parent agent session.
