@@ -37,7 +37,7 @@ describe("liveness attempt candidates", () => {
       ...db,
       prepare(sql, options) {
         const statement = db.prepare(sql, options);
-        if (!sql.includes("WITH candidate_keys AS")) return statement;
+        if (!sql.includes("candidate_keys AS MATERIALIZED")) return statement;
         query = sql;
         return {
           ...statement,
@@ -106,6 +106,8 @@ describe("liveness attempt candidates", () => {
       .prepare(`EXPLAIN QUERY PLAN ${query}`)
       .all(...bindings)
       .map((row) => String(row.detail));
+    expect(query).not.toMatch(/INDEXED BY/i);
+    expect(plan).toContain("MATERIALIZE raw_keys");
     expect(plan).toContain("MATERIALIZE candidate_keys");
     expect(plan).toContain("SCAN app_task_attempts USING COVERING INDEX idx_app_task_attempts_running_started");
     expect(plan).toContain(
