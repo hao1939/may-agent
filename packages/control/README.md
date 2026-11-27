@@ -66,18 +66,12 @@ must agree and the exact shown proposal remains required even for non-decision
 feedback. A stale proposal cannot silently become generation-only Task feedback.
 
 Passive `context.focusedTask`, quoted discussion, lists and watch refreshes
-remain Conversation context. They do not address background work. The Host
-revalidates deliberate replies before routing to the same- or cross-App owning
-Task and again before projecting question fields into its receipt. A stale,
-missing or ambiguous question stays ordinary Conversation input with refresh
-guidance; it never binds to a newer Condition. If the owner cannot accept the
-complete message under its declared input contract, the text likewise remains
-in the originating Conversation, without an exact owning-Task receipt.
-Original human provenance and
-the journaled return address survive exact admission and uncertain-ack retries.
-Admission proves receipt only, not a sufficient answer, Condition fulfillment
-or an external action. Older complete Telegram question bindings and explicit
-proposal replies remain supported; incomplete older frames degrade to discussion.
+remain Conversation context. They do not address background work. Same-App
+deliberate replies are revalidated before attaching to the owning Task; cross-App
+non-decision replies stay in the configured Conversation with card context for
+May, while formal proposal decisions publish `project.approval.submitted`.
+A stale, missing or ambiguous question stays ordinary Conversation input with
+refresh guidance; it never binds to a newer Condition.
 
 The Host recognizes exact decisions, preserves the input and proposal, then
 publishes the existing decision event from its durable Conversation route. Its
@@ -390,7 +384,4 @@ the browser does not claim unsupported approval authority.
 Console's global semantic subscription uses `/ws` `taskApps: ["*"]`. This emits
 identity-only Task wakes for semantic changes, not all executor progress or a
 per-Task polling loop. Older explicit App filters retain their meaning. Reconnect
-and overflow require canonical rereads. Exact cross-App human replies retain a
-separate originating Conversation App on the admitted inbox record; older rows
-without that field keep their historical App identity. Both schema entry points
-add the nullable field and origin-history index without rewriting old identities.
+and overflow require canonical rereads.

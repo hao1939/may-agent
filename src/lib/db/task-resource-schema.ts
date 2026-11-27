@@ -213,8 +213,6 @@ const REQUIRED_TASK_RESOURCE_TABLES = [
 ] as const;
 
 const REQUIRED_TASK_RESOURCE_INDEXES = [
-  "idx_app_inbox_conversation_origin_recent",
-  "idx_app_inbox_conversation_origin_topic_recent",
   "idx_app_inbox_ready",
   "idx_app_inbox_admission_read",
   "idx_app_inbox_unadmitted",
@@ -291,8 +289,6 @@ function isTaskResourceSchemaCurrent(db: SqliteDb): boolean {
   ) {
     return false;
   }
-  const inboxColumns = db.prepare("PRAGMA table_info(app_inbox_items)").all() as Array<{ name?: unknown }>;
-  if (!inboxColumns.some(item => item.name === "conversation_app_id")) return false;
   const columns = db.prepare("PRAGMA table_info(app_task_attempts)").all() as Array<{ name?: unknown }>;
   if (!columns.some((item) => item.name === "accepted_result_state")) return false;
   if (!tables.has("host_schema_migrations")) return false;
@@ -371,9 +367,6 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
   withSqliteInitializationRetry("initialize task resource schema", () => {
     const tx = acquireImmediateOrSavepoint(db);
     try {
-      const inboxColumns = db.prepare("PRAGMA table_info(app_inbox_items)").all() as Array<{ name?: unknown }>;
-      if (inboxColumns.length && !inboxColumns.some(item => item.name === "conversation_app_id"))
-        db.exec("ALTER TABLE app_inbox_items ADD COLUMN conversation_app_id TEXT");
       db.exec(APP_INBOX_SCHEMA);
       db.exec(`CREATE INDEX IF NOT EXISTS idx_app_inbox_rejected_feedback ON app_inbox_items(id)
         WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL

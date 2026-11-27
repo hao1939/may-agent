@@ -24,7 +24,6 @@ import { appEventInboxSubmission } from "../state/app-event-admission-store.js";
 import {
   createAppInboxItem,
   getAppInboxItem,
-  inputConversationAppId,
   hasConversationExecutionTask,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
@@ -589,7 +588,7 @@ export class AppInboxHost {
         throw new Error("No responsible route accepted the rejected input feedback");
       markAppInboxRecoveryReported(this.#db, item.id, "input-admission", evidence.fingerprint, this.#now());
       resolveAppInboxRecovery(this.#db, item.id, "input-feedback", this.#now());
-      if (item.conversationId) this.#onConversationChanged?.(inputConversationAppId(this.#db, item), item.conversationId);
+      if (item.conversationId) this.#onConversationChanged?.(item.appId, item.conversationId);
     } catch (error) {
       // Retry only the notification, never the permanently rejected attachment.
       recordAppInboxRecoveryFailure(this.#db, item.id, "input-feedback", errorMessage(error), this.#now());
@@ -709,7 +708,7 @@ export class AppInboxHost {
       resolveAppInboxRecovery(this.#db, item.id, "input-result", this.#now());
       try {
         this.#onRequestUpdated?.(item, result, "done");
-        if (item.conversationId) this.#onConversationChanged?.(inputConversationAppId(this.#db, item), item.conversationId);
+        if (item.conversationId) this.#onConversationChanged?.(item.appId, item.conversationId);
       } catch {
         // The accepted result remains readable even if its notification fails.
       }

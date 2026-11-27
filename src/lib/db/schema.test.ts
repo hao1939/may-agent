@@ -1,4 +1,3 @@
-import { ensureTaskResourceSchema } from "./task-resource-schema.js";
 import { describe, expect, it } from "bun:test";
 import { openDatabase } from "../db.js";
 import { applyDbSchema } from "./schema.js";
@@ -42,8 +41,7 @@ describe("canonical database schema", () => {
       applyDbSchema(trackedDb);
       expect(executedSql.some((sql) => sql.includes("SET changed_at = COALESCE"))).toBe(false);
       expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(events)"))).toHaveLength(1);
-      // The migration and Task-schema readiness check each inspect the inbox.
-      expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(app_inbox_items)"))).toHaveLength(2);
+      expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(app_inbox_items)"))).toHaveLength(1);
       expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(sessions)"))).toHaveLength(1);
       expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(workflow_runs)"))).toHaveLength(1);
     } finally {
@@ -77,22 +75,6 @@ describe("canonical database schema", () => {
       applyDbSchema(db);
       expect(db.prepare("SELECT target_task_id, target_task_generation, input_data FROM app_inbox_items WHERE id = 'retained'").get())
         .toEqual({ target_task_id: "work", target_task_generation: null, input_data: "{}" });
-    } finally { db.close(); }
-  });
-
-  it.each([applyDbSchema, ensureTaskResourceSchema])("adds a trusted Conversation return App without rewriting legacy identities (%p)", (initialize) => {
-    const db = openDatabase(":memory:");
-    try {
-      applyDbSchema(db);
-      db.exec("DROP INDEX idx_app_inbox_conversation_origin_recent");
-      db.exec("DROP INDEX idx_app_inbox_conversation_origin_topic_recent");
-      db.exec("ALTER TABLE app_inbox_items DROP COLUMN conversation_app_id");
-      db.exec(`INSERT INTO app_inbox_items (id, app_id, conversation_id, source_kind, source_id, input_kind, input_data, created_at, updated_at)
-        VALUES ('retained', 'sample', 'primary', 'human', 'operator', 'message', '{}', 100, 100)`);
-      initialize(db);
-      initialize(db);
-      expect(db.prepare("SELECT app_id, conversation_app_id, conversation_id, input_data FROM app_inbox_items WHERE id = 'retained'").get())
-        .toEqual({ app_id: "sample", conversation_app_id: null, conversation_id: "primary", input_data: "{}" });
     } finally { db.close(); }
   });
 
