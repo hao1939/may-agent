@@ -1257,12 +1257,103 @@ describe("served workflow and metric health pages", () => {
         runningNow: 0,
       });
 
+      // Gym facts: k=2 omitting trialPassRatio -> scenario pass^2 badge; k=4 -> pass^4 badge (never pass^3).
+      db.prepare(
+        `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+         VALUES
+           ('canary-domain', 'gym-k2-att', 'spec-task-1', 1, 'completed', ?, ?),
+           ('canary-domain', 'gym-k4-att', 'spec-task-1', 1, 'completed', ?, ?)`,
+      ).run(
+        now - 2_000,
+        JSON.stringify({
+          finishedAt: new Date(now - 1_500).toISOString(),
+          acceptedResult: {
+            state: "converged",
+            facts: [
+              `gym-comparison:${JSON.stringify({
+                version: 1,
+                agent: "canary-spec",
+                benchmark: "spec-suite",
+                trialsPerScenario: 2,
+                scenarioCount: 4,
+                passedScenariosHatK: 2,
+                candidatePassHatKRatio: 0.5,
+                verdict: "hold",
+              })}`,
+              `gym-comparison:${JSON.stringify({
+                version: 1,
+                agent: "idle-chat-agent",
+                benchmark: "chat-suite",
+                trialsPerScenario: 4,
+                scenarioCount: 4,
+                passedScenariosHatK: 3,
+                candidatePassHatKRatio: 0.75,
+                trialPassRatio: 0.875,
+                verdict: "candidate-supported",
+              })}`,
+            ],
+          },
+        }),
+        now - 1_000,
+        JSON.stringify({
+          finishedAt: new Date(now - 500).toISOString(),
+          acceptedResult: {
+            state: "converged",
+            facts: [
+              `gym-comparison:${JSON.stringify({
+                version: 1,
+                agent: "canary-spec",
+                benchmark: "spec-suite",
+                trialsPerScenario: 2,
+                scenarioCount: 4,
+                candidatePassHatKRatio: null,
+              })}`,
+            ],
+          },
+        }),
+      );
+
       const aboutRes = await fetch(`${base}/api/agents/canary-spec/about`);
       expect(aboutRes.status).toBe(200);
-      const aboutBody = (await aboutRes.json()) as { assignedTasks: Array<{ appId: string; taskId: string }> };
+      const aboutBody = (await aboutRes.json()) as {
+        assignedTasks: Array<{ appId: string; taskId: string }>;
+        gym: { status: string; trialsPerScenario: number; passHatKRatio: number; trialPassRatio: number | null; passHat3Ratio: number | null };
+      };
       expect(aboutBody.assignedTasks).toEqual([
         expect.objectContaining({ appId: "canary-domain", taskId: "spec-task-1" }),
       ]);
+      expect(aboutBody.gym).toMatchObject({
+        status: "sub_3_trials",
+        trialsPerScenario: 2,
+        passHatKRatio: 0.5,
+        trialPassRatio: null,
+        passHat3Ratio: null,
+      });
+
+      if (!skipBrowser && chrome) {
+        const browser = await puppeteer.launch({
+          executablePath: chrome,
+          headless: true,
+          args: ["--no-sandbox", "--disable-dev-shm-usage"],
+        });
+        try {
+          const page = await browser.newPage();
+          await page.goto(`${base}/agents`, { waitUntil: "networkidle2" });
+          await page.waitForSelector(".agent-roster-card");
+          const agentsText = await page.$eval("#agents-content", (el) => el.textContent || "");
+          expect(agentsText).toContain("Gym pass^2 · 50%");
+          expect(agentsText).toContain("▲ Gym pass^4 75%");
+          expect(agentsText).not.toContain("Gym pass³ 75%");
+
+          await page.goto(`${base}/agents/canary-spec`, { waitUntil: "networkidle2" });
+          await page.waitForSelector(".agent-eval-compare-grid");
+          const detailText = await page.$eval("#agents-content", (el) => el.textContent || "");
+          expect(detailText).toContain("3-trial pass³ is unmeasured");
+          expect(detailText).not.toContain("promotion requires");
+        } finally {
+          await browser.close();
+        }
+      }
 
       const livenessRes = await fetch(`${base}/api/liveness?hours=4`);
       expect(livenessRes.status).toBe(200);
