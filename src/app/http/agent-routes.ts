@@ -403,11 +403,16 @@ export function createAgentRouteHandlers(options: {
       if (file) otherFiles.push(file);
     }
 
-    // Assigned open/idle durable Tasks + recent 24h Task attempts for the Overview inspector.
+    // Assigned open/idle durable Tasks + recent 24h Task attempts + 7d/30d Scorecard & Gym rollups for Overview.
     let assignedTasks: Array<Record<string, unknown>> = [];
     let recentAttempts: Array<Record<string, unknown>> = [];
+    let scorecard7d: unknown = null;
+    let gym: unknown = null;
     try {
       const db = _db();
+      const cap = readAgentCapabilityRollups(db, Date.now())(agentName);
+      scorecard7d = cap.scorecard7d;
+      gym = cap.gym;
       const catalog = resolveObservabilityCatalog(db, {
         projectsRoot: PROJECTS_ROOT,
         loadedApps: options.listLoadedApps?.() ?? null,
@@ -496,7 +501,7 @@ export function createAgentRouteHandlers(options: {
       /* Read-only best-effort enrichment. */
     }
 
-    return json({ name: agentName, agentJson, promptFiles, otherFiles, assignedTasks, recentAttempts });
+    return json({ name: agentName, agentJson, promptFiles, otherFiles, assignedTasks, recentAttempts, scorecard7d, gym });
   }
 
   return {

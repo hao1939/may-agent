@@ -607,6 +607,125 @@ type RawScorecardFact = {
   payload: Record<string, unknown>;
 };
 
+export type AgentGymSummary = {
+  status: "pass_hat_3" | "pass_hat_k" | "sub_3_trials" | "not_run";
+  benchmark: string | null;
+  candidate: string | null;
+  model: string | null;
+  trialsPerScenario: number | null;
+  scenarioCount: number | null;
+  passedScenariosHatK: number | null;
+  /** Strict three-trial consistency ratio [0..1]; populated only when trialsPerScenario === 3. */
+  passHat3Ratio: number | null;
+  /** Observed scenario pass^k ratio [0..1] for the run's trialsPerScenario. */
+  passHatKRatio: number | null;
+  trialPassRatio: number | null;
+  verdict: string | null;
+  latestAt: number | null;
+};
+
+const EMPTY_AGENT_GYM_SUMMARY: AgentGymSummary = {
+  status: "not_run",
+  benchmark: null,
+  candidate: null,
+  model: null,
+  trialsPerScenario: null,
+  scenarioCount: null,
+  passedScenariosHatK: null,
+  passHat3Ratio: null,
+  passHatKRatio: null,
+  trialPassRatio: null,
+  verdict: null,
+  latestAt: null,
+};
+
+function readGymComparisonByAgent(db: SqliteDb, start: number, end: number): Map<string, AgentGymSummary> {
+  const tsExpr = `COALESCE(
+    CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
+    a.started_at
+  )`;
+  const rows = db
+    .prepare(
+      `SELECT a.attempt_id AS attemptId,
+        ${tsExpr} AS timestamp,
+        f.value AS fact
+      FROM app_task_attempts a, json_each(a.attempt_json, '$.acceptedResult.facts') f
+      WHERE instr(a.attempt_json, 'gym-comparison:') > 0
+        AND ${tsExpr} >= ? AND ${tsExpr} < ?
+        AND a.accepted_result_state IS NOT NULL
+        AND f.type = 'text'
+        AND substr(f.value, 1, 15) = 'gym-comparison:'
+        AND length(f.value) <= 8000`,
+    )
+    .all(start, end) as Array<{
+    attemptId: string;
+    timestamp: number;
+    fact: string;
+  }>;
+
+  const parsed: Array<{ attemptId: string; timestamp: number; agent: string; summary: AgentGymSummary }> = [];
+  for (const row of rows) {
+    if (!Number.isFinite(row.timestamp) || row.timestamp < start || row.timestamp >= end) continue;
+    try {
+      const p = JSON.parse(row.fact.slice("gym-comparison:".length)) as Record<string, unknown>;
+      if (!p || typeof p !== "object" || Array.isArray(p) || p.version !== 1) continue;
+      const agent = typeof p.agent === "string" && p.agent.trim() ? p.agent.trim() : null;
+      const k = typeof p.trialsPerScenario === "number" ? p.trialsPerScenario : Number.NaN;
+      const scenarioCount = typeof p.scenarioCount === "number" ? p.scenarioCount : Number.NaN;
+      const passHatKRatio = typeof p.candidatePassHatKRatio === "number" ? p.candidatePassHatKRatio : Number.NaN;
+      const hasTrialPassRatio = p.trialPassRatio !== undefined;
+      const rawTrialPassRatio = typeof p.trialPassRatio === "number" ? p.trialPassRatio : Number.NaN;
+      const hasPassedScenarios = p.passedScenariosHatK !== undefined;
+      const rawPassedScenarios = typeof p.passedScenariosHatK === "number" ? p.passedScenariosHatK : Number.NaN;
+      if (
+        !agent ||
+        !Number.isInteger(k) ||
+        k < 1 ||
+        !Number.isInteger(scenarioCount) ||
+        scenarioCount < 1 ||
+        !Number.isFinite(passHatKRatio) ||
+        passHatKRatio < 0 ||
+        passHatKRatio > 1 ||
+        (hasTrialPassRatio && (!Number.isFinite(rawTrialPassRatio) || rawTrialPassRatio < 0 || rawTrialPassRatio > 1)) ||
+        (hasPassedScenarios && (!Number.isInteger(rawPassedScenarios) || rawPassedScenarios < 0 || rawPassedScenarios > scenarioCount))
+      ) {
+        continue;
+      }
+      const trialPassRatio = hasTrialPassRatio ? rawTrialPassRatio : null;
+      const passedScenarios = hasPassedScenarios ? rawPassedScenarios : Math.round(passHatKRatio * scenarioCount);
+      const status: AgentGymSummary["status"] =
+        k === 3 ? "pass_hat_3" : k > 3 ? "pass_hat_k" : "sub_3_trials";
+      parsed.push({
+        attemptId: row.attemptId,
+        timestamp: row.timestamp,
+        agent,
+        summary: {
+          status,
+          benchmark: typeof p.benchmark === "string" && p.benchmark.trim() ? p.benchmark.trim() : null,
+          candidate: typeof p.candidate === "string" && p.candidate.trim() ? p.candidate.trim() : null,
+          model: typeof p.model === "string" && p.model.trim() ? p.model.trim() : null,
+          trialsPerScenario: k,
+          scenarioCount,
+          passedScenariosHatK: passedScenarios,
+          passHat3Ratio: k === 3 ? passHatKRatio : null,
+          passHatKRatio,
+          trialPassRatio,
+          verdict: typeof p.verdict === "string" && p.verdict.trim() ? p.verdict.trim() : null,
+          latestAt: row.timestamp,
+        },
+      });
+    } catch {
+      /* Malformed gym-comparison facts are ignored. */
+    }
+  }
+  parsed.sort((a, b) => b.timestamp - a.timestamp || a.attemptId.localeCompare(b.attemptId));
+  const byAgent = new Map<string, AgentGymSummary>();
+  for (const item of parsed) {
+    if (!byAgent.has(item.agent)) byAgent.set(item.agent, item.summary);
+  }
+  return byAgent;
+}
+
 function readScorecardFacts(db: SqliteDb, start: number, end: number): RawScorecardFact[] {
   const tsExpr = `COALESCE(
     CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
@@ -1818,6 +1937,7 @@ export function readAgentCapabilityRollups(db: SqliteDb, now = Date.now()) {
     set.add(normalizeAppKey(row.appId));
     appsByAgent.set(row.agent, set);
   }
+  const gymByAgent = readGymComparisonByAgent(db, end - 30 * 86_400_000, end);
   const usageByAgent = new Map(usageRows.map((r) => [r.agent, r]));
 
   return (agentName: string) => {
@@ -1828,6 +1948,7 @@ export function readAgentCapabilityRollups(db: SqliteDb, now = Date.now()) {
       estimatedCost7d:
         u && u.priced7d > 0 && u.cost7d !== null ? Math.round(u.cost7d * 10000) / 10000 : null,
       scorecard7d: summarizeAppScorecard(factsByAgent.get(agentName) ?? []),
+      gym: gymByAgent.get(agentName) ?? { ...EMPTY_AGENT_GYM_SUMMARY },
     };
   };
 }
