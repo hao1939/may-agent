@@ -350,12 +350,21 @@ function renderTopDownObservability(data, options = {}) {
         }).join('')}</div>`
       : '';
 
+    const domainMetrics = Array.isArray(app.domainMetrics) ? app.domainMetrics : [];
+    const domainHtml = domainMetrics.length
+      ? `<div class="td-domain-kpis" data-app-domain-metrics="${attrEsc(app.appId)}">`
+        + `<div class="health-note" style="font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;margin:2px 0 4px">Domain KPIs</div>`
+        + domainMetrics.map(m => renderTrendRow(m, days)).join('')
+        + `</div>`
+      : '';
+
     return `<article class="td-app-card" data-app-card="${attrEsc(app.appId)}">
       <header class="td-app-head">
         <h3><a href="${attrEsc(metricHref)}">${esc(app.appId)}</a></h3>
         ${renderScorePill(sc)}
       </header>
       <div class="td-trend-body">
+        ${domainHtml}
         ${renderTrendRow(tr.verifiedOutcomes, days)}
         ${renderTrendRow(tr.costPerOutcomeUsd, days)}
         ${renderTrendRow(tr.failureRatio, days)}

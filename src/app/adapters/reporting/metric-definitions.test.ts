@@ -68,4 +68,51 @@ describe("App metric definitions", () => {
 
     expect(attempts).toBe(2);
   });
+
+  it("registers bounded collect() definitions as app-collector domain metrics and rejects raw SQL mixing", () => {
+    const installed: MetricDefinition[] = [];
+    const definition = defineApp({
+      id: "scout-knowledge-lib",
+      version: 1,
+      agent: "scout",
+      inputSchema: Type.Object({}),
+      metrics: [
+        {
+          id: "scout-knowledge-lib.findings_published_7d",
+          name: "Findings published (7d)",
+          unit: "outcomes",
+          direction: "up",
+          collect: async ({ now }) => ({ value: 12, sampleSize: 12, measuredAt: now }),
+        },
+      ],
+    });
+
+    syncAppMetricDefinitions([{ definition }], { define: (metric) => installed.push(metric) });
+    expect(installed[0]).toMatchObject({
+      id: "scout-knowledge-lib.findings_published_7d",
+      owner: "scout",
+      project: "scout-knowledge-lib",
+      source: "app-collector",
+      measureInterval: 300_000,
+      config: { scope: "app:scout-knowledge-lib", domainMetric: true },
+    });
+    expect(installed[0]?.collect).toBeUndefined();
+
+    const invalid = defineApp({
+      id: "scout-knowledge-lib",
+      version: 1,
+      agent: "scout",
+      inputSchema: Type.Object({}),
+      metrics: [
+        {
+          id: "scout-knowledge-lib.mixed",
+          sourceQuery: "SELECT 1 AS value",
+          collect: () => 1,
+        },
+      ],
+    });
+    expect(() => syncAppMetricDefinitions([{ definition: invalid }], { define() {} })).toThrow(
+      /cannot combine collect\(\) with sourceQuery or sourceCommand/,
+    );
+  });
 });

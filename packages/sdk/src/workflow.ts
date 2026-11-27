@@ -278,6 +278,32 @@ export type MetricView = {
   calculation?: MetricCalculation;
 };
 
+export type MetricSampleResult =
+  | number
+  | {
+      kind?: "sample";
+      value: number;
+      sampleSize?: number;
+      measuredAt?: number;
+      note?: string;
+    }
+  | {
+      /** Empty-denominator observation (neither 0 nor a collection failure). */
+      kind: "no_exposure";
+      sampleSize: 0;
+      measuredAt?: number;
+      note?: string;
+    };
+
+export type AppMetricCollectContext = {
+  appId: string;
+  appRoot: string;
+  projectRoot: string;
+  read: AppRead;
+  signal: AbortSignal;
+  now: number;
+};
+
 export type MetricDefinition = {
   id: string;
   name?: string;
@@ -296,8 +322,14 @@ export type MetricDefinition = {
   /** Breach comparison; defaults to <. above/below are strict aliases. */
   alertOp?: "<" | ">" | "<=" | ">=" | "above" | "below";
   speed?: string;
+  direction?: "up" | "down" | string;
   description?: string;
   config?: Record<string, unknown> & { calculation?: MetricCalculationOptions };
+  /**
+   * Bounded App-domain collector. Runs in-process with scoped AppRead and
+   * workspace paths (never raw Host SQL) on the metric's declared cadence.
+   */
+  collect?: (context: AppMetricCollectContext) => Promise<MetricSampleResult | null> | MetricSampleResult | null;
 };
 
 export type MetricRecordOptions = {

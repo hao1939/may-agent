@@ -2591,6 +2591,114 @@ export function readObservabilitySummary(
 
     const selectedAppIds = filterAppId ? allAppIds.filter((id) => id === filterAppId) : allAppIds;
 
+    // App-declared domain metrics (`source = 'app-collector'` or `config.domainMetric === true`), rendered dynamically per App.
+    const domainMetricDefs = db
+      .prepare(
+        `SELECT id, name, owner, project, unit, direction, source, config
+         FROM metrics
+         WHERE status = 'active'
+           AND (source = 'app-collector'
+             OR (json_valid(COALESCE(config, '{}')) AND json_extract(config, '$.domainMetric') = 1))
+         ORDER BY id ASC`,
+      )
+      .all() as Array<{
+      id: string;
+      name: string | null;
+      owner: string | null;
+      project: string | null;
+      unit: string | null;
+      direction: string | null;
+      source: string | null;
+      config: string | null;
+    }>;
+
+    const domainTrendsByApp = new Map<string, TrendSeries[]>();
+    if (domainMetricDefs.length > 0) {
+      const span = Math.max(TREND_BUCKETS, end - start);
+      const bucketWidth = span / TREND_BUCKETS;
+      const bucketStarts = Array.from({ length: TREND_BUCKETS }, (_, i) => Math.round(start + i * bucketWidth));
+      const placeholders = domainMetricDefs.map(() => "?").join(", ");
+      const snapRows = db
+        .prepare(
+          `SELECT metric_id AS metricId, value, sample_size AS sampleSize, measured_at AS ts
+           FROM metric_snapshots
+           WHERE metric_id IN (${placeholders})
+             AND measured_at >= ? AND measured_at < ?
+           ORDER BY measured_at ASC, id ASC`,
+        )
+        .all(...domainMetricDefs.map((d) => d.id), start, end) as Array<{
+        metricId: string;
+        value: number;
+        sampleSize: number | null;
+        ts: number;
+      }>;
+      const snapsByMetric = new Map<string, typeof snapRows>();
+      for (const row of snapRows) {
+        const list = snapsByMetric.get(row.metricId) ?? [];
+        list.push(row);
+        snapsByMetric.set(row.metricId, list);
+      }
+
+      for (const def of domainMetricDefs) {
+        const scope = classifyMetricScope(def, catalog);
+        if (scope.kind !== "app") continue;
+        const unitRaw = (def.unit ?? "").trim().toLowerCase();
+        const unit: TrendSeries["unit"] =
+          unitRaw === "ratio" || unitRaw === "%" || unitRaw === "percent"
+            ? "ratio"
+            : unitRaw === "s" || unitRaw === "sec" || unitRaw === "seconds"
+              ? "seconds"
+              : unitRaw === "usd" || unitRaw === "$"
+                ? "usd"
+                : "outcomes";
+        const dirRaw = (def.direction ?? "").trim().toLowerCase();
+        const goodDirection: TrendSeries["goodDirection"] = dirRaw === "down" ? "down" : "up";
+        const latestVals: Array<number | null> = Array.from({ length: TREND_BUCKETS }, () => null);
+        const counts = Array.from({ length: TREND_BUCKETS }, () => 0);
+        const snaps = snapsByMetric.get(def.id) ?? [];
+        for (const s of snaps) {
+          const b = Math.min(TREND_BUCKETS - 1, Math.max(0, Math.floor((s.ts - start) / bucketWidth)));
+          latestVals[b] = roundMetric(s.value);
+          counts[b] += typeof s.sampleSize === "number" && s.sampleSize > 0 ? s.sampleSize : 1;
+        }
+        const latestInWindow = snaps.length ? snaps[snaps.length - 1]! : null;
+        const obs = metricById.get(def.id)?.observation ?? null;
+        const current = latestInWindow
+          ? roundMetric(latestInWindow.value)
+          : obs && obs.measuredAt < end
+            ? roundMetric(obs.value)
+            : null;
+        const sampleSize =
+          latestInWindow?.sampleSize ?? obs?.sampleSize ?? counts.reduce((acc, n) => acc + n, 0);
+        const mid = Math.floor(TREND_BUCKETS / 2);
+        const firstVals = latestVals.slice(0, mid).filter((v): v is number => v !== null);
+        const secondVals = latestVals.slice(mid).filter((v): v is number => v !== null);
+        const delta =
+          firstVals.length > 0 && secondVals.length > 0
+            ? roundMetric(
+                secondVals.reduce((a, b) => a + b, 0) / secondVals.length -
+                  firstVals.reduce((a, b) => a + b, 0) / firstVals.length,
+              )
+            : null;
+        const defaultLabel = def.id.toLowerCase().startsWith(`${scope.appId.toLowerCase()}.`)
+          ? def.id.slice(scope.appId.length + 1)
+          : def.id;
+        const series: TrendSeries = {
+          metricId: def.id,
+          label: def.name?.trim() || defaultLabel,
+          unit,
+          goodDirection,
+          current,
+          sampleSize,
+          delta,
+          points: bucketStarts.map((t, i) => ({ t, v: latestVals[i]!, n: counts[i]! })),
+        };
+        const list = domainTrendsByApp.get(scope.appId) ?? [];
+        list.push(series);
+        domainTrendsByApp.set(scope.appId, list);
+      }
+    }
+
     const apps = selectedAppIds.map((appId) => {
       const counts = {
         running: 0,
@@ -2696,6 +2804,7 @@ export function readObservabilitySummary(
           catalogTruncated: observations.truncated,
         },
         trends: appTrends.get(appId) ?? null,
+        domainMetrics: domainTrendsByApp.get(appId) ?? [],
         scorecard: summarizeAppScorecard(appScorecardFactsByApp.get(appId) ?? []),
       };
     });

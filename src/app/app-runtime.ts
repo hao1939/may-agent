@@ -270,12 +270,25 @@ export async function runAppRuntime(opts: {
       appRegistry.snapshot().entries.some((entry) => entry.definition.id === appId.trim().replace(/\.app$/, "")),
 
   });
+  const buildScopedAppRead = (appId: string) =>
+    createRuntimeAppRead({
+      readContract: async (targetAppId) => appTasks.contract(targetAppId),
+      getDb: () => getDb(opts.persistDir),
+      persistDir: opts.persistDir,
+      readMetric: opts.reporting?.readMetric,
+      taskRead: {
+        workload: async (options) => appTasks.workload({ appId, options }),
+        list: async (options) => appTasks.list({ appId, ...(options ? { options } : {}) }),
+        get: async (taskId, options) => appTasks.get({ appId, taskId, options }),
+      },
+    });
+
   // Reporting observes the committed generation; it cannot reject publication.
   const refreshReporting = () => {
     if (!opts.reporting) return;
     setImmediate(() => {
       try {
-        opts.reporting!.syncDefinitions(appRegistry.snapshot().entries);
+        opts.reporting!.syncDefinitions(appRegistry.snapshot().entries, (appId) => buildScopedAppRead(appId));
       } catch (error) {
         console.error(`[reporting] Metric definitions unavailable: ${String(error)}`);
       }
@@ -314,17 +327,7 @@ export async function runAppRuntime(opts: {
       const log = (level: string, message: string) =>
         bus.emit({ type: "info", message: `[app:${appId}:observer:${level}] ${message}` });
       return {
-        read: createRuntimeAppRead({
-          readContract: async (targetAppId) => appTasks.contract(targetAppId),
-          getDb: () => getDb(opts.persistDir),
-          persistDir: opts.persistDir,
-          readMetric: opts.reporting?.readMetric,
-          taskRead: {
-            workload: async (options) => appTasks.workload({ appId, options }),
-            list: async (options) => appTasks.list({ appId, ...(options ? { options } : {}) }),
-            get: async (taskId, options) => appTasks.get({ appId, taskId, options }),
-          },
-        }),
+        read: buildScopedAppRead(appId),
         workspace: { appRoot: appDir, projectRoot: projectDir },
         log: {
           debug: (message) => log("debug", message),
@@ -517,6 +520,7 @@ export async function runAppRuntime(opts: {
       bus,
       persistDir: opts.persistDir,
       listLoadedApps: () => humanTasks.listApps(),
+      appCollectors: opts.reporting ? (metricId) => opts.reporting!.getCollector(metricId) : undefined,
     });
     startBackgroundRuntime({
       manager,

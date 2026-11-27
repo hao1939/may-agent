@@ -88,6 +88,7 @@ FROM stale`;
 
 type SourceMetric = {
   id: string;
+  source: string | null;
   source_query: string | null;
   source_command: string | null;
   measure_interval: number | null;
@@ -198,6 +199,7 @@ export async function measureSourceMetrics(options: {
   persistDir: string;
   triggerEventId?: number;
   measuredAt?: number;
+  appCollectors?: (metricId: string) => ((signal: AbortSignal, now: number) => Promise<unknown>) | undefined;
   isDue?: (metric: SourceMetric) => boolean;
   onAttempt?: (metric: SourceMetric) => void;
 }): Promise<{ measured: string[]; skipped: string[]; failures: Array<{ id: string; reason: string }> }> {
@@ -208,11 +210,12 @@ export async function measureSourceMetrics(options: {
   });
   const rows = db
     .prepare(
-      `SELECT id, source_query, source_command, measure_interval
+      `SELECT id, source, source_query, source_command, measure_interval
        FROM metrics
        WHERE status = 'active'
          AND ((source_query IS NOT NULL AND trim(source_query) != '')
            OR (source_command IS NOT NULL AND trim(source_command) != '')
+           OR source = 'app-collector'
            OR id IN (?, ?, ?))
        ORDER BY id`,
     )
@@ -364,6 +367,22 @@ export async function measureSourceMetrics(options: {
         const completed = await result;
         completedAt = completed.completedAt;
         sample = parseCommandOutput(completed.output, row.id);
+      } else if (row.source === "app-collector" || options.appCollectors?.(row.id)) {
+        if (!options.appCollectors) {
+          skipped.push(row.id);
+          continue;
+        }
+        const collector = options.appCollectors(row.id);
+        if (!collector) {
+          failed(row.id, "App collector is not registered in the active App generation");
+          continue;
+        }
+        measuredBy = "runtime:app-collector";
+        note = options.triggerEventId ? `app-collector; trigger-event:${options.triggerEventId}` : "app-collector";
+        const collectorNow = options.measuredAt ?? Date.now();
+        const raw = await collector(AbortSignal.timeout(10_000), collectorNow);
+        completedAt = Date.now();
+        sample = commandSample(raw);
       }
       if (!sample) {
         failed(row.id, "Source returned no finite numeric sample");
@@ -486,6 +505,7 @@ export function attachMetricSourceMeasurement(options: {
   persistDir: string;
   projectsRoot?: string;
   listLoadedApps?: () => ReadonlyArray<{ id: string; owner?: string }>;
+  appCollectors?: (metricId: string) => ((signal: AbortSignal, now: number) => Promise<unknown>) | undefined;
 }): MetricPassRuntime {
   const db = getDb(options.persistDir);
   const metricService = createMetricService({ getDb: () => db });

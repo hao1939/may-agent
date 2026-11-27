@@ -17,6 +17,7 @@ export function attachDaemonMetricTimers(opts: {
   bus: EventBus;
   persistDir: string;
   listLoadedApps?: () => ReadonlyArray<{ id: string; owner?: string }>;
+  appCollectors?: (metricId: string) => ((signal: AbortSignal, now: number) => Promise<unknown>) | undefined;
   setInterval?: typeof globalThis.setInterval;
   clearInterval?: typeof globalThis.clearInterval;
 }): { close(): void; idle(): Promise<void> } {
