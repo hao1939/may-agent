@@ -506,8 +506,25 @@ export async function execute(ctx) {
     ]);
   }
 
-  // Persist Attempt 2 + parked inputWaits as Host reconciler does
-  store.bootstrapSnapshot(
+  // Persist Attempt 2 + parked inputWaits on a fresh state root as Host reconciler does
+  const root2 = mkdtempSync(join(tmpdir(), "task-workflow-ctx-ask-2-"));
+  roots.push(root2);
+  const workflowDir2 = join(root2, "owner", "workflows");
+  mkdirSync(workflowDir2, { recursive: true });
+  writeFileSync(
+    join(workflowDir2, "ask-env.ts"),
+    `
+export const name = "ask-env";
+export const description = "Parks on ctx.ask then converges with human reply";
+export async function execute(ctx) {
+  const answer = await ctx.ask({ id: "clarify-env", prompt: "Which env?" });
+  return ctx.done("Shipped", {
+    output: { attemptNumber: ctx.task.attemptNumber, env: answer.value },
+    facts: [\`attempt:\${ctx.task.attemptNumber}\`, \`env:\${answer.value}\`],
+  });
+}`,
+  );
+  AppTaskResourceStore.fromDb(getDb(root2), "fixture").bootstrapSnapshot(
     {
       project: "fixture",
       resources: {
@@ -557,6 +574,9 @@ export async function execute(ctx) {
 
   const run2 = await runner.execute({
     ...baseInput,
+    source: { projectsRoot: root2, projectRoot: root2, persistDir: root2, agentsRoot: root2, sharedRoot: join(root2, "shared") },
+    descriptor: { id: "fixture", appDir: join(root2, "sample.app"), projectDir: root2, app: {} },
+    executionPaths: { appDir: root2, projectDir: root2, workspaceDir: root2 },
     attempt: {
       read: { tasks: {} },
       task: {
