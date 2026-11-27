@@ -93,6 +93,24 @@ function requireWorkflowRuntimeOptions(opts: TaskDefinitionSource): {
   };
 }
 
+const EXPLICIT_RECONCILE_KEYS = new Set([
+  "state",
+  "summary",
+  "facts",
+  "result",
+  "response",
+  "conditions",
+  "requests",
+  "actions",
+  "communication",
+  "inputKeys",
+  "acceptedLiveEventIds",
+  "reviewAt",
+  "report",
+  "continue",
+  "acceptanceBasis",
+]);
+
 function appWorkflowRuntimePaths(
   opts: TaskDefinitionSource,
   descriptor: { appDir: string },
@@ -256,8 +274,10 @@ async function executeTaskWorkflow(
     const isExplicitReconcileResult =
       done &&
       outputRec !== undefined &&
-      (outputRec.state === "converged" || outputRec.state === "waiting" || outputRec.state === "incomplete") &&
-      typeof outputRec.summary === "string";
+      typeof outputRec.state === "string" &&
+      typeof outputRec.summary === "string" &&
+      Array.isArray(outputRec.facts) &&
+      Object.keys(outputRec).every((key) => EXPLICIT_RECONCILE_KEYS.has(key));
     const translatedDoneRun =
       done && !isExplicitReconcileResult
         ? translateHostedExecutionResult(
