@@ -28,6 +28,35 @@ execution place. Unbound direct execution fails closed, while saved
 terminal-result reads remain free. Definition inspection is still a read of
 trusted source; this is neither a code sandbox nor an online activation barrier.
 
+## Shared preparation and Task ownership
+
+Standalone and hosted calls format the canonical `{ prompt, data? }` assignment
+through the SDK's `formatExecutionInput`. Hosted preparation also delegates
+readonly tool filtering to the shared SDK. Host adapters add the current Task
+context and controls; they do not define a second helper input or tool policy.
+`workflow-input-parity.test.ts` and `test/integration/helper-model-parity.test.ts`
+cover the assignment, effective tools, real reads and corrective finish feedback.
+Provider replies in these fixtures are scripted. They verify execution contracts;
+unscripted model judgment and installed App activation need separate evidence.
+
+A Task binding supplies identity, fencing and background to bounded helpers.
+Only the owning Task invocation receives its reconciliation tool from the
+managed-agent adapter. A helper's generic `finish` returns its contribution to
+its caller; it does not settle the owning Task. Invocation-specific tool bindings
+are neither captured definitions nor capabilities inherited by helper calls.
+Shared SDK preparation applies them after filesystem rebasing and before tool
+policy and completion validation, so rebasing cannot erase a scoped capability.
+Interrupted Responses recovery selects the captured completion tool by exact
+name before using the legacy finish fallback; its normal schema still applies.
+
+Session observations refresh the claim without replacing its recorded executing
+process. A workflow's helper remains a helper even without a parent agent session.
+The Task runtime and reconciler tests cover these ownership boundaries. Apps
+decide how to interpret interrupted work using the existing Task requests and
+accepted results; this shared preparation adds no recovery ledger or scheduler.
+Host still has its own invocation supervision; these changes do not establish
+complete standalone/Host execution convergence.
+
 ## Shared execution environment
 
 Agents, App workflows, Task workers and native executors inherit the environment
@@ -156,6 +185,21 @@ Legacy rows with neither retain their unknown delivery obligation. Housekeeping
 marks overdue pending receipts without replaying subscribers, erasing accepted
 receipts or clearing independent App admission. Existing exact-target plan expiry
 and broad App admission recovery keep their respective responsibilities.
+
+## Provider routes
+
+Model selection preserves the configured route identity. The SDK model registry
+supports `github_copilot/gemini-4-carbon` through Responses with a conservative
+200,000-token context limit and the advertised 65,536-token output limit. Its
+unverified tariff remains unknown. An unavailable route is not permission to
+substitute another model or relabel its evidence.
+
+Gemini's existing object-root projection for function schemas recognizes the
+final model-name segment of provider-qualified IDs. The original argument
+validator still checks the returned value. Model-registry and provider-request
+tests cover route selection and both qualified and unqualified Gemini names.
+Supporting a route does not change any installed App's model selection or prove
+that model's judgment quality; those are App acceptance and activation decisions.
 
 Detailed tests live beside their source. Cross-component execution and process
 coverage is described in the [test guide](../../test/README.md). External direct-execution consumers use the documented adapter in the

@@ -48,6 +48,7 @@ import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
 import {
   CallableCatalog,
   canonicalCallableName,
+  formatExecutionInput,
   validateCallableInput,
   type CallableDefinition,
   type CallableDescriptor,
@@ -1414,14 +1415,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     signal?: AbortSignal,
   ) => Promise<WorkflowKernelResolvedTarget>;
 
-  const promptTaskFromInput = (input: unknown, target: string): string => {
-    if (!input || typeof input !== "object" || typeof (input as { prompt?: unknown }).prompt !== "string") {
-      throw new Error(`Prompt target "${target}" requires a canonical { prompt, data? } input`);
-    }
-    const { prompt, data } = input as { prompt: string; data?: unknown };
-    return data === undefined ? prompt : `${prompt}\n\nInput data:\n${JSON.stringify(data, null, 2)}`;
-  };
-
   const captureCallableDescriptors = (): readonly CallableDescriptor[] => {
     const definitions: CallableDefinition[] = [];
     for (const [name, entry] of preparedCatalog.prompts) {
@@ -1628,7 +1621,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       return {
         kind: "agent" as const,
         invoke: async (callOpts, nestedControl) =>
-          executePromptStep(resolved.name, promptTaskFromInput(input, target), callOpts, nestedControl),
+          executePromptStep(resolved.name, formatExecutionInput(input), callOpts, nestedControl),
       };
     }
     return {
@@ -1755,7 +1748,7 @@ export async function runDirectWorkflow<TInput = unknown>(
           return {
             kind: "agent" as const,
             invoke: async (callOpts, stepControl) =>
-              executePromptStep(target, promptTaskFromInput(input, target), callOpts, {
+              executePromptStep(target, formatExecutionInput(input), callOpts, {
                 ...stepControl,
                 tools: options.tools ?? stepControl.tools,
               }),

@@ -1344,10 +1344,17 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
         event.parentSessionId,
         isRecord(event.data) ? event.data.parentSessionId : undefined,
       );
+      const workflowRunId = firstNonEmptyString(
+        event.workflowRunId,
+        isRecord(event.data) ? event.data.workflowRunId : undefined,
+      );
       // Helpers inherit Task context for reads and tracing, but that inherited
       // context does not transfer ownership of the reconciliation attempt or
       // its recovery lease away from the session that launched the helper.
-      const sessionBinding = startedSessionId && !parentSessionId ? appTaskSessionBinding(event.taskBinding) : null;
+      // A code workflow's first helper can have no parent agent session; its
+      // workflow run still owns that contribution.
+      const sessionBinding = startedSessionId && !parentSessionId && !workflowRunId
+        ? appTaskSessionBinding(event.taskBinding) : null;
       if (sessionBinding) {
         const descriptor = (appRouterDescriptorsByBus.get(opts.bus) ?? []).find(
           (candidate) => candidate.id === sessionBinding.appId,

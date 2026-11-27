@@ -3593,6 +3593,26 @@ describe("App task reconciler state", () => {
     });
   });
 
+  it("session observations preserve the recorded worker process while refreshing its lease", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent(), appAgent: "app-owner", handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    const worker = { pid: process.pid + 1_000_000, processIdentity: "synthetic-worker-instance", processStartedAt: 1 };
+    mutateAttemptFixture(config, claim.taskId, claim.attemptId, attempt => {
+      attempt.lease!.ownerProcess = worker;
+    });
+    const before = config.resourceStore.readAttempt(claim.attemptId)!;
+    expect(associateAppTaskSession(config, {
+      taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId,
+    }, "observed-session")).toEqual({ status: "recorded", taskId: claim.taskId });
+    const after = config.resourceStore.readAttempt(claim.attemptId)!;
+    expect(after.sessionId).toBe("observed-session");
+    expect(after.lease?.version).toBe(before.lease!.version + 1);
+    expect(after.lease?.ownerProcess).toEqual(worker);
+  });
+
   it("associates workflow sessions with the current attempt and rejects stale generations", () => {
     const state = fixture();
     const { config } = state;
