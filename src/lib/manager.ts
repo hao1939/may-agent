@@ -833,7 +833,7 @@ export class SubagentManager {
     opts?.signal?.throwIfAborted();
     return {
       ...result,
-      messages: result.messages.length > 0 ? result.messages : this.progress(sessionId, 1000),
+      messages: Array.isArray(result.messages) && result.messages.length > 0 ? result.messages : this.progress(sessionId, 1000),
     };
   }
 
@@ -1188,7 +1188,7 @@ export class SubagentManager {
               })
             : { disposition: "ineligible" as const };
           for (const message of sendMessages.slice(beforeSendLen)) {
-            messages.push(message);
+            if (sendMessages !== messages) messages.push(message);
             appendSessionMessage(this._persistDir, sessionId, message);
           }
           if (captured.disposition === "recovered" || captured.disposition === "already-committed") {
