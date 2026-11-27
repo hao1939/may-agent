@@ -236,7 +236,7 @@ describe("environment-agnostic SDK execution preparation", () => {
     expect(mutations).toBe(0);
   });
 
-  test.each(["gemini-4-argon", "github_copilot/gemini-4-carbon"])("normalizes root tool schemas for Gemini route %s", async (modelId) => {
+  test.each(["gemini-4-argon", "github_copilot/gemini-4-argon"])("normalizes root tool schemas for Gemini route %s", async (modelId) => {
     const geminiModel = {
       ...streamTestModel,
       id: modelId,

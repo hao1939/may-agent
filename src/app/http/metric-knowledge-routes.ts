@@ -190,16 +190,19 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
 
     const attemptCandidates = db
       .prepare(
-        `WITH candidate_keys AS MATERIALIZED (
-           SELECT app_id, attempt_id FROM app_task_attempts INDEXED BY idx_app_task_attempts_running_started
+        `WITH raw_keys AS MATERIALIZED (
+           SELECT app_id, attempt_id FROM app_task_attempts
            WHERE state = 'running'
-           UNION
-           SELECT app_id, attempt_id FROM app_task_attempts INDEXED BY idx_app_task_attempts_started
+           UNION ALL
+           SELECT app_id, attempt_id FROM app_task_attempts
            WHERE started_at > ?
-           UNION
-           SELECT app_id, attempt_id FROM app_task_attempts INDEXED BY idx_app_task_attempts_finished_ms
+           UNION ALL
+           SELECT app_id, attempt_id FROM app_task_attempts
            WHERE state IN ('completed', 'failed', 'interrupted')
              AND CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER) > ?
+         ),
+         candidate_keys AS MATERIALIZED (
+           SELECT DISTINCT app_id, attempt_id FROM raw_keys
          )
          SELECT
            a.app_id AS appId,
