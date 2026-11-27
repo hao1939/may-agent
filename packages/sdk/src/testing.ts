@@ -161,15 +161,69 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
       }
       return terminal(`wf_test_${target}`);
     }) as WorkflowContext["call"]);
+  const workspace = options.workspace ?? {
+    appRoot: "/test/apps/example.app",
+    projectRoot: "/test/projects/example",
+    root: "/test/projects/example",
+    output: "/test/projects/example",
+  };
+  const rec = options.reconciliation;
+  const taskView: import("./workflow.js").WorkflowTaskView<TReconciliationInput> = {
+    appId: rec?.appId ?? "test",
+    id: rec?.taskId ?? "test-task",
+    generation: rec?.generation ?? 1,
+    attemptNumber: 1,
+    outcome: rec?.outcome ?? "test outcome",
+    acceptance: rec?.acceptance ?? [],
+    taskInput: (rec?.input ?? options.input) as TReconciliationInput,
+    newInputs: rec?.events.items ?? [],
+    facts: rec?.task.facts ?? [],
+    ...(rec?.task.result ? { previousResult: rec.task.result } : {}),
+  };
   return {
     input: options.input,
     signal: options.signal ?? new AbortController().signal,
+    task: taskView,
+    workspace,
+    exec: fn(async (argv: readonly [string, ...string[]]) => ({
+      argv: [...argv],
+      cwd: workspace.root,
+      startedAt: new Date(0).toISOString(),
+      endedAt: new Date(0).toISOString(),
+      exitCode: 0,
+      signal: null,
+      stdout: "",
+      stderr: "",
+    })),
     ...(options.reconciliation ? { reconciliation: options.reconciliation } : {}),
     ...(options.reviseTask ? { reviseTask: options.reviseTask } : {}),
     ...(options.closeTask ? { closeTask: options.closeTask } : {}),
     read: options.read ?? createTestAppRead(),
     list: options.list ?? (() => Object.freeze([])),
     call,
+    agent: (target: string) => ({
+      send: ((input: unknown, opts?: any) =>
+        call(target, typeof input === "string" ? { prompt: input } : input, opts)) as any,
+      close: async () => undefined,
+    }),
+    observe: () => null,
+    park: (wait) => ({
+      status: "blocked",
+      summary: wait.summary,
+      ...(wait.result ? { output: wait.result as never } : {}),
+      facts: {
+        ...(wait.conditions ? { conditions: wait.conditions } : {}),
+        ...(wait.requests ? { requests: wait.requests } : {}),
+        ...(wait.retryAfterMs !== undefined ? { retryAfterMs: wait.retryAfterMs } : {}),
+        ...(wait.continue ? { continue: true } : {}),
+        ...(wait.facts ? { domainFacts: wait.facts } : {}),
+      },
+    }),
+    ask: async (req) => ({
+      status: "answered" as const,
+      value: req.prompt as never,
+    }),
+    progress: fn(() => undefined),
     events: {
       emit: options.emit ?? fn(async () => undefined),
       read: options.readEvent ?? fn(async () => null),
@@ -181,13 +235,29 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
       record: options.recordMetric ?? fn(async () => undefined),
       evaluate: fn(() => []),
     },
-    ...(options.workspace ? { workspace: options.workspace } : {}),
     log: options.log ?? createTestAppLogger(),
-    done: <T>(summary: string, output?: T) => ({
-      status: "done",
-      summary,
-      ...(output !== undefined ? { output } : {}),
-    }),
+    done: <T>(summary: string, outputOrOptions?: T | import("./workflow.js").DoneOptions<T>): ExecutionResult<T> => {
+      if (
+        outputOrOptions &&
+        typeof outputOrOptions === "object" &&
+        !Array.isArray(outputOrOptions) &&
+        Object.keys(outputOrOptions as Record<string, unknown>).length > 0 &&
+        Object.keys(outputOrOptions as Record<string, unknown>).every((k) => k === "output" || k === "facts")
+      ) {
+        const opts = outputOrOptions as import("./workflow.js").DoneOptions<T>;
+        return {
+          status: "done",
+          summary,
+          ...(opts.output !== undefined ? { output: opts.output } : {}),
+          ...(opts.facts !== undefined ? { facts: opts.facts } : {}),
+        };
+      }
+      return {
+        status: "done",
+        summary,
+        ...(outputOrOptions !== undefined ? { output: outputOrOptions as T } : {}),
+      };
+    },
     blocked: (reason: string, facts?: unknown) => ({
       status: "blocked",
       summary: reason,

@@ -413,3 +413,218 @@ export async function execute(ctx) {
   expect(observedPrompt).toContain("## Assigned Attempt Input");
   expect(observedPrompt).toContain('"continuedInputs"');
 });
+
+it("parks on ctx.ask and retires the answered human.review Condition with expanded inputKeys on wake", async () => {
+  const root = mkdtempSync(join(tmpdir(), "task-workflow-ctx-ask-"));
+  roots.push(root);
+  const workflowDir = join(root, "owner", "workflows");
+  mkdirSync(workflowDir, { recursive: true });
+  writeFileSync(
+    join(workflowDir, "ask-env.ts"),
+    `
+export const name = "ask-env";
+export const description = "Parks on ctx.ask then converges with human reply";
+export async function execute(ctx) {
+  const answer = await ctx.ask({ id: "clarify-env", prompt: "Which env?" });
+  return ctx.done("Shipped", {
+    output: { attemptNumber: ctx.task.attemptNumber, env: answer.value },
+    facts: [\`attempt:\${ctx.task.attemptNumber}\`, \`env:\${answer.value}\`],
+  });
+}`,
+  );
+  const store = AppTaskResourceStore.fromDb(getDb(root), "fixture");
+  store.bootstrapSnapshot(
+    {
+      project: "fixture",
+      resources: {
+        ship: {
+          metadata: { id: "ship", generation: 1, resourceVersion: 2 },
+          spec: { parentId: "root", outcome: "Ship", acceptance: ["Verified"] },
+          status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt-1" },
+        },
+      },
+      attempts: {
+        "attempt-1": {
+          metadata: { id: "attempt-1", resourceVersion: 1 },
+          taskId: "ship",
+          taskGeneration: 1,
+          specHash: "hash",
+          owner: "owner",
+          handler: "workflow:ask-env",
+          runtimeId: "rt",
+          state: "running",
+          reason: "event",
+          startedAt: new Date().toISOString(),
+        },
+      },
+    },
+    "fixture",
+  );
+  const bus = new EventBus();
+  const runner = createTaskWorkflowRunner({ manager: {} as never, bus });
+  const baseInput = {
+    source: { projectsRoot: root, projectRoot: root, persistDir: root, agentsRoot: root, sharedRoot: join(root, "shared") },
+    descriptor: { id: "fixture", appDir: join(root, "sample.app"), projectDir: root, app: {} },
+    capability: { workflow: "ask-env", task: "Ship v1" },
+    handler: "workflow:ask-env",
+    executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
+    childContext: { live: [], completed: [] },
+    taskSnapshot: { live: [], truncated: false },
+    taskEvents: {},
+    executionTimeoutMs: 5000,
+  };
+
+  // Attempt 1: parks on clarify-env
+  const run1 = await runner.execute({
+    ...baseInput,
+    attempt: {
+      read: { tasks: {} },
+      task: {
+        id: "ship",
+        generation: 1,
+        status: "running",
+        outcome: "Ship",
+        acceptance: ["Verified"],
+        input: {},
+        pendingEvents: { items: [], truncated: false },
+      },
+      attemptId: "attempt-1",
+      role: { agent: "owner" },
+      resourceVersion: 2,
+      events: { items: [], truncated: false },
+      waits: { open: [], note: "none" },
+      children: { live: [], completed: [] },
+      declaredOutputPaths: [],
+      signal: new AbortController().signal,
+      onEvent: () => () => {},
+    },
+  } as unknown as TaskWorkflowInput);
+  expect(run1.handlerResult.state).toBe("waiting");
+  if (run1.handlerResult.state === "waiting") {
+    expect(run1.handlerResult.conditions).toMatchObject([
+      { id: "clarify-env", type: "human.review", owner: "human", requestedAction: "Which env?" },
+    ]);
+  }
+
+  // Persist Attempt 2 + parked inputWaits as Host reconciler does
+  store.bootstrapSnapshot(
+    {
+      project: "fixture",
+      resources: {
+        ship: {
+          metadata: { id: "ship", generation: 1, resourceVersion: 4 },
+          spec: { parentId: "root", outcome: "Ship", acceptance: ["Verified"] },
+          status: {
+            phase: "running",
+            observedGeneration: 1,
+            currentAttemptId: "attempt-2",
+            conditionIds: ["clarify-env"],
+            inputWaits: {
+              "task:orig-1": { taskGeneration: 1, conditions: [{ id: "clarify-env", generation: 1 }] },
+            },
+          },
+        },
+      },
+      attempts: {
+        "attempt-1": {
+          metadata: { id: "attempt-1", resourceVersion: 2 },
+          taskId: "ship",
+          taskGeneration: 1,
+          specHash: "hash",
+          owner: "owner",
+          handler: "workflow:ask-env",
+          runtimeId: "rt",
+          state: "completed",
+          reason: "event",
+          startedAt: new Date().toISOString(),
+        },
+        "attempt-2": {
+          metadata: { id: "attempt-2", resourceVersion: 1 },
+          taskId: "ship",
+          taskGeneration: 1,
+          specHash: "hash",
+          owner: "owner",
+          handler: "workflow:ask-env",
+          runtimeId: "rt",
+          state: "running",
+          reason: "event",
+          startedAt: new Date().toISOString(),
+        },
+      },
+    },
+    "fixture",
+  );
+
+  const run2 = await runner.execute({
+    ...baseInput,
+    attempt: {
+      read: { tasks: {} },
+      task: {
+        id: "ship",
+        generation: 1,
+        status: "running",
+        outcome: "Ship",
+        acceptance: ["Verified"],
+        input: {},
+        conditions: [{ id: "clarify-env", type: "human.review", subject: "workflow-ask:ship:clarify-env", owner: "human" }],
+        pendingEvents: { items: [], truncated: false },
+      },
+      attemptId: "attempt-2",
+      role: { agent: "owner" },
+      resourceVersion: 4,
+      events: {
+        items: [
+          {
+            observedAt: "2026-11-28T00:00:00Z",
+            event: {
+              type: "app.task.requested",
+              source: "human",
+              data: {
+                idempotencyKey: "task:reply-2",
+                request: {
+                  humanRequested: true,
+                  source: { kind: "human", id: "hao" },
+                  input: { kind: "message", data: { message: "prod-east" } },
+                },
+              },
+            },
+          },
+        ],
+        truncated: false,
+      },
+      waits: {
+        open: [
+          {
+            conditionId: "clarify-env",
+            conditionGeneration: 1,
+            type: "human.review",
+            subject: "workflow-ask:ship:clarify-env",
+            state: "unknown",
+          },
+        ],
+        note: "open",
+      },
+      children: { live: [], completed: [] },
+      declaredOutputPaths: [],
+      signal: new AbortController().signal,
+      onEvent: () => () => {},
+    },
+  } as unknown as TaskWorkflowInput);
+
+  expect(run2.hostCompletion).toBe("finite-done");
+  expect(run2.handlerResult).toMatchObject({
+    state: "converged",
+    summary: "Shipped",
+    result: { attemptNumber: 2, env: "prod-east" },
+    actions: [
+      {
+        kind: "retire-condition",
+        conditionId: "clarify-env",
+        expectedConditionGeneration: 1,
+        reason: "Answered by human task input",
+      },
+    ],
+    inputKeys: ["task:orig-1", "task:reply-2"],
+  });
+});
+

@@ -4,5 +4,5 @@ export type { Static, TSchema } from "typebox";
 export { ExecutionDeferredError } from "./workflow.js";
 export { CallableCatalog, CallableCatalogStore, CallableValidationError } from "./callable.js";
 export type { CallableDefinition } from "./callable.js";
-export type { AgentCallOptions, AgentContext, AgentExecutableModule, CallOptions, ExecutionDeferral, ExecutionResult, Logger, WorkflowInput, WorkflowContext, } from "./workflow.js";
+export type { AgentCallOptions, AgentContext, AgentExecutableModule, CallOptions, CommandReceipt, ConditionObservation, DoneOptions, ExecutionDeferral, ExecutionResult, Logger, WorkflowAgentSession, WorkflowAskAnswer, WorkflowAskRequest, WorkflowExecOptions, WorkflowInput, WorkflowParkInput, WorkflowTaskView, WorkflowWorkspace, WorkflowContext, } from "./workflow.js";
 export type { WorkflowExecutableModule, } from "./workflow-kernel.js";

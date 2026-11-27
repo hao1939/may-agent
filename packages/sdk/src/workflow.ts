@@ -1,20 +1,25 @@
 import type { Static, TSchema } from "typebox";
 import type { AppContract, AppResult } from "./app.js";
-import type { CallableDescriptor, CallableResult } from "./callable.js";
+import type { CallableDescriptor, CallableResult, ExecutionInput } from "./callable.js";
+import type { CommandReceipt } from "./command.js";
 import type { AppEvent } from "./event.js";
 import type {
   Condition,
   ResourceCreator,
   TaskAcceptanceBasis,
+  TaskAppRequest,
   TaskChangeReceipt,
   TaskChanges,
   TaskClosure,
+  TaskCondition,
   TaskExecutorName,
   TaskPriority,
   TaskReconcileResult,
   TaskRevision,
   TaskStatus,
 } from "./task.js";
+
+export type { CommandReceipt } from "./command.js";
 
 export type Logger = {
   debug(message: string): void;
@@ -804,6 +809,80 @@ export type TaskReconciliationContext<TInput = unknown> = {
   events: TaskReconciliationEvents;
 };
 
+export type WorkflowWorkspace = {
+  /** Root of the App declaration that owns this agent execution. */
+  appRoot: string;
+  /** Root of the App's configured project workspace. */
+  projectRoot: string;
+  /** Root of this bounded execution's writable workspace. */
+  root: string;
+  /** Output root admitted for this bounded execution. */
+  output: string;
+};
+
+export type WorkflowTaskView<TTaskInput = unknown> = {
+  readonly appId: string;
+  readonly id: string;
+  readonly generation: number;
+  readonly attemptNumber: number;
+  readonly outcome: string;
+  readonly acceptance: readonly string[];
+  readonly taskInput: TTaskInput;
+  readonly newInputs: readonly TaskReconciliationEvent[];
+  readonly facts: readonly string[];
+  readonly previousResult?: Record<string, unknown>;
+};
+
+export type WorkflowExecOptions = {
+  cwd?: string;
+};
+
+export type WorkflowAgentSession = {
+  send<S extends TSchema>(
+    input: ExecutionInput | string,
+    options: CallOptions<S> & { schema: S },
+  ): Promise<ExecutionResult<Static<S>>>;
+  send<TOut = unknown>(
+    input: ExecutionInput | string,
+    options?: CallOptions,
+  ): Promise<ExecutionResult<TOut>>;
+  close(): Promise<void>;
+};
+
+export type ConditionObservation<T = unknown> = {
+  state: "unknown" | "false" | "true";
+  observed?: T;
+  facts?: string[];
+  observedAt?: string;
+};
+
+export type WorkflowParkInput = {
+  summary: string;
+  conditions?: TaskCondition[];
+  requests?: TaskAppRequest[];
+  facts?: string[];
+  result?: Record<string, unknown>;
+  retryAfterMs?: number;
+  continue?: boolean;
+};
+
+export type WorkflowAskRequest = {
+  id?: string;
+  subject?: string;
+  prompt: string;
+  options?: string[];
+};
+
+export type WorkflowAskAnswer<T = unknown> = {
+  status: "answered";
+  value: T;
+};
+
+export type DoneOptions<T = unknown> = {
+  output?: T;
+  facts?: string[];
+};
+
 export type AgentContext<TInput = unknown> = {
   input: WorkflowInput<TInput>;
   /**
@@ -828,47 +907,52 @@ export type AgentContext<TInput = unknown> = {
     input: unknown,
     options?: CallOptions,
   ): Promise<ExecutionResult<TOut>>;
-  workspace?: {
-    /** Root of the App declaration that owns this agent execution. */
-    appRoot: string;
-    /** Root of the App's configured project workspace. */
-    projectRoot: string;
-    /** Root of this bounded execution's writable workspace. */
-    root: string;
-    /** Output root admitted for this bounded execution. */
-    output: string;
-  };
+  workspace?: WorkflowWorkspace;
   log: Logger;
   done<T>(summary: string, output?: T): ExecutionResult<T>;
+  done<T>(summary: string, options: DoneOptions<T>): ExecutionResult<T>;
   blocked(reason: string, facts?: unknown): ExecutionResult<never>;
 };
 
 /**
- * Host/App compatibility context for procedures that have not yet migrated to
- * domain input and results. It is intentionally absent from the root authoring
- * surface; App orchestration owns these Task-scoped capabilities.
+ * Unified App workflow context across Host and Standalone modes (`@may-agent/sdk/app`).
  */
-export type AppWorkflowContext<TInput = unknown, TReconciliationInput = unknown> = AgentContext<TInput> & {
-  /** Present only when a durable App task owns this workflow attempt. Its input is the raw admitted Task domain input. */
+export type AppWorkflowContext<TInput = unknown, TReconciliationInput = unknown> = Omit<
+  AgentContext<TInput>,
+  "workspace"
+> & {
+  /** Always-present Task obligation view in both Host and Standalone modes. */
+  task: WorkflowTaskView<TTaskInputOrDefault<TReconciliationInput>>;
+  /** Non-null workspace paths bound for this execution. */
+  workspace: WorkflowWorkspace;
+  /** Execute a bounded argv command in workspace.root (or options.cwd) with process-group cleanup. */
+  exec(argv: readonly [string, ...string[]], options?: WorkflowExecOptions): Promise<CommandReceipt>;
+  /** Open a stateful multi-turn specialist session scoped to this workflow attempt. */
+  agent(target: string): WorkflowAgentSession;
+  /** Inspect the current observed state of a Condition by id or subject. */
+  observe<T = unknown>(subjectOrConditionId: string): ConditionObservation<T> | null;
+  /** Park the workflow on Host Conditions / cross-App requests (or Standalone task.json for --resume). */
+  park(wait: WorkflowParkInput): ExecutionResult<never>;
+  /** Request human input/approval; returns immediately when answered or parks cleanly. */
+  ask<T = unknown>(request: WorkflowAskRequest): Promise<WorkflowAskAnswer<T>>;
+  /** Report human-readable step progress to Host timeline or Standalone CLI. */
+  progress(status: string): void;
+  /** Present when a durable App task owns this workflow attempt. */
   reconciliation?: TaskReconciliationContext<TReconciliationInput>;
-  /** Task-owned workflows only. Save complete requirements using the recorded creator's authority. */
   reviseTask?: TaskAttempt["reviseTask"];
-  /** End an assignment created by this Task after reviewing its exact accepted result. */
   closeTask?: TaskAttempt["closeTask"];
-  /** Apply the same changes accepted in a final result, while continuing this execution. */
   applyTaskChanges?: TaskAttempt["apply"];
   readCommunication?: TaskAttempt["read"]["communication"];
   read: AppRead;
   events: {
     emit(event: AppEvent): Promise<void>;
-    /** Verified original publication in this Task generation. */
     read(type: string, localKey: string): Promise<{ eventId: number; data: Record<string, unknown> } | null>;
-    /** Live convenience for events addressed to the current Task. */
     onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
   };
   metrics: WorkflowMetricCapability;
-  workspace?: AgentContext<TInput>["workspace"];
 };
+
+type TTaskInputOrDefault<T> = T;
 
 export type AgentExecutableModule<TInput = unknown, TOutput = unknown> = {
   name: string;
@@ -885,5 +969,5 @@ export type AgentExecutableModule<TInput = unknown, TOutput = unknown> = {
   entryContentHash?: string;
 };
 
-/** @deprecated Use `AgentContext`. */
+/** @deprecated On root `@may-agent/sdk`, use `AgentContext`; for App workflows import `WorkflowContext` from `@may-agent/sdk/app`. */
 export type WorkflowContext<TInput = unknown> = AgentContext<TInput>;

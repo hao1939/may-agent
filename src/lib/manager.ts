@@ -26,6 +26,7 @@ import {
   invokeCatalogSkill,
   parseExplicitSkill,
   recoverCapturedWorkflowFinish,
+  restoreAgentMessages,
   shouldAttemptWorkflowFinishRecovery,
   validateOperationAllowance,
   workflowFinishRecoveryPrompt,
@@ -136,6 +137,8 @@ export interface RunOptions {
   toolPolicy?: ToolPolicy;
   /** Effective filesystem root supplied by an enclosing workflow/task. */
   executionRoot?: string;
+  /** Optional prior turn messages for multi-turn in-attempt workflow agent sessions. */
+  initialMessages?: AgentMessage[];
 }
 
 export type CallAgentOptions = Pick<
@@ -162,6 +165,7 @@ export type CallAgentOptions = Pick<
   | "toolBindings"
   | "toolPolicy"
   | "executionRoot"
+  | "initialMessages"
   | "deadlineAt"
 > & {
   timeout?: number;
@@ -488,6 +492,7 @@ export class SubagentManager {
         ...prepared.runner,
         initialState: { ...prepared.runner.initialState, tools },
       });
+      if (opts?.initialMessages) restoreAgentMessages(agent, opts.initialMessages);
       agent.subscribe(usage.observe);
 
       // JSONL persistence
@@ -800,6 +805,7 @@ export class SubagentManager {
       toolBindings: opts?.toolBindings,
       toolPolicy: opts?.toolPolicy,
       executionRoot: opts?.executionRoot,
+      initialMessages: opts?.initialMessages,
     });
     this.callDepths.set(sessionId, parentDepth + 1);
     const cancel = () => {

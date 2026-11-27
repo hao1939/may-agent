@@ -8,10 +8,22 @@
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { Type, type TSchema } from "typebox";
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import type { AgentCallOptions, AppRead, CallOptions, WorkflowContext } from "@may-agent/sdk/app";
+import { createInterface } from "node:readline/promises";
+import type {
+  AgentCallOptions,
+  AppRead,
+  CallOptions,
+  ConditionObservation,
+  ResourceObserver,
+  TaskCondition,
+  WorkflowAskRequest,
+  WorkflowContext,
+  WorkflowTaskView,
+} from "@may-agent/sdk/app";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -68,6 +80,7 @@ import {
   type AgentConfig,
   type AgentDirectory,
 } from "./loader/agent-config.js";
+import { importRuntimeModule } from "../lib/runtime-import.js";
 import { createModelRegistry } from "./model-registry.js";
 
 export type ToolDenial = {
@@ -146,6 +159,8 @@ export type DirectAgentRunOptions = {
   toolDenials?: ToolDenial[];
   /** Bind services for explicitly declared capabilities that the portable SDK does not implement. */
   capabilityProviders?: Readonly<Record<string, DirectCapabilityProvider>>;
+  /** Optional prior turn messages for multi-turn in-attempt workflow agent sessions. */
+  initialMessages?: AgentMessage[];
   /** Reports the concrete prompt-session identity before model execution starts. */
   onSessionStarted?: (sessionId: string) => void;
   timeoutMs?: number;
@@ -470,6 +485,7 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
       signal: options.signal,
       deadlineAt: options.deadlineAt,
       operationAllowance: options.operationAllowance,
+      ...(options.initialMessages ? { initialMessages: options.initialMessages } : {}),
       onObservation: (event) => {
         if (event.type === "message_end" && "message" in event) {
           appendFileSync(transcriptPath, `${JSON.stringify((event as { message: AgentMessage }).message)}\n`);
@@ -684,6 +700,15 @@ export type DirectWorkflowRunOptions<TInput = unknown> = WorkflowExecutionEnviro
   maxDepth?: number;
   signal?: AbortSignal;
   executionId?: string;
+  stateDir?: string;
+  resume?: boolean;
+  answer?: string;
+  interactiveAsk?: boolean;
+  task?: WorkflowTaskView;
+  attemptNumber?: number;
+  observations?: Readonly<Record<string, ConditionObservation>>;
+  askHuman?: (request: WorkflowAskRequest, signal: AbortSignal) => Promise<unknown>;
+  onProgress?: (status: string) => void;
   onStep?: (step: WorkflowStepTrace) => void;
   onLog?: (entry: WorkflowLogEntry) => void;
   onNotice?: (message: string) => void;
@@ -1308,21 +1333,55 @@ export async function runDirectWorkflow<TInput = unknown>(
   }
 
   const readOverrides = env?.read ?? options.read;
+  const standaloneTaskDetail: import("@may-agent/sdk/app").TaskDetail | null = options.task
+    ? {
+        id: options.task.id,
+        generation: options.task.generation,
+        status: "running" as const,
+        outcome: options.task.outcome,
+        summary: options.task.outcome,
+        acceptance: [...options.task.acceptance],
+        input:
+          options.task.taskInput && typeof options.task.taskInput === "object" && !Array.isArray(options.task.taskInput)
+            ? (options.task.taskInput as Record<string, unknown>)
+            : {},
+        facts: [...options.task.facts],
+        ...(options.task.previousResult ? { result: options.task.previousResult } : {}),
+        parentId: "",
+        conditions: [],
+        acceptedEvidence: { available: false, maxPageSize: 8 },
+      }
+    : null;
   const unavailableRead = (name: string) => async () => {
     throw new Error(`${name} read is not configured in standalone mode`);
   };
-  const read: AppRead = {
-    contract: readOverrides?.contract ?? unavailableRead("read.contract"),
-    appResult: readOverrides?.appResult ?? unavailableRead("read.appResult"),
-    tasks: {
-      list: readOverrides?.tasks?.list ?? unavailableRead("read.tasks.list"),
-      get: readOverrides?.tasks?.get ?? unavailableRead("read.tasks.get"),
-      ...(readOverrides?.tasks?.created ? { created: readOverrides.tasks.created } : {}),
-      ...(readOverrides?.tasks?.workload ? { workload: readOverrides.tasks.workload } : {}),
-    },
-    execution: readOverrides?.execution ?? unavailableRead("read.execution"),
-    metric: readOverrides?.metric ?? unavailableRead("read.metric"),
-  };
+  const read: AppRead = standaloneTaskDetail
+    ? {
+        contract: readOverrides?.contract ?? unavailableRead("read.contract"),
+        appResult: readOverrides?.appResult ?? (async () => null),
+        tasks: {
+          list: readOverrides?.tasks?.list ?? (async () => ({ items: [standaloneTaskDetail] })),
+          get:
+            readOverrides?.tasks?.get ??
+            (async (id) => (standaloneTaskDetail.id === id ? standaloneTaskDetail : null)),
+          ...(readOverrides?.tasks?.created ? { created: readOverrides.tasks.created } : {}),
+          ...(readOverrides?.tasks?.workload ? { workload: readOverrides.tasks.workload } : {}),
+        },
+        execution: readOverrides?.execution ?? (async () => null),
+        metric: readOverrides?.metric ?? (async () => null),
+      }
+    : {
+        contract: readOverrides?.contract ?? unavailableRead("read.contract"),
+        appResult: readOverrides?.appResult ?? unavailableRead("read.appResult"),
+        tasks: {
+          list: readOverrides?.tasks?.list ?? unavailableRead("read.tasks.list"),
+          get: readOverrides?.tasks?.get ?? unavailableRead("read.tasks.get"),
+          ...(readOverrides?.tasks?.created ? { created: readOverrides.tasks.created } : {}),
+          ...(readOverrides?.tasks?.workload ? { workload: readOverrides.tasks.workload } : {}),
+        },
+        execution: readOverrides?.execution ?? unavailableRead("read.execution"),
+        metric: readOverrides?.metric ?? unavailableRead("read.metric"),
+      };
 
   const maxConcurrentCalls = options.maxConcurrentCalls ?? DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS;
   const executeAgent = options.runAgent ?? runDirectAgent;
@@ -1443,11 +1502,15 @@ export async function runDirectWorkflow<TInput = unknown>(
     return new CallableCatalog(definitions).list();
   };
 
+  const agentSessionHistories = new Map<string, AgentMessage[]>();
+
   const executePromptStep = async (
     agent: string,
     prompt: string,
     callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     stepControl: WorkflowKernelStepControl,
+    sessionKey?: string,
+    workRootOverride?: string,
   ): Promise<WorkflowStepInvocationResult> => {
     const promptDef = preparedCatalog.prompts?.get(agent)?.definition;
     if (!promptDef) {
@@ -1483,6 +1546,7 @@ export async function runDirectWorkflow<TInput = unknown>(
           }),
         };
 
+    const priorMessages = sessionKey ? agentSessionHistories.get(sessionKey) : undefined;
     const directRun = await executeAgent({
       agentName: config.name,
       agentSource: promptDef.source,
@@ -1491,7 +1555,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       sharedPromptText: promptDef.sharedPromptText,
       task: prompt,
       projectRoot: options.projectRoot,
-      workRoot: options.workRoot,
+      workRoot: workRootOverride ?? options.workRoot,
       agentsRoot: options.agentsRoot,
       sharedRoot: options.sharedRoot,
       projectsRoot: options.projectsRoot,
@@ -1503,6 +1567,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       toolPolicy: stepControl.tools,
       toolDenials: denials,
       capabilityProviders,
+      ...(priorMessages ? { initialMessages: priorMessages } : {}),
       onSessionStarted: options.onSessionStarted,
       drainProcessGroup: options.drainProcessGroup,
       timeoutMs: stepControl.timeoutMs,
@@ -1510,6 +1575,9 @@ export async function runDirectWorkflow<TInput = unknown>(
       signal: stepControl.signal,
       onNotice: options.onNotice,
     });
+    if (sessionKey && Array.isArray(directRun.messages)) {
+      agentSessionHistories.set(sessionKey, [...directRun.messages]);
+    }
 
     const transcriptPath = join(directRun.sessionPath, "session.jsonl");
     childSessions.push({
@@ -1627,7 +1695,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       return {
         kind: "agent" as const,
         invoke: async (callOpts, nestedControl) =>
-          executePromptStep(resolved.name, formatExecutionInput(input), callOpts, nestedControl),
+          executePromptStep(resolved.name, formatExecutionInput(input), callOpts, nestedControl, undefined, effectiveWorkspace.root),
       };
     }
     return {
@@ -1637,11 +1705,54 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   };
 
+  let allocatedWorktreeRoot: string | undefined;
+  if (
+    !nested &&
+    options.stateDir &&
+    !env?.workspace &&
+    !options.workspace &&
+    (targetModule.workspace === "task" ||
+      (typeof targetModule.workspace === "object" && targetModule.workspace?.kind === "task"))
+  ) {
+    const wtDir = resolve(options.stateDir, "worktree");
+    if (!existsSync(join(wtDir, ".git"))) {
+      mkdirSync(resolve(options.stateDir), { recursive: true });
+      const baseBranch =
+        typeof targetModule.workspace === "object" && targetModule.workspace.baseBranch
+          ? targetModule.workspace.baseBranch
+          : "HEAD";
+      try {
+        execFileSync("git", ["-C", resolve(options.workRoot), "worktree", "add", "--detach", wtDir, baseBranch], {
+          stdio: "pipe",
+        });
+      } catch {
+        execFileSync("git", ["-C", resolve(options.workRoot), "worktree", "add", "--detach", wtDir, "HEAD"], {
+          stdio: "pipe",
+        });
+      }
+      const parentNodeModules = join(resolve(options.workRoot), "node_modules");
+      const wtNodeModules = join(wtDir, "node_modules");
+      if (existsSync(parentNodeModules) && !existsSync(wtNodeModules)) {
+        try {
+          symlinkSync(parentNodeModules, wtNodeModules, "dir");
+        } catch {
+          /* optional convenience link */
+        }
+      }
+    }
+    allocatedWorktreeRoot = wtDir;
+  }
+
+  const effectiveRoot = allocatedWorktreeRoot ?? resolve(options.workRoot);
+  const inferredAppRoot =
+    callerOwner && callerOwner !== "global" && options.projectsRoot && existsSync(join(options.projectsRoot, `${callerOwner}.app`))
+      ? join(options.projectsRoot, `${callerOwner}.app`)
+      : resolve(options.projectRoot);
   const effectiveWorkspace = env?.workspace ?? options.workspace ?? {
-    appRoot: resolve(options.projectRoot),
+    appRoot: inferredAppRoot,
     projectRoot: resolve(options.workRoot),
-    root: resolve(options.workRoot),
-    output: resolve(options.workRoot),
+    root: effectiveRoot,
+    output: options.stateDir ? resolve(options.stateDir) : resolve(options.outputRoot),
   };
   const authoredModule = targetModule;
   const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(
@@ -1709,31 +1820,62 @@ export async function runDirectWorkflow<TInput = unknown>(
               }),
           }
         : undefined,
-      metrics: (env?.metrics ?? options.metrics)
+      metrics: standaloneTaskDetail
         ? {
+            define: (env?.metrics ?? options.metrics)?.define ?? (() => undefined),
+            defineMany: (env?.metrics ?? options.metrics)?.defineMany ?? (() => undefined),
+            record: (env?.metrics ?? options.metrics)?.record ?? (async () => undefined),
+            evaluate: (env?.metrics ?? options.metrics)?.evaluate ?? (() => []),
+          }
+        : {
             define:
-              (env?.metrics ?? options.metrics)!.define ??
+              (env?.metrics ?? options.metrics)?.define ??
               (() => {
                 throw new Error("metrics.define is not configured in standalone mode");
               }),
             defineMany:
-              (env?.metrics ?? options.metrics)!.defineMany ??
+              (env?.metrics ?? options.metrics)?.defineMany ??
               (() => {
                 throw new Error("metrics.defineMany is not configured in standalone mode");
               }),
             record:
-              (env?.metrics ?? options.metrics)!.record ??
+              (env?.metrics ?? options.metrics)?.record ??
               (async () => {
                 throw new Error("metrics.record is not configured in standalone mode");
               }),
             evaluate:
-              (env?.metrics ?? options.metrics)!.evaluate ??
+              (env?.metrics ?? options.metrics)?.evaluate ??
               (() => {
                 throw new Error("metrics.evaluate is not configured in standalone mode");
               }),
-          }
-        : undefined,
+          },
       workspace: effectiveWorkspace,
+      ...(options.task ? { task: options.task } : {}),
+      ...(options.attemptNumber !== undefined ? { attemptNumber: options.attemptNumber } : {}),
+      ...(options.observations ? { observations: options.observations } : {}),
+      ...(options.askHuman ? { askHuman: options.askHuman } : {}),
+      onProgress: (status) => {
+        options.onProgress?.(status);
+        options.onNotice?.(`[progress] ${status}`);
+      },
+      invokeAgentSession: async (sessionKey, target, envelope, callOpts, stepControl) => {
+        if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
+        const resolved = resolveCallable(callerOwner, target, preparedCatalog);
+        if (resolved.kind !== "prompt") {
+          throw new Error(`ctx.agent("${target}") requires a prompt agent target`);
+        }
+        return executePromptStep(
+          resolved.name,
+          formatExecutionInput(envelope),
+          callOpts,
+          stepControl,
+          sessionKey,
+          effectiveWorkspace.root,
+        );
+      },
+      closeAgentSessions: async () => {
+        agentSessionHistories.clear();
+      },
       reconciliation,
       reviseTask: env?.reviseTask ?? options.reviseTask,
       closeTask: env?.closeTask ?? options.closeTask,
@@ -1995,6 +2137,77 @@ type CanonicalStandaloneRoute = {
 };
 
 
+type StandalonePersistedTask = {
+  version: 1;
+  target: string;
+  appId: string;
+  id: string;
+  generation: number;
+  attemptNumber: number;
+  outcome: string;
+  acceptance: string[];
+  input: unknown;
+  status: "running" | "done" | "parked" | "blocked" | "error" | "interrupted";
+  summary?: string;
+  facts: string[];
+  previousResult?: Record<string, unknown>;
+  conditions: TaskCondition[];
+  observations: Record<string, ConditionObservation>;
+};
+
+async function inspectStandaloneResourceConditions(params: {
+  projectsRoot: string;
+  appId: string;
+  conditions: readonly TaskCondition[];
+  observations: Record<string, ConditionObservation>;
+  signal?: AbortSignal;
+}): Promise<void> {
+  if (!params.conditions.length) return;
+  const appFile = ["app.ts", "app.js"]
+    .map((f) => join(params.projectsRoot, `${params.appId}.app`, f))
+    .find((candidate) => existsSync(candidate));
+  if (!appFile) return;
+  try {
+    const mod = await importRuntimeModule<{ default?: { observers?: unknown[] } }>(appFile);
+    const observers = Array.isArray(mod.default?.observers) ? mod.default!.observers : [];
+    const resourceObservers = observers.filter(
+      (obs): obs is ResourceObserver =>
+        Boolean(obs) && typeof obs === "object" && "inspect" in (obs as Record<string, unknown>),
+    );
+    if (!resourceObservers.length) return;
+    const abortCtrl = new AbortController();
+    const signal = params.signal ?? abortCtrl.signal;
+    for (const cond of params.conditions) {
+      if (!("type" in cond) || !("subject" in cond)) continue;
+      if (params.observations[cond.id]?.state === "true") continue;
+      const obs = resourceObservers.find((candidate) => candidate.type === cond.type);
+      if (!obs) continue;
+      const rawResource = cond.subject.startsWith("resource:") ? cond.subject.slice("resource:".length) : cond.subject;
+      try {
+        const observed = await obs.inspect(rawResource, { signal });
+        if (observed !== null && observed !== undefined) {
+          const expected = (cond as { expected?: Record<string, unknown> }).expected;
+          const matchesExpected =
+            !expected ||
+            (typeof observed === "object" &&
+              Object.entries(expected).every(([k, v]) => (observed as Record<string, unknown>)[k] === v));
+          const nextObs: ConditionObservation = {
+            state: matchesExpected ? "true" : "false",
+            observed,
+            observedAt: new Date().toISOString(),
+          };
+          params.observations[cond.id] = nextObs;
+          params.observations[cond.subject] = nextObs;
+        }
+      } catch {
+        /* Keep Condition pending when provider inspection fails. */
+      }
+    }
+  } catch {
+    /* Optional standalone observer check must not fail execution. */
+  }
+}
+
 /**
  * Run any prompt agent, code procedure, or native CLI executor standalone—either
  * with positional `(target, input, options?)` or an options object `run(options)`—
@@ -2013,8 +2226,36 @@ export async function run<TInput = unknown>(
 ): Promise<RunResult> {
   const isPositional = typeof targetOrOptions === "string";
   const options: RunOptions<TInput> = isPositional ? maybeOptions : targetOrOptions;
-  const input = (isPositional ? maybeInput : targetOrOptions.input) as TInput;
-  const rawTarget = isPositional ? targetOrOptions : (options.target ?? "");
+  let input: unknown = isPositional ? maybeInput : targetOrOptions.input;
+  let rawTarget: string = isPositional ? targetOrOptions : (options.target ?? "");
+
+  const stateDir = options.stateDir ? resolve(options.stateDir) : undefined;
+  const stateFilePath = stateDir ? join(stateDir, "task.json") : undefined;
+  let persistedState: StandalonePersistedTask | undefined;
+  if (stateFilePath && existsSync(stateFilePath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(stateFilePath, "utf8")) as StandalonePersistedTask;
+      if (parsed && typeof parsed === "object" && parsed.version === 1) {
+        persistedState = parsed;
+        if (!rawTarget.trim() && parsed.target) rawTarget = parsed.target;
+        const emptyInput =
+          input === undefined ||
+          input === "" ||
+          (typeof input === "object" && input !== null && Object.keys(input as Record<string, unknown>).length === 0);
+        if (options.resume && emptyInput && parsed.input !== undefined) {
+          input = parsed.input as TInput;
+        }
+      }
+    } catch {
+      /* Ignore unreadable state file on fresh start. */
+    }
+  }
+  if (options.resume && stateFilePath && !persistedState) {
+    return Object.freeze({
+      status: "error",
+      summary: `Cannot --resume: no saved task.json found in ${stateDir}`,
+    });
+  }
 
   const startedAt = Date.now();
   const cwd = resolve(options.cwd ?? process.cwd());
@@ -2077,16 +2318,99 @@ export async function run<TInput = unknown>(
   const agentsRoot = resolve(options.agentsRoot ?? globalAgentsRoot);
 
   const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
-  const ownsTempOutputRoot = !options.outputRoot;
-  const outputRoot = options.outputRoot ? resolve(options.outputRoot) : mkdtempSync(join(tmpdir(), "may-run-"));
-  const models = options.models ?? createModelRegistry();
+  const ownsTempOutputRoot = !options.outputRoot && !stateDir;
+  const outputRoot = options.outputRoot
+    ? resolve(options.outputRoot)
+    : stateDir
+      ? join(stateDir, "output")
+      : mkdtempSync(join(tmpdir(), "may-run-"));
+  const models = options.models ? { ...createModelRegistry(), ...options.models } : createModelRegistry();
+
+  const callerOwner = rawTarget.slice(0, rawTarget.indexOf("/"));
+  const attemptNumber = persistedState ? persistedState.attemptNumber + 1 : (options.attemptNumber ?? 1);
+  const observations: Record<string, ConditionObservation> = {
+    ...(persistedState?.observations ?? {}),
+    ...(options.observations ?? {}),
+  };
+  if (options.answer !== undefined && persistedState?.conditions?.length) {
+    const answeredAt = new Date().toISOString();
+    for (const cond of persistedState.conditions) {
+      if (
+        "type" in cond &&
+        (cond.type === "human.review" || cond.type === "project.approval.submitted" || cond.owner === "human")
+      ) {
+        const obs: ConditionObservation = { state: "true", observed: options.answer, observedAt: answeredAt };
+        observations[cond.id] = obs;
+        observations[cond.subject] = obs;
+      }
+    }
+  }
+  if (persistedState?.conditions?.length && callerOwner && callerOwner !== "global") {
+    await inspectStandaloneResourceConditions({
+      projectsRoot,
+      appId: callerOwner,
+      conditions: persistedState.conditions,
+      observations,
+      signal: options.signal,
+    });
+  }
+
+  const rawInputValue: unknown = input;
+  const inputRecord =
+    rawInputValue && typeof rawInputValue === "object" && !Array.isArray(rawInputValue)
+      ? (rawInputValue as Record<string, unknown>)
+      : undefined;
+  const derivedOutcome =
+    persistedState?.outcome ??
+    (typeof inputRecord?.prompt === "string" && inputRecord.prompt.trim()
+      ? inputRecord.prompt.trim()
+      : typeof rawInputValue === "string" && rawInputValue.trim()
+        ? rawInputValue.trim()
+        : rawTarget);
+  const standaloneTask: WorkflowTaskView | undefined = stateDir
+    ? {
+        appId: callerOwner && callerOwner !== "global" ? callerOwner : "standalone",
+        id: persistedState?.id ?? "standalone",
+        generation: persistedState?.generation ?? 1,
+        attemptNumber,
+        outcome: derivedOutcome,
+        acceptance: persistedState?.acceptance ?? [],
+        taskInput: inputRecord && "data" in inputRecord ? inputRecord.data : rawInputValue,
+        newInputs: [],
+        facts: persistedState?.facts ?? [],
+        ...(persistedState?.previousResult ? { previousResult: persistedState.previousResult } : {}),
+      }
+    : options.task;
+
+  const interactiveAsk =
+    options.askHuman ??
+    (options.interactiveAsk && process.stdin.isTTY && process.stdout.isTTY
+      ? async (req: WorkflowAskRequest, sig: AbortSignal) => {
+          const rl = createInterface({ input: process.stdin, output: process.stdout });
+          const onAbort = () => rl.close();
+          sig.addEventListener("abort", onAbort, { once: true });
+          try {
+            const suffix = req.options?.length ? ` (${req.options.join(" / ")})` : "";
+            const ans = await rl.question(`${req.prompt}${suffix}: `);
+            return ans.trim();
+          } finally {
+            sig.removeEventListener("abort", onAbort);
+            rl.close();
+          }
+        }
+      : undefined);
 
   let cleanupConfirmed = false;
   try {
     const res = await runDirectWorkflow({
       ...options,
       ...(normalizedTarget ? { target: normalizedTarget } : {}),
-      input,
+      ...(stateDir ? { stateDir } : {}),
+      ...(standaloneTask ? { task: standaloneTask } : {}),
+      attemptNumber,
+      observations,
+      ...(interactiveAsk ? { askHuman: interactiveAsk } : {}),
+      input: rawInputValue as TInput,
       deadlineAt,
       projectRoot,
       workRoot,
@@ -2100,7 +2424,7 @@ export async function run<TInput = unknown>(
       root: true,
       depth: 1,
       catalog: captured.catalog,
-      callerOwner: rawTarget.slice(0, rawTarget.indexOf("/")),
+      callerOwner,
       ...(options.tools ? { tools: options.tools } : {}),
     });
     cleanupConfirmed = res.report.cleanup.confirmed === true;
@@ -2110,9 +2434,45 @@ export async function run<TInput = unknown>(
         ? contribution.summary
         : contribution.reason
       : res.report.error?.message ?? (res.error instanceof Error ? res.error.message : String(res.error ?? res.status));
+    const finalStatus = contribution?.type ?? res.status;
+    if (stateDir && stateFilePath) {
+      mkdirSync(stateDir, { recursive: true });
+      const factObj =
+        contribution?.facts && typeof contribution.facts === "object" && !Array.isArray(contribution.facts)
+          ? (contribution.facts as Record<string, unknown>)
+          : undefined;
+      const parkedConditions = Array.isArray(factObj?.conditions) ? (factObj.conditions as TaskCondition[]) : [];
+      const domainFacts = Array.isArray(contribution?.facts)
+        ? contribution.facts.filter((f): f is string => typeof f === "string")
+        : Array.isArray(factObj?.domainFacts)
+          ? (factObj.domainFacts as string[])
+          : persistedState?.facts ?? [];
+      const prevResult =
+        contribution?.output && typeof contribution.output === "object" && !Array.isArray(contribution.output)
+          ? (contribution.output as Record<string, unknown>)
+          : persistedState?.previousResult;
+      const saved: StandalonePersistedTask = {
+        version: 1,
+        target: normalizedTarget,
+        appId: standaloneTask?.appId ?? "standalone",
+        id: standaloneTask?.id ?? "standalone",
+        generation: standaloneTask?.generation ?? 1,
+        attemptNumber,
+        outcome: derivedOutcome,
+        acceptance: [...(standaloneTask?.acceptance ?? [])],
+        input,
+        status: finalStatus === "blocked" && parkedConditions.length > 0 ? "parked" : finalStatus,
+        summary,
+        facts: domainFacts,
+        ...(prevResult ? { previousResult: prevResult } : {}),
+        conditions: finalStatus === "blocked" ? parkedConditions : [],
+        observations,
+      };
+      writeFileSync(stateFilePath, `${JSON.stringify(saved, null, 2)}\n`, "utf8");
+    }
     return Object.freeze({
       ...(res.started ? { id: res.report.executionId } : {}),
-      status: contribution?.type ?? res.status,
+      status: finalStatus,
       summary,
       ...(contribution?.output !== undefined ? { output: contribution.output } : {}),
       ...(contribution?.facts !== undefined ? { facts: contribution.facts } : {}),
