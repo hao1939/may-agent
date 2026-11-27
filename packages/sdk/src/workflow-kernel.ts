@@ -494,12 +494,6 @@ class WorkflowParkedSignal extends Error {
   }
 }
 
-function isDoneOptions<T>(value: unknown): value is DoneOptions<T> {
-  if (!isRecord(value)) return false;
-  const keys = Object.keys(value);
-  return keys.length > 0 && keys.every((k) => k === "output" || k === "facts");
-}
-
 function buildWorkflowTaskView<TInput>(bindings: WorkflowKernelBindings<TInput>): WorkflowTaskView {
   if (bindings.task) return bindings.task;
   const rec = bindings.reconciliation;
@@ -1211,6 +1205,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       assertActive();
       const condId = request.id?.trim() || `ask-${(request.subject?.trim() || "human").replace(/[^A-Za-z0-9._:-]/g, "_")}`;
       const subject = request.subject?.trim() || `workflow-ask:${effectiveTaskView.id}:${condId}`;
+      const hasDiscreteChoices = Boolean(request.options && request.options.length > 0);
       const existing = observeCondition<T>(condId) ?? observeCondition<T>(subject);
       if (existing?.state === "true") {
         const obsRecord =
@@ -1238,40 +1233,44 @@ export async function runWorkflowInvocation<TInput = unknown>(
       const parkedCond = bindings.reconciliation?.task?.conditions?.find(
         (item) => item.id === condId || item.subject === subject,
       );
-      if (parkedCond || openWait) {
-        const createdMs = parkedCond?.observation?.observedAt ? Date.parse(parkedCond.observation.observedAt) : NaN;
-        const batches = [
-          ...(bindings.reconciliation?.events?.items ?? []),
-          ...(bindings.reconciliation?.events?.continuedInputs ?? []),
-        ];
-        for (let idx = batches.length - 1; idx >= 0; idx--) {
-          const entry = batches[idx]!;
-          if (Number.isFinite(createdMs)) {
-            const observedMs = Date.parse(entry.observedAt);
-            if (Number.isFinite(observedMs) && observedMs < createdMs) continue;
-          }
+      const condType = openWait?.type ?? parkedCond?.type;
+      // Discrete approvals (`options` / `project.approval.submitted`) require the
+      // Host's verified approval proposal tracker; only freeform `human.review`
+      // questions accept addressed human Task messages.
+      if (!hasDiscreteChoices && (parkedCond || openWait) && condType === "human.review") {
+        const resolvedCondId = openWait?.conditionId ?? parkedCond?.id ?? condId;
+        const resolvedGen = openWait?.conditionGeneration ?? parkedCond?.observation?.generation ?? 1;
+        const openHumanReviewIds = new Set<string>([
+          ...(bindings.reconciliation?.waits?.open ?? [])
+            .filter((item) => item.type === "human.review" && item.state !== "true")
+            .map((item) => item.conditionId),
+          ...(bindings.reconciliation?.task?.conditions ?? [])
+            .filter((item) => item.type === "human.review" && item.observation?.state !== "true")
+            .map((item) => item.id),
+        ]);
+        const inputsByKey = new Map(
+          (bindings.reconciliation?.events?.inputs ?? []).map((inputItem) => [inputItem.key, inputItem]),
+        );
+        const currentItems = bindings.reconciliation?.events?.items ?? [];
+        for (let idx = currentItems.length - 1; idx >= 0; idx--) {
+          const entry = currentItems[idx]!;
           const ev = entry.event;
+          if (ev.type !== "app.task.requested") continue;
           const evData =
             ev.data && typeof ev.data === "object" && !Array.isArray(ev.data)
               ? (ev.data as Record<string, unknown>)
               : undefined;
+          if (typeof evData?.idempotencyKey !== "string") continue;
           const evRequest =
-            evData?.request && typeof evData.request === "object" && !Array.isArray(evData.request)
+            evData.request && typeof evData.request === "object" && !Array.isArray(evData.request)
               ? (evData.request as Record<string, unknown>)
               : undefined;
-          const evSource =
-            evRequest?.source && typeof evRequest.source === "object" && !Array.isArray(evRequest.source)
-              ? (evRequest.source as Record<string, unknown>)
-              : evData?.source && typeof evData.source === "object" && !Array.isArray(evData.source)
-                ? (evData.source as Record<string, unknown>)
-                : undefined;
-          const isHumanEvent =
-            evRequest?.humanRequested === true ||
-            evSource?.kind === "human" ||
-            ev.source === "human" ||
-            (typeof ev.source === "string" && (ev.source.startsWith("human:") || ev.source.startsWith("web-task:")));
-          if (!isHumanEvent) continue;
-          const rawInputObj = evRequest?.input ?? evData?.input;
+          // Require Host-projected admission provenance matching the exact request ID.
+          const admittedInput = inputsByKey.get(evData.idempotencyKey);
+          if (!admittedInput || admittedInput.source.kind !== "human" || evRequest?.id !== admittedInput.id) {
+            continue;
+          }
+          const rawInputObj = evRequest?.input;
           const evInput =
             rawInputObj && typeof rawInputObj === "object" && !Array.isArray(rawInputObj)
               ? (rawInputObj as Record<string, unknown>)
@@ -1280,17 +1279,38 @@ export async function runWorkflowInvocation<TInput = unknown>(
             evInput?.data && typeof evInput.data === "object" && !Array.isArray(evInput.data)
               ? (evInput.data as Record<string, unknown>)
               : undefined;
+          const evContext =
+            evInputData?.context && typeof evInputData.context === "object" && !Array.isArray(evInputData.context)
+              ? (evInputData.context as Record<string, unknown>)
+              : undefined;
+          if (
+            evContext?.expectedGeneration !== undefined &&
+            Number(evContext.expectedGeneration) !== effectiveTaskView.generation
+          ) {
+            continue;
+          }
+          const anchoredCondId =
+            typeof evContext?.conditionId === "string" && evContext.conditionId.trim()
+              ? evContext.conditionId.trim()
+              : undefined;
+          if (anchoredCondId !== undefined) {
+            if (anchoredCondId !== resolvedCondId) continue;
+            if (
+              evContext?.conditionGeneration !== undefined &&
+              Number(evContext.conditionGeneration) !== resolvedGen
+            ) {
+              continue;
+            }
+          } else if (openHumanReviewIds.size > 1) {
+            // Refuse unanchored freeform replies when multiple human.review Conditions are open.
+            continue;
+          }
           const replyValue =
             evInputData?.message ??
             evData?.answer ??
-            evData?.decision ??
             evData?.message;
           if (replyValue !== undefined) {
-            const condType = openWait?.type ?? parkedCond?.type;
-            const resolvedCondId = openWait?.conditionId ?? parkedCond?.id ?? condId;
-            const resolvedGen = openWait?.conditionGeneration ?? parkedCond?.observation?.generation ?? 1;
             if (
-              condType === "human.review" &&
               Number.isSafeInteger(resolvedGen) &&
               resolvedGen > 0 &&
               !answeredHumanConditions.some((item) => item.conditionId === resolvedCondId)
@@ -1309,7 +1329,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
         assertActive();
         return { status: "answered", value: value as T };
       }
-      const hasDiscreteChoices = Boolean(request.options && request.options.length > 0);
       throw new WorkflowParkedSignal(
         parkResult({
           summary: request.prompt,
@@ -1472,21 +1491,12 @@ export async function runWorkflowInvocation<TInput = unknown>(
         return tracked;
       },
     },
-    done: <T>(summary: string, outputOrOptions?: T | DoneOptions<T>): ExecutionResult<T> => {
-      if (isDoneOptions<T>(outputOrOptions)) {
-        return {
-          status: "done",
-          summary,
-          ...(outputOrOptions.output !== undefined ? { output: outputOrOptions.output } : {}),
-          ...(outputOrOptions.facts !== undefined ? { facts: outputOrOptions.facts } : {}),
-        };
-      }
-      return {
-        status: "done",
-        summary,
-        ...(outputOrOptions !== undefined ? { output: outputOrOptions as T } : {}),
-      };
-    },
+    done: <T = undefined>(summary: string, output?: T, options?: DoneOptions): ExecutionResult<T> => ({
+      status: "done",
+      summary,
+      ...(output !== undefined ? { output } : {}),
+      ...(options?.facts !== undefined ? { facts: options.facts } : {}),
+    }),
     blocked: (reason: string, facts?: unknown): ExecutionResult<never> => ({
       status: "blocked",
       summary: reason,

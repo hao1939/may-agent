@@ -236,28 +236,16 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
       evaluate: fn(() => []),
     },
     log: options.log ?? createTestAppLogger(),
-    done: <T>(summary: string, outputOrOptions?: T | import("./workflow.js").DoneOptions<T>): ExecutionResult<T> => {
-      if (
-        outputOrOptions &&
-        typeof outputOrOptions === "object" &&
-        !Array.isArray(outputOrOptions) &&
-        Object.keys(outputOrOptions as Record<string, unknown>).length > 0 &&
-        Object.keys(outputOrOptions as Record<string, unknown>).every((k) => k === "output" || k === "facts")
-      ) {
-        const opts = outputOrOptions as import("./workflow.js").DoneOptions<T>;
-        return {
-          status: "done",
-          summary,
-          ...(opts.output !== undefined ? { output: opts.output } : {}),
-          ...(opts.facts !== undefined ? { facts: opts.facts } : {}),
-        };
-      }
-      return {
-        status: "done",
-        summary,
-        ...(outputOrOptions !== undefined ? { output: outputOrOptions as T } : {}),
-      };
-    },
+    done: <T = undefined>(
+      summary: string,
+      output?: T,
+      doneOptions?: import("./workflow.js").DoneOptions,
+    ): ExecutionResult<T> => ({
+      status: "done",
+      summary,
+      ...(output !== undefined ? { output } : {}),
+      ...(doneOptions?.facts !== undefined ? { facts: doneOptions.facts } : {}),
+    }),
     blocked: (reason: string, facts?: unknown) => ({
       status: "blocked",
       summary: reason,

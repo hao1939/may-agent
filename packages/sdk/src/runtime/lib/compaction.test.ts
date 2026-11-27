@@ -1193,5 +1193,61 @@ describe("usage-calibrated compaction & offloadContent & mockModel", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("bounds offloaded files across multiple session IDs while preserving the active session's outputs", async () => {
+    const { mkdtempSync, rmSync, existsSync, readdirSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { wrapToolsWithOffload } = await import("./offload-content.js");
+
+    const baseDir = mkdtempSync(join(tmpdir(), "offload-cross-session-"));
+    try {
+      const dummyRead = {
+        name: "read",
+        label: "Read",
+        description: "Read",
+        parameters: Type.Object({}),
+        execute: async () => ({ content: [{ type: "text" as const, text: "ok" }] }),
+      };
+      const bigTool = {
+        name: "dump",
+        label: "Dump",
+        description: "Dump",
+        parameters: Type.Object({}),
+        execute: async () => ({ content: [{ type: "text" as const, text: "x".repeat(1500) }] }),
+      };
+
+      const s1Tools = wrapToolsWithOffload([dummyRead as any, bigTool as any], "session-old-1", {
+        baseDir,
+        maxBytes: 500,
+        maxDirectoryFiles: 3,
+      });
+      const s2Tools = wrapToolsWithOffload([dummyRead as any, bigTool as any], "session-old-2", {
+        baseDir,
+        maxBytes: 500,
+        maxDirectoryFiles: 3,
+      });
+      const s3Tools = wrapToolsWithOffload([dummyRead as any, bigTool as any], "session-active-3", {
+        baseDir,
+        maxBytes: 500,
+        maxDirectoryFiles: 3,
+      });
+
+      await s1Tools[1]!.execute("c1", {}, new AbortController().signal, () => {});
+      await new Promise((r) => setTimeout(r, 15));
+      await s2Tools[1]!.execute("c2", {}, new AbortController().signal, () => {});
+      await new Promise((r) => setTimeout(r, 15));
+      await s3Tools[1]!.execute("c3a", {}, new AbortController().signal, () => {});
+      await s3Tools[1]!.execute("c3b", {}, new AbortController().signal, () => {});
+
+      const rootResults = join(baseDir, "may-agent-tool-results");
+      // Global maxDirectoryFiles=3 evicted session-old-1 and removed its empty directory while preserving session-active-3's 2 files!
+      expect(existsSync(join(rootResults, "session-old-1"))).toBe(false);
+      const activeFiles = readdirSync(join(rootResults, "session-active-3")).sort();
+      expect(activeFiles).toEqual(["dump-c3a.txt", "dump-c3b.txt"]);
+    } finally {
+      rmSync(baseDir, { recursive: true, force: true });
+    }
+  });
 });
 

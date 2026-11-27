@@ -1592,6 +1592,9 @@ export async function executePreparedAgent(
   const usage = createExecutionUsage(prepared.preparation);
   const unsubscribeUsage = agent.subscribe(usage.observe);
   if (options.initialMessages) restoreAgentMessages(agent, options.initialMessages);
+  const restoredMessages = new Set<unknown>(agent.state.messages as unknown[]);
+  const currentSendMessages = (): AgentMessage[] =>
+    (agent.state.messages as AgentMessage[]).filter((message) => !restoredMessages.has(message));
   const unsubscribe = options.onObservation ? agent.subscribe(options.onObservation) : undefined;
   let timedOut = false;
   let interrupted = false;
@@ -1616,19 +1619,27 @@ export async function executePreparedAgent(
       scope.signal.throwIfAborted();
       const initialError = initialCause instanceof Error ? initialCause.message : String(initialCause);
       const messages = agent.state.messages as AgentMessage[];
+      const sendMessages = currentSendMessages();
+      const beforeRecoveryLen = messages.length;
       const captured = prepared.requireFinish
         ? await recoverCapturedWorkflowFinish({
             sessionId: prepared.sessionId,
-            messages,
+            messages: sendMessages,
             tools,
             reason: initialError,
           })
         : { disposition: "ineligible" as const };
+      if (sendMessages.length > 0 && captured.disposition === "recovered") {
+        const latestNew = sendMessages[sendMessages.length - 1];
+        if (latestNew && messages[messages.length - 1] !== latestNew && messages.length === beforeRecoveryLen) {
+          messages.push(latestNew);
+        }
+      }
       if (captured.disposition === "recovered" || captured.disposition === "already-committed") {
         recoveredThrownFailure = true;
       } else if (
         prepared.requireFinish &&
-        !extractFinishParams(messages as any[]) &&
+        !extractFinishParams(currentSendMessages() as any[]) &&
         shouldAttemptWorkflowFinishRecovery(initialError)
       ) {
         recoveredThrownFailure = true;
@@ -1649,10 +1660,12 @@ export async function executePreparedAgent(
     if (prepared.requireFinish && !recoveredThrownFailure) {
       scope.signal.throwIfAborted();
       const messages = agent.state.messages as AgentMessage[];
-      const terminalError = extractLastAssistantError(messages) ?? classifyTerminalAssistantFailure(messages);
-      if (!extractFinishParams(messages as any[])) {
+      const sendMessages = currentSendMessages();
+      const terminalError =
+        extractLastAssistantError(sendMessages) ?? classifyTerminalAssistantFailure(sendMessages);
+      if (!extractFinishParams(sendMessages as any[])) {
         if (shouldAttemptWorkflowFinishRecovery(terminalError)) {
-          if (isRetryableEmptyAssistantFailure(terminalError)) {
+          if (isRetryableEmptyAssistantFailure(terminalError) && sendMessages.length > 0) {
             messages.pop();
           }
           await agent.prompt(workflowFinishRecoveryPrompt(prepared.outputSchema, terminalError));
@@ -1679,13 +1692,14 @@ export async function executePreparedAgent(
   }
 
   const messages = agent.state.messages as AgentMessage[];
-  const finishResult = extractFinishParams(messages as any[]) ?? undefined;
+  const sendMessages = currentSendMessages();
+  const finishResult = extractFinishParams(sendMessages as any[]) ?? undefined;
   // A committed finish survives a timeout while the turn unwinds. Validate the
   // caller's required payload below before treating that receipt as a result.
   if (finishResult && interrupted) error = undefined;
   if (interrupted && !finishResult) error ??= scope.signal.reason?.message ?? "Execution interrupted";
-  const assistantError = !finishResult ? extractLastAssistantError(messages) : undefined;
-  const terminalFailure = !finishResult ? classifyTerminalAssistantFailure(messages) : undefined;
+  const assistantError = !finishResult ? extractLastAssistantError(sendMessages) : undefined;
+  const terminalFailure = !finishResult ? classifyTerminalAssistantFailure(sendMessages) : undefined;
   error ??= assistantError ?? terminalFailure;
   if (!error && prepared.requireFinish && !finishResult) {
     error = "Workflow agent step ended without calling finish() after one corrective prompt";
@@ -1693,7 +1707,7 @@ export async function executePreparedAgent(
   if (!error && prepared.outputSchema && finishResult?.status === "done" && finishResult.output === undefined) {
     error = "Workflow agent step completed without the required schema-backed finish().output payload";
   }
-  const assistantText = finishResult?.summary ?? extractLastAssistantText(messages);
+  const assistantText = finishResult?.summary ?? extractLastAssistantText(sendMessages);
   if (!error && !finishResult && !assistantText) {
     error = "Agent ended without producing a response";
   }

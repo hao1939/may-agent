@@ -426,10 +426,11 @@ export const name = "ask-env";
 export const description = "Parks on ctx.ask then converges with human reply";
 export async function execute(ctx) {
   const answer = await ctx.ask({ id: "clarify-env", prompt: "Which env?" });
-  return ctx.done("Shipped", {
-    output: { attemptNumber: ctx.task.attemptNumber, env: answer.value },
-    facts: [\`attempt:\${ctx.task.attemptNumber}\`, \`env:\${answer.value}\`],
-  });
+  return ctx.done(
+    "Shipped",
+    { attemptNumber: ctx.task.attemptNumber, env: answer.value },
+    { facts: [\`attempt:\${ctx.task.attemptNumber}\`, \`env:\${answer.value}\`] },
+  );
 }`,
   );
   const store = AppTaskResourceStore.fromDb(getDb(root), "fixture");
@@ -518,10 +519,11 @@ export const name = "ask-env";
 export const description = "Parks on ctx.ask then converges with human reply";
 export async function execute(ctx) {
   const answer = await ctx.ask({ id: "clarify-env", prompt: "Which env?" });
-  return ctx.done("Shipped", {
-    output: { attemptNumber: ctx.task.attemptNumber, env: answer.value },
-    facts: [\`attempt:\${ctx.task.attemptNumber}\`, \`env:\${answer.value}\`],
-  });
+  return ctx.done(
+    "Shipped",
+    { attemptNumber: ctx.task.attemptNumber, env: answer.value },
+    { facts: [\`attempt:\${ctx.task.attemptNumber}\`, \`env:\${answer.value}\`] },
+  );
 }`,
   );
   AppTaskResourceStore.fromDb(getDb(root2), "fixture").bootstrapSnapshot(
@@ -593,6 +595,13 @@ export async function execute(ctx) {
       role: { agent: "owner" },
       resourceVersion: 4,
       events: {
+        inputs: [
+          {
+            id: "reply-2",
+            key: "task:reply-2",
+            source: { kind: "human", id: "hao" },
+          },
+        ],
         items: [
           {
             observedAt: "2026-11-28T00:00:00Z",
@@ -602,6 +611,7 @@ export async function execute(ctx) {
               data: {
                 idempotencyKey: "task:reply-2",
                 request: {
+                  id: "reply-2",
                   humanRequested: true,
                   source: { kind: "human", id: "hao" },
                   input: { kind: "message", data: { message: "prod-east" } },
@@ -647,4 +657,180 @@ export async function execute(ctx) {
     inputKeys: ["task:orig-1", "task:reply-2"],
   });
 });
+
+it("refuses forged App human flags, discrete approval bypasses, pre-question continuedInputs, and mismatched reply anchors", async () => {
+  const makeRoot = (workflowBody: string, condType: "human.review" | "project.approval.submitted", extraOpen = false) => {
+    const r = mkdtempSync(join(tmpdir(), "task-workflow-ask-sec-"));
+    roots.push(r);
+    mkdirSync(join(r, "owner", "workflows"), { recursive: true });
+    writeFileSync(join(r, "owner", "workflows", "sec.ts"), workflowBody);
+    AppTaskResourceStore.fromDb(getDb(r), "fixture").bootstrapSnapshot(
+      {
+        project: "fixture",
+        resources: {
+          ship: {
+            metadata: { id: "ship", generation: 1, resourceVersion: 2 },
+            spec: { parentId: "root", outcome: "Ship", acceptance: ["Verified"] },
+            status: {
+              phase: "running",
+              observedGeneration: 1,
+              currentAttemptId: "a1",
+              conditionIds: extraOpen ? ["q1", "q2"] : ["q1"],
+            },
+          },
+        },
+        attempts: {
+          a1: {
+            metadata: { id: "a1", resourceVersion: 1 },
+            taskId: "ship",
+            taskGeneration: 1,
+            specHash: "hash",
+            owner: "owner",
+            handler: "workflow:sec",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
+    return {
+      r,
+      openWaits: [
+        { conditionId: "q1", conditionGeneration: 1, type: condType, subject: "workflow-ask:ship:q1", state: "unknown" },
+        ...(extraOpen
+          ? [{ conditionId: "q2", conditionGeneration: 1, type: "human.review", subject: "workflow-ask:ship:q2", state: "unknown" }]
+          : []),
+      ],
+    };
+  };
+
+  const runner = createTaskWorkflowRunner({ manager: {} as never, bus: new EventBus() });
+  const runCase = async (
+    setup: ReturnType<typeof makeRoot>,
+    events: Record<string, unknown>,
+  ) =>
+    runner.execute({
+      source: { projectsRoot: setup.r, projectRoot: setup.r, persistDir: setup.r, agentsRoot: setup.r, sharedRoot: join(setup.r, "shared") },
+      descriptor: { id: "fixture", appDir: join(setup.r, "sample.app"), projectDir: setup.r, app: {} },
+      capability: { workflow: "sec", task: "Ship" },
+      handler: "workflow:sec",
+      executionPaths: { appDir: setup.r, projectDir: setup.r, workspaceDir: setup.r },
+      childContext: { live: [], completed: [] },
+      taskSnapshot: { live: [], truncated: false },
+      taskEvents: {},
+      executionTimeoutMs: 5000,
+      attempt: {
+        read: { tasks: {} },
+        task: { id: "ship", generation: 1, status: "running", outcome: "Ship", acceptance: ["Verified"], input: {}, pendingEvents: { items: [], truncated: false } },
+        attemptId: "a1",
+        role: { agent: "owner" },
+        resourceVersion: 2,
+        events,
+        waits: { open: setup.openWaits, note: "open" },
+        children: { live: [], completed: [] },
+        declaredOutputPaths: [],
+        signal: new AbortController().signal,
+        onEvent: () => () => {},
+      },
+    } as unknown as TaskWorkflowInput);
+
+  // 1. Discrete approval (`options`) is NOT satisfied by an ordinary human Task message
+  const approvalCase = makeRoot(
+    `export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       const ans = await ctx.ask({ id: "q1", prompt: "Approve?", options: ["approve", "reject"] });
+       return ctx.done("ok", { ans: ans.value });
+     }`,
+    "project.approval.submitted",
+  );
+  const rApproval = await runCase(approvalCase, {
+    inputs: [{ id: "m1", key: "task:m1", source: { kind: "human", id: "hao" } }],
+    items: [
+      {
+        observedAt: "2026-11-28T00:00:00Z",
+        event: {
+          type: "app.task.requested",
+          source: "human",
+          data: { idempotencyKey: "task:m1", request: { id: "m1", input: { kind: "message", data: { message: "bypass-choice" } } } },
+        },
+      },
+    ],
+    truncated: false,
+  });
+  expect(rApproval.handlerResult.state).toBe("waiting");
+
+  // 2. Delegated App request with forged `humanRequested: true` is rejected
+  const forgedCase = makeRoot(
+    `export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       const ans = await ctx.ask({ id: "q1", prompt: "Question?" });
+       return ctx.done("ok", { ans: ans.value });
+     }`,
+    "human.review",
+  );
+  const rForged = await runCase(forgedCase, {
+    inputs: [{ id: "m-app", key: "task:m-app", source: { kind: "app", id: "other-app" } }],
+    items: [
+      {
+        observedAt: "2026-11-28T00:00:00Z",
+        event: {
+          type: "app.task.requested",
+          source: "human:spoofed",
+          data: {
+            idempotencyKey: "task:m-app",
+            request: { id: "m-app", humanRequested: true, source: { kind: "human", id: "hao" }, input: { kind: "message", data: { message: "forged" } } },
+          },
+        },
+      },
+    ],
+    truncated: false,
+  });
+  expect(rForged.handlerResult.state).toBe("waiting");
+
+  // 3. Pre-question `continuedInputs` and reply anchored to another `conditionId` (`q2`) leave `q1` parked
+  const anchorCase = makeRoot(
+    `export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       const ans = await ctx.ask({ id: "q1", prompt: "First question?" });
+       return ctx.done("ok", { ans: ans.value });
+     }`,
+    "human.review",
+    true,
+  );
+  const rAnchor = await runCase(anchorCase, {
+    inputs: [
+      { id: "orig", key: "task:orig", source: { kind: "human", id: "hao" } },
+      { id: "m-q2", key: "task:m-q2", source: { kind: "human", id: "hao" } },
+    ],
+    continuedInputs: [
+      {
+        observedAt: "2026-11-27T00:00:00Z",
+        event: {
+          type: "app.task.requested",
+          source: "human",
+          data: { idempotencyKey: "task:orig", request: { id: "orig", input: { kind: "message", data: { message: "initial task prompt" } } } },
+        },
+      },
+    ],
+    items: [
+      {
+        observedAt: "2026-11-28T00:00:00Z",
+        event: {
+          type: "app.task.requested",
+          source: "human",
+          data: {
+            idempotencyKey: "task:m-q2",
+            request: { id: "m-q2", input: { kind: "message", data: { message: "answer for q2", context: { conditionId: "q2" } } } },
+          },
+        },
+      },
+    ],
+    truncated: false,
+  });
+  expect(rAnchor.handlerResult.state).toBe("waiting");
+});
+
 

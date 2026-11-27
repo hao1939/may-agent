@@ -13,6 +13,7 @@ import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSyn
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
+import { isDeepStrictEqual } from "node:util";
 import type {
   AgentCallOptions,
   AppRead,
@@ -1555,7 +1556,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       sharedPromptText: promptDef.sharedPromptText,
       task: prompt,
       projectRoot: options.projectRoot,
-      workRoot: workRootOverride ?? options.workRoot,
+      workRoot: workRootOverride ?? effectiveWorkspace.root,
       agentsRoot: options.agentsRoot,
       sharedRoot: options.sharedRoot,
       projectsRoot: options.projectsRoot,
@@ -1611,6 +1612,8 @@ export async function runDirectWorkflow<TInput = unknown>(
     const sub = await runDirectWorkflow(
       {
         ...options,
+        workRoot: effectiveWorkspace.root,
+        workspace: effectiveWorkspace,
         reconciliation,
         executionId: undefined,
         module: targetMod,
@@ -1981,6 +1984,7 @@ type StandaloneCatalogSnapshot = Readonly<{
 const standaloneCatalogSnapshots = new WeakMap<readonly TargetSummary[], StandaloneCatalogSnapshot>();
 
 export const DEFAULT_STANDALONE_LIST_TIMEOUT_MS = 15_000;
+const DEFAULT_STANDALONE_OBSERVER_TIMEOUT_MS = 15_000;
 
 export async function listTargets(
   options: {
@@ -2155,12 +2159,61 @@ type StandalonePersistedTask = {
   observations: Record<string, ConditionObservation>;
 };
 
+function matchesStandaloneExpectationField(actual: unknown, expected: unknown): boolean {
+  if (isDeepStrictEqual(actual, expected)) return true;
+  if (!expected || typeof expected !== "object" || Array.isArray(expected)) return false;
+  const spec = expected as Record<string, unknown>;
+  if ("equals" in spec && isDeepStrictEqual(actual, spec.equals)) return true;
+  if (Array.isArray(spec.anyOf) && spec.anyOf.some((item) => isDeepStrictEqual(actual, item))) return true;
+  const cmpKeys = ["gt", "gte", "lt", "lte"].filter((k) => k in spec);
+  if (cmpKeys.length > 0) {
+    const toComparable = (v: unknown): number | string | null => {
+      if (typeof v === "number" && Number.isFinite(v)) return v;
+      if (typeof v === "string") {
+        const n = Number(v);
+        return Number.isFinite(n) && v.trim() !== "" ? n : v;
+      }
+      return null;
+    };
+    const left = toComparable(actual);
+    if (left === null) return false;
+    return cmpKeys.every((op) => {
+      const right = toComparable(spec[op]);
+      if (right === null || typeof left !== typeof right) return false;
+      if (op === "gt") return left > right;
+      if (op === "gte") return left >= right;
+      if (op === "lt") return left < right;
+      return left <= right;
+    });
+  }
+  if (actual && typeof actual === "object" && !Array.isArray(actual)) {
+    const actualRec = actual as Record<string, unknown>;
+    return Object.entries(spec).every(([k, v]) => matchesStandaloneExpectationField(actualRec[k], v));
+  }
+  return false;
+}
+
+function matchesStandaloneConditionExpected(envelope: Record<string, unknown>, expected: unknown): boolean {
+  if (expected === undefined || expected === null) return true;
+  if (typeof expected !== "object" || Array.isArray(expected)) {
+    return isDeepStrictEqual(envelope.value ?? envelope, expected);
+  }
+  const spec = expected as Record<string, unknown>;
+  if ("field" in spec && typeof spec.field === "string") {
+    const fieldVal = envelope[spec.field];
+    if ("equals" in spec) return isDeepStrictEqual(fieldVal, spec.equals);
+    if (Array.isArray(spec.anyOf)) return spec.anyOf.some((item) => isDeepStrictEqual(fieldVal, item));
+  }
+  return Object.entries(spec).every(([key, val]) => matchesStandaloneExpectationField(envelope[key], val));
+}
+
 async function inspectStandaloneResourceConditions(params: {
   projectsRoot: string;
   appId: string;
   conditions: readonly TaskCondition[];
   observations: Record<string, ConditionObservation>;
   signal?: AbortSignal;
+  deadlineAt?: number;
 }): Promise<void> {
   if (!params.conditions.length) return;
   const appFile = ["app.ts", "app.js"]
@@ -2175,35 +2228,83 @@ async function inspectStandaloneResourceConditions(params: {
         Boolean(obs) && typeof obs === "object" && "inspect" in (obs as Record<string, unknown>),
     );
     if (!resourceObservers.length) return;
-    const abortCtrl = new AbortController();
-    const signal = params.signal ?? abortCtrl.signal;
     for (const cond of params.conditions) {
+      params.signal?.throwIfAborted();
       if (!("type" in cond) || !("subject" in cond)) continue;
       if (params.observations[cond.id]?.state === "true") continue;
       const obs = resourceObservers.find((candidate) => candidate.type === cond.type);
       if (!obs) continue;
+      const remainingMs =
+        params.deadlineAt === undefined ? DEFAULT_STANDALONE_OBSERVER_TIMEOUT_MS : params.deadlineAt - Date.now();
+      if (remainingMs <= 0) return;
+      const obsTimeoutCfg = (obs as { timeoutMs?: number }).timeoutMs;
+      const perInspectMs = Math.max(
+        1,
+        Math.min(
+          typeof obsTimeoutCfg === "number" && Number.isFinite(obsTimeoutCfg) && obsTimeoutCfg > 0
+            ? obsTimeoutCfg
+            : DEFAULT_STANDALONE_OBSERVER_TIMEOUT_MS,
+          remainingMs,
+        ),
+      );
       const rawResource = cond.subject.startsWith("resource:") ? cond.subject.slice("resource:".length) : cond.subject;
+      const stepCtrl = new AbortController();
+      const onParentAbort = () => stepCtrl.abort(params.signal?.reason ?? new Error("Aborted"));
+      params.signal?.addEventListener("abort", onParentAbort, { once: true });
+      if (params.signal?.aborted) onParentAbort();
+      let inspectTimer: ReturnType<typeof setTimeout> | undefined;
       try {
-        const observed = await obs.inspect(rawResource, { signal });
+        const observed = await Promise.race([
+          obs.inspect(rawResource, { signal: stepCtrl.signal }),
+          new Promise<never>((_, reject) => {
+            inspectTimer = setTimeout(() => {
+              const timeoutErr = new Error(`Observer "${obs.id}" timed out after ${perInspectMs}ms`);
+              stepCtrl.abort(timeoutErr);
+              reject(timeoutErr);
+            }, perInspectMs);
+            inspectTimer.unref?.();
+          }),
+          ...(params.signal
+            ? [
+                new Promise<never>((_, reject) => {
+                  if (params.signal!.aborted) reject(params.signal!.reason ?? new Error("Aborted"));
+                  else params.signal!.addEventListener("abort", () => reject(params.signal!.reason ?? new Error("Aborted")), { once: true });
+                }),
+              ]
+            : []),
+        ]);
         if (observed !== null && observed !== undefined) {
-          const expected = (cond as { expected?: Record<string, unknown> }).expected;
-          const matchesExpected =
-            !expected ||
-            (typeof observed === "object" &&
-              Object.entries(expected).every(([k, v]) => (observed as Record<string, unknown>)[k] === v));
+          const nowMs = Date.now();
+          const observedObj =
+            typeof observed === "object" && !Array.isArray(observed)
+              ? (observed as Record<string, unknown>)
+              : { value: observed };
+          const envelope: Record<string, unknown> = {
+            ...observedObj,
+            data: observedObj,
+            source: `app:${params.appId}:observer:${obs.id}`,
+            timestamp: typeof observedObj.timestamp === "number" ? observedObj.timestamp : nowMs,
+          };
+          const expected = (cond as { expected?: unknown }).expected;
+          const matchesExpected = matchesStandaloneConditionExpected(envelope, expected);
           const nextObs: ConditionObservation = {
             state: matchesExpected ? "true" : "false",
             observed,
-            observedAt: new Date().toISOString(),
+            observedAt: new Date(nowMs).toISOString(),
           };
           params.observations[cond.id] = nextObs;
           params.observations[cond.subject] = nextObs;
         }
-      } catch {
-        /* Keep Condition pending when provider inspection fails. */
+      } catch (inspectErr) {
+        if (params.signal?.aborted) throw inspectErr;
+        /* Keep Condition pending when provider inspection fails or times out. */
+      } finally {
+        clearTimeout(inspectTimer);
+        params.signal?.removeEventListener("abort", onParentAbort);
       }
     }
-  } catch {
+  } catch (outerErr) {
+    if (params.signal?.aborted) throw outerErr;
     /* Optional standalone observer check must not fail execution. */
   }
 }
@@ -2233,9 +2334,21 @@ export async function run<TInput = unknown>(
   const stateFilePath = stateDir ? join(stateDir, "task.json") : undefined;
   let persistedState: StandalonePersistedTask | undefined;
   if (stateFilePath && existsSync(stateFilePath)) {
+    if (!options.resume) {
+      return Object.freeze({
+        status: "error",
+        summary: `State directory ${stateDir} already contains task.json; pass --resume to continue or choose a fresh --state-dir`,
+      });
+    }
     try {
       const parsed = JSON.parse(readFileSync(stateFilePath, "utf8")) as StandalonePersistedTask;
       if (parsed && typeof parsed === "object" && parsed.version === 1) {
+        if (rawTarget.trim() && parsed.target && rawTarget.trim() !== parsed.target) {
+          return Object.freeze({
+            status: "error",
+            summary: `Cannot --resume target "${rawTarget.trim()}" from state directory saved for "${parsed.target}"`,
+          });
+        }
         persistedState = parsed;
         if (!rawTarget.trim() && parsed.target) rawTarget = parsed.target;
         const emptyInput =
@@ -2247,13 +2360,22 @@ export async function run<TInput = unknown>(
         }
       }
     } catch {
-      /* Ignore unreadable state file on fresh start. */
+      return Object.freeze({
+        status: "error",
+        summary: `Cannot --resume: task.json in ${stateDir} is corrupt or unreadable`,
+      });
     }
   }
   if (options.resume && stateFilePath && !persistedState) {
     return Object.freeze({
       status: "error",
       summary: `Cannot --resume: no saved task.json found in ${stateDir}`,
+    });
+  }
+  if (options.answer !== undefined && (!options.resume || !persistedState)) {
+    return Object.freeze({
+      status: "error",
+      summary: "--answer requires --resume with a saved task.json",
     });
   }
 
@@ -2332,18 +2454,38 @@ export async function run<TInput = unknown>(
     ...(persistedState?.observations ?? {}),
     ...(options.observations ?? {}),
   };
-  if (options.answer !== undefined && persistedState?.conditions?.length) {
-    const answeredAt = new Date().toISOString();
-    for (const cond of persistedState.conditions) {
-      if (
+  if (options.answer !== undefined) {
+    const pendingHuman = (persistedState?.conditions ?? []).filter(
+      (cond): cond is Extract<TaskCondition, { id: string; type: string; subject: string }> =>
         "type" in cond &&
-        (cond.type === "human.review" || cond.type === "project.approval.submitted" || cond.owner === "human")
-      ) {
-        const obs: ConditionObservation = { state: "true", observed: options.answer, observedAt: answeredAt };
-        observations[cond.id] = obs;
-        observations[cond.subject] = obs;
-      }
+        (cond.type === "human.review" || cond.type === "project.approval.submitted" || cond.owner === "human") &&
+        observations[cond.id]?.state !== "true",
+    );
+    if (pendingHuman.length !== 1) {
+      return preStartError(
+        `--answer requires exactly 1 pending human Condition, found ${pendingHuman.length}`,
+      );
     }
+    const targetCond = pendingHuman[0]!;
+    const expectedRec =
+      targetCond.expected && typeof targetCond.expected === "object" && !Array.isArray(targetCond.expected)
+        ? (targetCond.expected as Record<string, unknown>)
+        : undefined;
+    const allowedChoices = Array.isArray(expectedRec?.anyOf)
+      ? expectedRec.anyOf.filter((c): c is string => typeof c === "string")
+      : undefined;
+    if (
+      (targetCond.type === "project.approval.submitted" || (allowedChoices && allowedChoices.length > 0)) &&
+      (!allowedChoices || !allowedChoices.includes(options.answer))
+    ) {
+      return preStartError(
+        `Invalid --answer ${JSON.stringify(options.answer)} for Condition "${targetCond.id}"; allowed choices: ${(allowedChoices ?? []).join(", ") || "none"}`,
+      );
+    }
+    const answeredAt = new Date().toISOString();
+    const obs: ConditionObservation = { state: "true", observed: options.answer, observedAt: answeredAt };
+    observations[targetCond.id] = obs;
+    observations[targetCond.subject] = obs;
   }
   if (persistedState?.conditions?.length && callerOwner && callerOwner !== "global") {
     await inspectStandaloneResourceConditions({
@@ -2352,6 +2494,7 @@ export async function run<TInput = unknown>(
       conditions: persistedState.conditions,
       observations,
       signal: options.signal,
+      deadlineAt,
     });
   }
 

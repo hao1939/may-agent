@@ -6,7 +6,7 @@
  */
 
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { mkdir, readdir, stat, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rmdir, stat, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -109,32 +109,69 @@ export function describeTextPreview(text: string, budget = 1_200): string {
   return `Text (${count}). ${lead}\n${shown.join("\n")}`;
 }
 
-async function evictOldestResults(dir: string, keepPath: string): Promise<void> {
-  const names = await readdir(dir);
-  const entries: Array<{ path: string; bytes: number; mtimeMs: number }> = [];
+async function evictOldestResults(
+  rootDir: string,
+  currentSessionDir: string,
+  keepPath: string,
+  limits: { maxFiles: number; maxBytes: number },
+): Promise<void> {
+  const sessionNames = await readdir(rootDir).catch(() => [] as string[]);
+  const entries: Array<{ path: string; sessionDir: string; bytes: number; mtimeMs: number }> = [];
+  const dirFileCounts = new Map<string, number>();
   let totalBytes = 0;
-  for (const name of names) {
-    const full = join(dir, name);
+
+  for (const sessionName of sessionNames) {
+    const sessionPath = join(rootDir, sessionName);
+    let fileNames: string[];
     try {
-      const st = await stat(full);
-      if (!st.isFile()) continue;
-      entries.push({ path: full, bytes: st.size, mtimeMs: st.mtimeMs });
-      totalBytes += st.size;
+      const dirStat = await stat(sessionPath);
+      if (!dirStat.isDirectory()) continue;
+      fileNames = await readdir(sessionPath);
     } catch {
-      /* Ignore concurrently deleted entries. */
+      continue;
+    }
+    let countInDir = 0;
+    for (const name of fileNames) {
+      const full = join(sessionPath, name);
+      try {
+        const st = await stat(full);
+        if (!st.isFile()) continue;
+        entries.push({ path: full, sessionDir: sessionPath, bytes: st.size, mtimeMs: st.mtimeMs });
+        totalBytes += st.size;
+        countInDir += 1;
+      } catch {
+        /* Ignore concurrently deleted entries. */
+      }
+    }
+    dirFileCounts.set(sessionPath, countInDir);
+    if (countInDir === 0 && sessionPath !== currentSessionDir) {
+      await rmdir(sessionPath).catch(() => undefined);
     }
   }
-  if (totalBytes <= MAX_DIRECTORY_BYTES && entries.length <= MAX_DIRECTORY_FILES) return;
+
+  if (totalBytes <= limits.maxBytes && entries.length <= limits.maxFiles) return;
+  // Evict older files from non-current sessions first so the active session retains
+  // its recent outputs unless the active session itself exceeds the global cap.
   const candidates = entries
     .filter((entry) => entry.path !== keepPath)
-    .sort((a, b) => a.mtimeMs - b.mtimeMs || a.path.localeCompare(b.path));
+    .sort((a, b) => {
+      const aActive = a.sessionDir === currentSessionDir ? 1 : 0;
+      const bActive = b.sessionDir === currentSessionDir ? 1 : 0;
+      if (aActive !== bActive) return aActive - bActive;
+      return a.mtimeMs - b.mtimeMs || a.path.localeCompare(b.path);
+    });
   let files = entries.length;
   for (const candidate of candidates) {
-    if (totalBytes <= MAX_DIRECTORY_BYTES && files <= MAX_DIRECTORY_FILES) return;
+    if (totalBytes <= limits.maxBytes && files <= limits.maxFiles) break;
     try {
       await unlink(candidate.path);
       totalBytes -= candidate.bytes;
       files -= 1;
+      const nextCount = (dirFileCounts.get(candidate.sessionDir) ?? 1) - 1;
+      dirFileCounts.set(candidate.sessionDir, nextCount);
+      if (nextCount <= 0 && candidate.sessionDir !== currentSessionDir) {
+        await rmdir(candidate.sessionDir).catch(() => undefined);
+      }
     } catch {
       /* Ignore races. */
     }
@@ -144,12 +181,17 @@ async function evictOldestResults(dir: string, keepPath: string): Promise<void> 
 export function wrapToolsWithOffload(
   tools: readonly AgentTool[],
   sessionId: string,
-  options: { maxBytes?: number; baseDir?: string } = {},
+  options: { maxBytes?: number; baseDir?: string; maxDirectoryFiles?: number; maxDirectoryBytes?: number } = {},
 ): AgentTool[] {
   const hasInspector = tools.some((t) => t.name === "read" || t.name === "bash");
   if (!hasInspector) return [...tools];
   const maxBytes = options.maxBytes ?? DEFAULT_OFFLOAD_MAX_BYTES;
-  const resultsDir = join(options.baseDir ?? tmpdir(), "may-agent-tool-results", boundedStem(sessionId));
+  const rootResultsDir = join(options.baseDir ?? tmpdir(), "may-agent-tool-results");
+  const resultsDir = join(rootResultsDir, boundedStem(sessionId));
+  const retentionLimits = {
+    maxFiles: options.maxDirectoryFiles ?? MAX_DIRECTORY_FILES,
+    maxBytes: options.maxDirectoryBytes ?? MAX_DIRECTORY_BYTES,
+  };
 
   return tools.map((tool) => {
     if (EXEMPT_TOOL_NAMES.has(tool.name)) return tool;
@@ -185,7 +227,7 @@ export function wrapToolsWithOffload(
         try {
           await mkdir(resultsDir, { recursive: true });
           await writeFile(filePath, combined, "utf8");
-          await evictOldestResults(resultsDir, filePath);
+          await evictOldestResults(rootResultsDir, resultsDir, filePath, retentionLimits);
           const note = [
             `Output of ${tool.name} (${bytes.toLocaleString("en-US")} bytes) was saved to ${filePath}.`,
             shape,

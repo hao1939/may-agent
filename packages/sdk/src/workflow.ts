@@ -878,9 +878,8 @@ export type WorkflowAskAnswer<T = unknown> = {
   value: T;
 };
 
-export type DoneOptions<T = unknown> = {
-  output?: T;
-  facts?: string[];
+export type DoneOptions = {
+  facts?: unknown;
 };
 
 export type AgentContext<TInput = unknown> = {
@@ -909,8 +908,7 @@ export type AgentContext<TInput = unknown> = {
   ): Promise<ExecutionResult<TOut>>;
   workspace?: WorkflowWorkspace;
   log: Logger;
-  done<T>(summary: string, output?: T): ExecutionResult<T>;
-  done<T>(summary: string, options: DoneOptions<T>): ExecutionResult<T>;
+  done<T = undefined>(summary: string, output?: T, options?: DoneOptions): ExecutionResult<T>;
   blocked(reason: string, facts?: unknown): ExecutionResult<never>;
 };
 
