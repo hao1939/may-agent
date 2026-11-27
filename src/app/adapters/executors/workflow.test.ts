@@ -847,6 +847,21 @@ it("refuses forged App human flags, discrete approval bypasses, pre-question con
     summary: "Published",
     result: { state: "published", url: "https://example.test/pr/1" },
   });
+
+  // 5. Structured non-array `facts` on `ctx.done` is serialized instead of dropped
+  const structuredFactsCase = makeRoot(
+    `export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       return ctx.done("Measured", { ok: true }, { facts: { testsPassed: 12 } });
+     }`,
+    "human.review",
+  );
+  const rStructFacts = await runCase(structuredFactsCase, { items: [], truncated: false });
+  expect(rStructFacts.handlerResult).toMatchObject({
+    state: "converged",
+    summary: "Measured",
+    facts: ['execution-facts:{"testsPassed":12}'],
+  });
 });
 
 

@@ -8,12 +8,12 @@
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { Type, type TSchema } from "typebox";
-import { execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { isDeepStrictEqual } from "node:util";
+import { runCommand } from "@may-agent/sdk/command";
 import type {
   AgentCallOptions,
   AppRead,
@@ -1708,43 +1708,50 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   };
 
-  let allocatedWorktreeRoot: string | undefined;
-  if (
+  const shouldAutoAllocateWorktree =
     !nested &&
-    options.stateDir &&
+    Boolean(options.stateDir) &&
     !env?.workspace &&
     !options.workspace &&
     (targetModule.workspace === "task" ||
-      (typeof targetModule.workspace === "object" && targetModule.workspace?.kind === "task"))
-  ) {
-    const wtDir = resolve(options.stateDir, "worktree");
-    if (!existsSync(join(wtDir, ".git"))) {
-      mkdirSync(resolve(options.stateDir), { recursive: true });
-      const baseBranch =
-        typeof targetModule.workspace === "object" && targetModule.workspace.baseBranch
-          ? targetModule.workspace.baseBranch
-          : "HEAD";
-      try {
-        execFileSync("git", ["-C", resolve(options.workRoot), "worktree", "add", "--detach", wtDir, baseBranch], {
-          stdio: "pipe",
-        });
-      } catch {
-        execFileSync("git", ["-C", resolve(options.workRoot), "worktree", "add", "--detach", wtDir, "HEAD"], {
-          stdio: "pipe",
-        });
-      }
-      const parentNodeModules = join(resolve(options.workRoot), "node_modules");
-      const wtNodeModules = join(wtDir, "node_modules");
-      if (existsSync(parentNodeModules) && !existsSync(wtNodeModules)) {
-        try {
-          symlinkSync(parentNodeModules, wtNodeModules, "dir");
-        } catch {
-          /* optional convenience link */
-        }
+      (typeof targetModule.workspace === "object" && targetModule.workspace?.kind === "task"));
+  const allocatedWorktreeRoot = shouldAutoAllocateWorktree ? resolve(options.stateDir!, "worktree") : undefined;
+  const ensureAllocatedWorktree = async (signal: AbortSignal): Promise<void> => {
+    if (!allocatedWorktreeRoot || existsSync(join(allocatedWorktreeRoot, ".git"))) return;
+    mkdirSync(resolve(options.stateDir!), { recursive: true });
+    const baseBranch =
+      typeof targetModule.workspace === "object" && targetModule.workspace?.baseBranch
+        ? targetModule.workspace.baseBranch
+        : "HEAD";
+    const srcRoot = resolve(options.workRoot);
+    const first = await runCommand(
+      srcRoot,
+      ["git", "-C", srcRoot, "worktree", "add", "--detach", allocatedWorktreeRoot, baseBranch],
+      signal,
+    );
+    if (first.exitCode !== 0) {
+      signal.throwIfAborted();
+      const fallback = await runCommand(
+        srcRoot,
+        ["git", "-C", srcRoot, "worktree", "add", "--detach", allocatedWorktreeRoot, "HEAD"],
+        signal,
+      );
+      if (fallback.exitCode !== 0) {
+        throw new Error(
+          `Failed to allocate standalone task worktree at ${allocatedWorktreeRoot}: ${(fallback.stderr || first.stderr).trim() || `exit ${fallback.exitCode}`}`,
+        );
       }
     }
-    allocatedWorktreeRoot = wtDir;
-  }
+    const parentNodeModules = join(srcRoot, "node_modules");
+    const wtNodeModules = join(allocatedWorktreeRoot, "node_modules");
+    if (existsSync(parentNodeModules) && !existsSync(wtNodeModules)) {
+      try {
+        symlinkSync(parentNodeModules, wtNodeModules, "dir");
+      } catch {
+        /* optional convenience link */
+      }
+    }
+  };
 
   const effectiveRoot = allocatedWorktreeRoot ?? resolve(options.workRoot);
   const inferredAppRoot =
@@ -1763,6 +1770,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       ...authoredModule,
       async execute(ctx) {
         activeScopeSignal = ctx.signal;
+        await ensureAllocatedWorktree(ctx.signal);
         if (!internal?.catalog && !catalogCapturedAtRoot) {
           const captured = await buildDirectPromptCatalog(
             { ...options, agentName: callerOwner },
@@ -2201,8 +2209,16 @@ function matchesStandaloneConditionExpected(envelope: Record<string, unknown>, e
   const spec = expected as Record<string, unknown>;
   if ("field" in spec && typeof spec.field === "string") {
     const fieldVal = envelope[spec.field];
-    if ("equals" in spec) return isDeepStrictEqual(fieldVal, spec.equals);
-    if (Array.isArray(spec.anyOf)) return spec.anyOf.some((item) => isDeepStrictEqual(fieldVal, item));
+    const fieldMatched =
+      "equals" in spec
+        ? isDeepStrictEqual(fieldVal, spec.equals)
+        : Array.isArray(spec.anyOf)
+          ? spec.anyOf.some((item) => isDeepStrictEqual(fieldVal, item))
+          : false;
+    if (!fieldMatched) return false;
+    return Object.entries(spec)
+      .filter(([key]) => key !== "field" && key !== "equals" && key !== "anyOf")
+      .every(([key, val]) => matchesStandaloneExpectationField(envelope[key], val));
   }
   return Object.entries(spec).every(([key, val]) => matchesStandaloneExpectationField(envelope[key], val));
 }
@@ -2545,8 +2561,13 @@ export async function run<TInput = unknown>(
           sig.addEventListener("abort", onAbort, { once: true });
           try {
             const suffix = req.options?.length ? ` (${req.options.join(" / ")})` : "";
-            const ans = await rl.question(`${req.prompt}${suffix}: `);
-            return ans.trim();
+            const ans = (await rl.question(`${req.prompt}${suffix}: `)).trim();
+            if (req.options?.length && !req.options.includes(ans)) {
+              throw new Error(
+                `Invalid interactive answer ${JSON.stringify(ans)}; allowed choices: ${req.options.join(", ")}`,
+              );
+            }
+            return ans;
           } finally {
             sig.removeEventListener("abort", onAbort);
             rl.close();

@@ -287,11 +287,12 @@ async function executeTaskWorkflow(
               summary,
               ...(result.output !== undefined ? { output: result.output } : {}),
               facts:
-                Array.isArray(result.facts) && result.facts.length > 0
-                  ? [...(Array.isArray(storedWorkflowFacts.facts) ? storedWorkflowFacts.facts : [String(storedWorkflowFacts.facts)]), ...answeredFactItems]
-                  : [summary, ...answeredFactItems],
+                result.facts !== undefined && !(Array.isArray(result.facts) && result.facts.length === 0)
+                  ? storedWorkflowFacts.facts
+                  : [summary],
             },
             input,
+            answeredFactItems.length > 0 ? { diagnosticFacts: answeredFactItems } : {},
           )
         : null;
     let handlerResult = done

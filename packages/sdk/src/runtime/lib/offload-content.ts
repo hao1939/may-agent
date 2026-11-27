@@ -196,7 +196,8 @@ export function wrapToolsWithOffload(
   sessionId: string,
   options: { maxBytes?: number; baseDir?: string; maxDirectoryFiles?: number; maxDirectoryBytes?: number } = {},
 ): AgentTool[] {
-  const hasInspector = tools.some((t) => t.name === "read" || t.name === "bash");
+  const hasBash = tools.some((t) => t.name === "bash");
+  const hasInspector = hasBash || tools.some((t) => t.name === "read");
   if (!hasInspector) return [...tools];
   const maxBytes = options.maxBytes ?? DEFAULT_OFFLOAD_MAX_BYTES;
   const uidSuffix = typeof process.getuid === "function" ? `-${process.getuid()}` : "";
@@ -238,6 +239,18 @@ export function wrapToolsWithOffload(
           }
         }
         const ext = isJson ? "json" : "txt";
+        let payloadToWrite = combined;
+        if (isJson) {
+          const pretty = JSON.stringify(parsedJson, null, 2);
+          if (Buffer.byteLength(pretty, "utf8") <= MAX_SAVED_BYTES) {
+            payloadToWrite = pretty;
+          }
+        }
+        // Agents with `read` but no `bash` cannot read individual lines > 50 KB (`read.ts` MAX_LINE_BYTES).
+        // Keep the result inline if any retained line still exceeds 50 KB without `bash`.
+        if (!hasBash && payloadToWrite.split("\n").some((line) => Buffer.byteLength(line, "utf8") > 50_000)) {
+          return result;
+        }
         const filePath = join(resultsDir, `${boundedStem(tool.name)}-${boundedStem(callId)}.${ext}`);
         const budget = Math.max(240, Math.floor(maxBytes / 4));
         const shape = isJson ? describeJsonShape(parsedJson, budget) : describeTextPreview(combined, budget);
@@ -248,7 +261,7 @@ export function wrapToolsWithOffload(
           if (existingFile?.isSymbolicLink()) {
             throw new Error(`Refusing to overwrite symlink at ${filePath}`);
           }
-          await writeFile(filePath, combined, { encoding: "utf8", mode: 0o600 });
+          await writeFile(filePath, payloadToWrite, { encoding: "utf8", mode: 0o600 });
           await chmod(filePath, 0o600);
           await evictOldestResults(rootResultsDir, resultsDir, filePath, retentionLimits);
           const note = [

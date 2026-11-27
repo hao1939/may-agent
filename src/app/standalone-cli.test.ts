@@ -368,7 +368,12 @@ export async function execute(ctx) {
   const fast = ctx.observe("build-cond");
   const stalled = ctx.observe("stalled-cond");
   if (fast?.state === "true") {
-    return ctx.done("observed", { fastState: fast.state, stalledState: stalled?.state ?? "pending" });
+    const staleField = ctx.observe("stale-field-cond");
+    return ctx.done("observed", {
+      fastState: fast.state,
+      staleFieldState: staleField?.state ?? "pending",
+      stalledState: stalled?.state ?? "pending",
+    });
   }
   const cond = observationCondition(buildContract, {
     id: "build-cond",
@@ -382,6 +387,13 @@ export async function execute(ctx) {
     summary: "Waiting on CI",
     conditions: [
       cond,
+      {
+        id: "stale-field-cond",
+        type: "ci.status",
+        subject: "resource:pr-42",
+        expected: { field: "green", equals: true, source: "app:demo:observer:build-check", timestamp: { gte: Date.now() + 600_000 } },
+        owner: "app:demo",
+      },
       { id: "stalled-cond", type: "stalled.status", subject: "resource:hang", expected: { ok: true }, owner: "app:demo" },
     ],
   });
@@ -458,7 +470,31 @@ export async function execute(ctx) {
       const obs2 = await run("demo/obs-flow", { prompt: "go" }, { projectRoot: wsRoot, stateDir: stateObs, resume: true });
       expect(Date.now() - startedResume).toBeLessThan(3000);
       expect(obs2.status).toBe("done");
-      expect(obs2.output).toEqual({ fastState: "true", stalledState: "pending" });
+      expect(obs2.output).toEqual({ fastState: "true", staleFieldState: "false", stalledState: "pending" });
+
+      // 5. Interactive/callback askHuman rejects out-of-options discrete choices
+      const invalidInteractive = await run("demo/gate-a", { prompt: "go" }, {
+        projectRoot: wsRoot,
+        askHuman: async () => "maybe",
+      });
+      expect(invalidInteractive.status).toBe("error");
+      expect(invalidInteractive.summary).toContain("allowed choices: approve, reject");
+
+      // 6. Stalled post-checkout hook during worktree allocation is bounded by timeoutMs with process-group cleanup
+      const hooksDir = join(wsRoot, ".git", "hooks");
+      mkdirSync(hooksDir, { recursive: true });
+      const hookPath = join(hooksDir, "post-checkout");
+      writeFileSync(hookPath, "#!/bin/sh\nsleep 30\n", { mode: 0o755 });
+      const startedHook = Date.now();
+      const stalledWt = await run("demo/parent-wt", { prompt: "go" }, {
+        projectRoot: wsRoot,
+        workRoot: wsRoot,
+        stateDir: join(wsRoot, ".state-stalled-wt"),
+        timeoutMs: 250,
+        models,
+      });
+      expect(Date.now() - startedHook).toBeLessThan(3000);
+      expect(stalledWt.status).toBe("error");
     } finally {
       rmSync(wsRoot, { recursive: true, force: true });
     }

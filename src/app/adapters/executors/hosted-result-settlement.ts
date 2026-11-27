@@ -316,7 +316,7 @@ export function translateHostedExecutionResult(
     {
       state: "converged",
       summary,
-      facts: factStrings(facts, answeredFacts),
+      facts: factStrings(facts, [...(options.diagnosticFacts ?? []), ...answeredFacts]),
       actions: answeredActions,
       ...outputResult(output),
     },

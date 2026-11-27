@@ -1260,6 +1260,31 @@ describe("usage-calibrated compaction & offloadContent & mockModel", () => {
       // Refuses to overwrite symlink and falls back to inline result cleanly
       expect((symRes.content[0] as { text: string }).text).toBe("x".repeat(1500));
       expect(readFileSync(victim, "utf8")).toBe("preserve-me");
+
+      // >50KB minified JSON is pretty-printed so read-only agents can inspect lines <=50KB, while >50KB single-line text without bash stays inline
+      const bigMinifiedJson = JSON.stringify(Array.from({ length: 1200 }, (_, i) => ({ id: i, pad: "z".repeat(40) })));
+      expect(Buffer.byteLength(bigMinifiedJson, "utf8")).toBeGreaterThan(55_000);
+      const jsonTool = {
+        name: "big_json",
+        label: "Big JSON",
+        description: "Big JSON",
+        parameters: Type.Object({}),
+        execute: async () => ({ content: [{ type: "text" as const, text: bigMinifiedJson }] }),
+      };
+      const hugeLineTool = {
+        name: "huge_line",
+        label: "Huge Line",
+        description: "Huge single line",
+        parameters: Type.Object({}),
+        execute: async () => ({ content: [{ type: "text" as const, text: "L".repeat(60_000) }] }),
+      };
+      const roTools = wrapToolsWithOffload([dummyRead as any, jsonTool as any, hugeLineTool as any], "ro-session", {
+        baseDir,
+      });
+      const jsonRes = await roTools[1]!.execute("j1", {}, new AbortController().signal, () => {});
+      expect((jsonRes.content[0] as { text: string }).text).toContain("was saved to ");
+      const lineRes = await roTools[2]!.execute("l1", {}, new AbortController().signal, () => {});
+      expect((lineRes.content[0] as { text: string }).text).toBe("L".repeat(60_000));
     } finally {
       rmSync(baseDir, { recursive: true, force: true });
     }

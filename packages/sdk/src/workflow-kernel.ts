@@ -1325,9 +1325,18 @@ export async function runWorkflowInvocation<TInput = unknown>(
         }
       }
       if (bindings.askHuman) {
-        const value = await trackOperation(bindings.askHuman(request, controller.signal));
+        const rawValue = await trackOperation(bindings.askHuman(request, controller.signal));
         assertActive();
-        return { status: "answered", value: value as T };
+        const normalizedValue = typeof rawValue === "string" ? rawValue.trim() : rawValue;
+        if (
+          hasDiscreteChoices &&
+          (typeof normalizedValue !== "string" || !request.options!.includes(normalizedValue))
+        ) {
+          throw new Error(
+            `Invalid answer ${JSON.stringify(normalizedValue)} for "${condId}"; allowed choices: ${request.options!.join(", ")}`,
+          );
+        }
+        return { status: "answered", value: normalizedValue as T };
       }
       throw new WorkflowParkedSignal(
         parkResult({
