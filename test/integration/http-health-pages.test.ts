@@ -1306,7 +1306,7 @@ describe("served workflow and metric health pages", () => {
         passHat3Ratio: null,
       });
 
-      if (chrome) {
+      if (!skipBrowser && chrome) {
         const browser = await puppeteer.launch({
           executablePath: chrome,
           headless: true,
@@ -1320,6 +1320,12 @@ describe("served workflow and metric health pages", () => {
           expect(agentsText).toContain("Gym pass^2 · 50%");
           expect(agentsText).toContain("▲ Gym pass^4 75%");
           expect(agentsText).not.toContain("Gym pass³ 75%");
+
+          await page.goto(`${base}/agents/canary-spec`, { waitUntil: "networkidle2" });
+          await page.waitForSelector(".agent-eval-compare-grid");
+          const detailText = await page.$eval("#agents-content", (el) => el.textContent || "");
+          expect(detailText).toContain("3-trial pass³ is unmeasured");
+          expect(detailText).not.toContain("promotion requires");
         } finally {
           await browser.close();
         }

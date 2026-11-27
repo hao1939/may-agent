@@ -48,11 +48,11 @@ function renderGymPill(gym, showEmpty = false) {
   }
   if (gym.trialPassRatio != null) {
     const pct = Math.round(Number(gym.trialPassRatio) * 100);
-    const tip = `Gym k=${k} (${gym.benchmark || 'suite'}): ${pct}% trial pass — run k=3 for pass^3 consistency`;
+    const tip = `Gym k=${k} (${gym.benchmark || 'suite'}): ${pct}% trial pass (3-trial pass³ unmeasured)`;
     return `<span class="td-score-pill" title="${attrEsc(tip)}">Gym k=${esc(String(k))} · ${pct}%</span>`;
   }
   const pct = Math.round(Number(gym.passHatKRatio ?? 0) * 100);
-  const tip = `Gym pass^${k} (${gym.benchmark || 'suite'}): ${gym.passedScenariosHatK ?? 0}/${gym.scenarioCount ?? 0} scenarios passed all ${k} trials (trial pass rate unknown) — run k=3 for pass^3 consistency`;
+  const tip = `Gym pass^${k} (${gym.benchmark || 'suite'}): ${gym.passedScenariosHatK ?? 0}/${gym.scenarioCount ?? 0} scenarios passed all ${k} trials (trial pass rate unknown; 3-trial pass³ unmeasured)`;
   return `<span class="td-score-pill" title="${attrEsc(tip)}">Gym pass^${esc(String(k))} · ${pct}%</span>`;
 }
 
@@ -81,7 +81,7 @@ function renderAgentEvaluationCompareCard(scorecard, gym) {
     : 'No live cohorts graded in 7d';
   const gymMeta = gym && gym.status !== 'not_run'
     ? `${esc(gym.benchmark || 'suite')} · ${gym.passedScenariosHatK ?? 0}/${gym.scenarioCount ?? 0} pass^${gym.trialsPerScenario || 1}${gym.verdict ? ` · ${esc(gym.verdict)}` : ''}${gym.latestAt ? ` · ${esc(timeAgo(gym.latestAt))}` : ''}`
-    : 'Run compare-candidate (trials=3) to establish pass^3';
+    : 'No retained Gym comparison in 30d';
   return `<div class="agent-panel-card">
     <div class="agent-panel-head"><h3>Evaluation: Live Rubric vs. Gym Consistency</h3></div>
     <div class="agent-eval-compare-grid">
@@ -94,7 +94,7 @@ function renderAgentEvaluationCompareCard(scorecard, gym) {
         <div class="agent-eval-col-head"><span>Gym (30d · ${gym && gym.status === 'pass_hat_k' ? `pass^${esc(String(gym.trialsPerScenario))}` : 'pass³'})</span>${gymPill}</div>
         <div class="agent-eval-sub">${gymMeta}</div>
         ${gym && gym.status === 'sub_3_trials'
-          ? `<div class="agent-eval-note">Latest run used k=${esc(String(gym.trialsPerScenario))}; promotion requires pass^3 (3/3 trials).</div>`
+          ? `<div class="agent-eval-note">Latest run measured k=${esc(String(gym.trialsPerScenario))} (${gym.trialsPerScenario === 1 ? '1 trial' : `${esc(String(gym.trialsPerScenario))} trials`}/scenario); 3-trial pass³ is unmeasured.</div>`
           : gym && gym.model
             ? `<div class="agent-eval-note">Model: <code>${esc(gym.model)}</code>${gym.candidate ? ` · Candidate: <code>${esc(gym.candidate)}</code>` : ''}</div>`
             : ''}
