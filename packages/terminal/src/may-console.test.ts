@@ -1467,8 +1467,12 @@ describe("May Console", () => {
                 conversation: { id: "may:primary", owner: "may", version: 0, messages: [], work: [] },
               })}\n`,
             );
+          } else if (frame.type === "tasks.list") {
+            socket.write(`${JSON.stringify({ type: "ok", command: "tasks.list", tasks: { items: [] } })}\n`);
           } else {
-            socket.write(`${JSON.stringify({ type: "ok", command: frame.type })}\n`);
+            socket.write(
+              `${JSON.stringify({ type: "ok", command: frame.type, eventId: Math.max(1, humanIds.length), delivery: "accepted" })}\n`,
+            );
           }
         }
       });
