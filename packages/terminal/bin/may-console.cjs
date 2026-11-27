@@ -1492,20 +1492,20 @@ function handleCommand(input) {
         requestTasks({ ...nextTaskPage, command: input });
         return;
       }
-      const tokens = restParts.map((part) => part.toLowerCase());
-      const filters = tokens.filter((part) => part !== "history");
-      if (filters.length > 1 || new Set(tokens).size !== tokens.length) {
+      const lowerTokens = restParts.map((part) => part.toLowerCase());
+      const rawFilters = restParts.filter((part) => part.toLowerCase() !== "history");
+      if (rawFilters.length > 1 || new Set(lowerTokens).size !== lowerTokens.length) {
         printLine("Usage: /tasks [all|app] [history], or /tasks more");
         return;
       }
-      requestTasks({ appId: !filters.length || filters[0] === "all" ? null : filters[0],
-        includeDone: tokens.includes("history"), command: input });
+      requestTasks({ appId: !rawFilters.length || rawFilters[0].toLowerCase() === "all" ? null : rawFilters[0],
+        includeDone: lowerTokens.includes("history"), command: input });
       return;
     }
     case "todo": {
-      const tokens = restParts.map((part) => part.toLowerCase());
-      const more = tokens.length === 1 && tokens[0] === "more";
-      if (tokens.length > 1) {
+      const lowerTokens = restParts.map((part) => part.toLowerCase());
+      const more = lowerTokens.length === 1 && lowerTokens[0] === "more";
+      if (restParts.length > 1) {
         printLine("Usage: /todo [all|app], or /todo more");
         return;
       }
@@ -1516,7 +1516,7 @@ function handleCommand(input) {
       if (!more) nextTodoPage = null;
       requestTasks({
         kind: "todo-command",
-        appId: more ? nextTodoPage.appId : !tokens.length || tokens[0] === "all" ? null : tokens[0],
+        appId: more ? nextTodoPage.appId : !restParts.length || lowerTokens[0] === "all" ? null : restParts[0],
         humanActionOnly: true,
         limit: todoPageSize,
         ...(more ? { cursor: nextTodoPage.cursor } : {}),

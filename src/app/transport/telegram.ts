@@ -1044,20 +1044,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     if (command === "/todo") {
-      const tokens = rest.map((part) => part.toLowerCase());
-      const more = tokens.length === 1 && tokens[0] === "more";
+      const lowerTokens = rest.map((part) => part.toLowerCase());
+      const more = lowerTokens.length === 1 && lowerTokens[0] === "more";
       const prior = more ? session.nextTodoPage : undefined;
       if (more && !prior) {
         deliverCommandView("No next page. Use /todo first.");
         return true;
       }
-      if (tokens.length > 1) {
+      if (rest.length > 1) {
         deliverCommandView("Use: /todo [all|app], or /todo more");
         return true;
       }
       const appId = more
         ? prior!.appId
-        : !tokens.length || tokens[0] === "all" ? undefined : tokens[0];
+        : !rest.length || lowerTokens[0] === "all" ? undefined : rest[0];
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         humanActionOnly: true,
@@ -1087,16 +1087,16 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         deliverCommandView("No next page. Use /tasks first.");
         return true;
       }
-      const tokens = more ? [] : rest.map((part) => part.toLowerCase());
-      const filters = tokens.filter((part) => part !== "history");
-      if (filters.length > 1 || new Set(tokens).size !== tokens.length) {
+      const lowerTokens = more ? [] : rest.map((part) => part.toLowerCase());
+      const rawFilters = more ? [] : rest.filter((part) => part.toLowerCase() !== "history");
+      if (rawFilters.length > 1 || new Set(lowerTokens).size !== lowerTokens.length) {
         deliverCommandView("Use: /tasks [all|app] [history], or /tasks more");
         return true;
       }
-      const includeDone = prior?.includeDone ?? tokens.includes("history");
+      const includeDone = prior?.includeDone ?? lowerTokens.includes("history");
       const appId = more
         ? prior!.appId
-        : !filters.length || filters[0] === "all" ? undefined : filters[0];
+        : !rawFilters.length || rawFilters[0]!.toLowerCase() === "all" ? undefined : rawFilters[0];
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         includeDone,
