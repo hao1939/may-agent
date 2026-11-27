@@ -272,7 +272,7 @@ describe("Telegram durable input and natural follow-up", () => {
     const f = durableTelegramFixture();
     const blocked = Promise.withResolvers<void>();
     try {
-      f.hold((body) => body.text.includes("Selected App") ? blocked.promise : Promise.resolve());
+      f.hold((body) => body.text.includes("Read-only App view") ? blocked.promise : Promise.resolve());
       f.send([
         { update_id: 100, message: { message_id: 100, chat: { id: 123 }, text: "/apps sample" } },
         { update_id: 101, message: { message_id: 101, chat: { id: 123 }, text: "Review this" } },
@@ -280,7 +280,7 @@ describe("Telegram durable input and natural follow-up", () => {
       ]);
       await waitFor(() => f.polls().includes(103));
       expect(f.inputs()).toHaveLength(2);
-      expect(f.inputs()[0].data.context).toMatchObject({ focusedApp: "sample" });
+      expect(f.inputs()[0].data.context).toMatchObject({ focusedApp: "may" });
       expect(f.inputs()[1].data.metadata).toMatchObject({ channelTargetId: "456" });
     } finally { blocked.resolve(); await f.close(); }
   });
@@ -310,7 +310,7 @@ describe("Telegram durable input and natural follow-up", () => {
         f.sends().some((call) => call.body.message_thread_id === 8));
       expect(surfaceSends()).toHaveLength(1);
       expect(f.admitted).toEqual(["Continue this work"]);
-      expect(f.inputs()[0].data.context.focusedApp).toBe("sample");
+      expect(f.inputs()[0].data.context.focusedApp).toBe("may");
 
       if (outcome === "close") {
         f.bot.close();
@@ -328,7 +328,7 @@ describe("Telegram durable input and natural follow-up", () => {
         expect.stringContaining("Optional shortcuts"),
         expect.stringContaining("Optional shortcuts"),
         expect.stringContaining("Unknown command: /unknown"),
-        expect.stringContaining("Selected App: sample"),
+        expect.stringContaining("Read-only App view"),
       ]);
       expect(surfaceSends()[1].body.reply_parameters.message_id).toBe(101);
       expect(surfaceSends()[2].body.parse_mode).toBe("Markdown");
@@ -450,9 +450,15 @@ describe("Telegram durable input and natural follow-up", () => {
       await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/watch"));
       expect(f.published.find((e) => e.data.metadata?.command === "/watch")!.data.metadata.topicId)
         .toBe("topic_aaaaaaaa");
-      f.message(103, "What's the status?", { message_thread_id: 7 });
+      const discussionCard = f.sends().find(c => c.body.text.includes("Following updates."))!;
+      expect(discussionCard.body.text).toContain("Reply here to discuss this work.");
+      await waitFor(() => Boolean(f.db.prepare("SELECT 1 FROM notification_messages WHERE telegram_msg_id = ?").get(discussionCard.messageId)));
+      f.message(103, "What's the status?", { message_thread_id: 7,
+        reply_to_message: { message_id: discussionCard.messageId, text: discussionCard.body.text } });
       await waitFor(() => f.inputs().length === 1);
       expect(f.inputs()[0].data.context).toMatchObject({ focusedTask: { appId: "may", taskId: "first" } });
+      expect(f.inputs()[0].data.context.displayedHumanCondition).toBeUndefined();
+      expect(f.inputs()[0].data.taskReply).toBeUndefined();
       expect(f.sends().filter((c) => c.body.text.startsWith("Background work accepted"))).toHaveLength(1);
       expect(f.tasks.get("second")?.status).toBe("running");
     } finally { await f.close(); }
@@ -479,7 +485,7 @@ describe("Telegram durable input and natural follow-up", () => {
             text: expect.stringContaining("can't read this attachment") });
       }
       expect(f.sends().find((call) => call.body.chat_id === "999")?.body.text).toContain("Unauthorized");
-      expect(f.sends().at(-1)!.body.text).toContain("Reply to an update to follow up");
+      expect(f.sends().at(-1)!.body.text).toContain("reply to an exact question card");
     } finally { await f.close(); }
   });
 
@@ -747,7 +753,10 @@ describe("Telegram durable input and natural follow-up", () => {
         "evaluation",
         true,
       ),
-    ).toContain("1 more action(s) are not shown. Use /todo more.");
+    ).toContain("1 action(s) shown on this page; 2 total in this query.\nMore actions are available. Use /todo more.");
+    expect(renderTelegramTodos([task], undefined, undefined, true)).toContain("total unknown");
+    expect(renderTelegramTodos([], 2)).toContain("0 action(s) shown on this page; 2 total in this query.");
+    expect(renderTelegramTodos([], 2)).not.toContain("Nothing needs your action");
     expect(
       renderTelegramTask({
         ...task,
@@ -863,7 +872,7 @@ describe("Telegram durable input and natural follow-up", () => {
         { includeDone: false, limit: 10 },
         { includeDone: false, limit: 10, cursor: "cursor-2" },
       ]);
-      expect(sent).toContainEqual(expect.stringContaining("Selected App: evaluation"));
+      expect(sent).toContainEqual(expect.stringContaining("Read-only App view"));
       expect(sent).toContainEqual(expect.stringContaining("11111111"));
       expect(sent).toContainEqual(expect.stringContaining("/tasks more"));
       expect(sent).toContainEqual(expect.stringContaining("22222222"));
@@ -873,6 +882,10 @@ describe("Telegram durable input and natural follow-up", () => {
         cursor: "todo-cursor-2",
       });
       expect(sent).toContainEqual(expect.stringContaining("Use /todo more."));
+      const finalTodo = sent.find(text => text.includes("Approve the second page."))!;
+      expect(finalTodo).toContain("1 action(s) shown on this page; 2 total in this query.");
+      expect(finalTodo).not.toContain("Use /todo more.");
+      expect(finalTodo).not.toContain("more action(s) are not shown");
       expect(sentParseModes.filter((mode) => mode === "HTML")).toHaveLength(4);
       expect(sentParseModes[0]).toBeUndefined();
     } finally {
@@ -1047,7 +1060,7 @@ describe("Telegram durable input and natural follow-up", () => {
       } as any,
     });
     try {
-      await waitFor(() => sent.some((text) => text.includes("Needs you for evaluation")));
+      await waitFor(() => sent.some((text) => text.includes("Needs you across all Apps")));
       expect(taskListReads.some((options) => options.humanActionOnly === true && options.limit === 50)).toBe(true);
       expect(sent).toContainEqual(expect.stringContaining("Approve or reject deployment."));
       await waitFor(() =>
@@ -1351,13 +1364,13 @@ describe("Telegram durable input and natural follow-up", () => {
           (event) =>
             event.type === "conversation.message.created" &&
             event.data?.text === "Prioritize exact facts" &&
-            event.data?.context?.focusedApp === "evaluation" &&
+            event.data?.context?.focusedApp === "may" &&
             event.data?.context?.focusedTask?.taskId === "review/docs",
         ),
       );
       expect(sent).toContainEqual(expect.stringContaining("evaluation — 1 open · 1 active"));
       expect(sent).toContainEqual(expect.stringContaining("Task 8f12ac90"));
-      expect(sent).toContainEqual(expect.stringContaining("Following updates. Reply here"));
+      expect(sent).toContainEqual(expect.stringContaining("Following updates. Reply to this message with an exact response"));
       const exactProposal =
         "Exact proposal: apply the reviewed docs candidate at commit 01234567; cost is one restart; simpler option is no change.";
       const approvalCards = sent.filter((text) => text.includes(exactProposal));

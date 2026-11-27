@@ -28,21 +28,20 @@ let reconnectTimer = null;
 let reconnectDelayMs = 250;
 let raw = false;
 let debug = false;
-let selectedApp = conversationAppId;
+const globalTodoAppId = null; // Global inspection scope; never a conversation recipient.
 let activeTurn = null;
 let completionVisible = false;
 let watchedTask = null;
 let watchedTaskReadInFlight = false;
 let watchedTaskDirty = false;
 let watchedTaskSelectionVersion = 0;
-let desiredAutoFollow = null;
 let lastDisconnectedMessage = "";
 const displayedTaskReplies = new Map();
-let appSelectionVersion = 0;
 let todoCount = 0;
 const todoReadDirtyApps = new Set();
 const pendingInputFrames = [];
 const maxPendingInputFrames = 100;
+const pendingHumanWrites = new Set();
 
 const renderedConversationMessages = new Set();
 const conversationResultsByTask = new Map();
@@ -64,12 +63,13 @@ const pendingTaskListReads = [];
 const pendingTaskReads = [];
 let nextTaskPage = null;
 let nextTodoPage = null;
+let taskListVersion = 0;
+let todoListVersion = 0;
 const pendingRuntimeControls = new Map();
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
 const shownTaskRevisions = new Map();
 let shownTodoActions = new Map();
-const pendingCommandLines = [];
 
 function rememberCompletion(set, value, limit) {
   if (set.has(value)) set.delete(value);
@@ -120,10 +120,10 @@ function completeInput(line) {
     command === "/apps"
       ? [...knownAppIds]
       : command === "/tasks"
-        ? ["all", "history", "more"]
+        ? ["all", "history", "more", ...knownAppIds]
         : command === "/todo"
-          ? ["all", "more"]
-          : command === "/task" || command === "/watch" || command === "/cancel"
+          ? ["all", "more", ...knownAppIds]
+          : command === "/task" || command === "/reply" || command === "/watch" || command === "/cancel"
             ? [...knownTaskRefs]
             : [];
   const matches = choices.filter((choice) => choice.startsWith(current));
@@ -145,30 +145,13 @@ function shortSessionId(sessionId) {
 }
 
 function promptText() {
-  if (!connected) return "you[disconnected]> ";
-  if (watchedTask) return `you[${watchedTask.appId}:${watchedTask.ref}]> `;
-  return `you[${selectedApp}${todoCount > 0 ? ` · ${todoCount} todo` : ""}]> `;
+  return "you> ";
 }
 
 function refreshPrompt() {
   if (closing) return;
   rl.setPrompt(promptText());
   rl.prompt(true);
-}
-
-function selectAppContext(appId) {
-  const next = typeof appId === "string" ? appId.trim() : "";
-  if (!next || next === selectedApp) return false;
-  selectedApp = next;
-  todoCount = 0;
-  shownTodoActions = new Map();
-  nextTodoPage = null;
-  if (connected) {
-    subscribe();
-    requestTodoRefresh();
-  }
-  refreshPrompt();
-  return true;
 }
 
 function writeStdout(text, callback) {
@@ -293,7 +276,7 @@ function printActivityText(label, text = "") {
 }
 
 function printResponseText(text = "", onRendered) {
-  printConversationText(daemonAgent, text, onRendered);
+  printConversationText("may", text, onRendered);
 }
 
 function eventPayload(event) {
@@ -328,6 +311,12 @@ async function httpJson(pathname, options = {}) {
   return body;
 }
 
+function retainUnconfirmedInput(frame, notice = "[unconfirmed] Input may be accepted.") {
+  if (!pendingInputFrames.some((saved) => saved.event.idempotencyKey === frame.event.idempotencyKey))
+    pendingInputFrames.push(frame);
+  printNotice(`${notice} Retained only in this Console; reconnect retries the same identity, not new work.`);
+}
+
 function sendFrame(frame, opts = {}) {
   if (frame?.type === "subscribe") {
     if (!connected || !socket || socket.readyState !== WebSocket.OPEN) return false;
@@ -335,9 +324,27 @@ function sendFrame(frame, opts = {}) {
     return true;
   }
   if (frame?.type === "publish" && frame.event) {
+    if (opts.receiptKind === "human-turn") pendingHumanWrites.add(frame);
     void httpJson("/api/events", { method: "POST", body: JSON.stringify(frame.event) })
-      .then((result) => handleEvent({ type: "ok", command: "publish", ...result, __receiptKind: opts.receiptKind }))
-      .catch((error) => handleEvent({ type: "error", command: "publish", message: error.message, __receiptKind: opts.receiptKind }));
+      .then((result) => {
+        if (opts.receiptKind === "human-turn") {
+          const validReceipt = Number.isSafeInteger(result?.eventId) && result.eventId > 0;
+          if (!validReceipt || result.delivery !== "accepted") {
+            if (validReceipt && result.delivery === "recorded") {
+              retainUnconfirmedInput(frame, "[recorded] Input recorded, but not yet admitted.");
+              return;
+            }
+            throw new Error("Input acknowledgment is missing or invalid; acceptance is unknown");
+          }
+        }
+        handleEvent({ type: "ok", command: "publish", ...result, __receiptKind: opts.receiptKind });
+      })
+      .catch((error) => {
+        if (opts.receiptKind === "human-turn" && (!error.status || error.status >= 500)) {
+          retainUnconfirmedInput(frame);
+        }
+        handleEvent({ type: "error", command: "publish", message: error.message, __receiptKind: opts.receiptKind });
+      }).finally(() => pendingHumanWrites.delete(frame));
     return true;
   }
   if (frame?.type === "task.cancel") {
@@ -389,11 +396,16 @@ function conversationInputFrame(message, reply) {
         ...(reply
           ? {
               replyTo: reply.messageId,
+              taskReply: {
+                target: reply.target,
+                taskGeneration: reply.generation,
+                ...(reply.condition ? { condition: reply.condition } : {}),
+              },
               ...(reply.proposal ? { approvalReply: { target: reply.target, proposal: reply.proposal } } : {}),
             }
           : {}),
         context: {
-          focusedApp: selectedApp,
+          focusedApp: conversationAppId,
           ...(reply
             ? { focusedTask: reply.target }
             : watchedTask
@@ -481,8 +493,8 @@ function readWillComplete(sent) {
   return true;
 }
 
-function requestApps(appId = null, command = "/apps", select = false, selection = {}) {
-  const pending = { appId, command, select, ...selection };
+function requestApps(appId = null, command = "/apps") {
+  const pending = { appId, command };
   pendingAppReads.push(pending);
   const sent = sendAppRead(pending);
   if (!readWillComplete(sent)) pendingAppReads.pop();
@@ -500,8 +512,11 @@ function sendAppRead(pending) {
 }
 
 function requestTasks(options = {}) {
+  if (options.kind === "todo-command") nextTodoPage = null;
+  else if (!options.kind || options.kind === "tasks") nextTaskPage = null;
   const pending = {
     kind: options.kind || "tasks",
+    queryVersion: options.kind === "todo-refresh" ? 0 : options.kind === "todo-command" ? ++todoListVersion : ++taskListVersion,
     appId: options.appId || null,
     includeDone: options.includeDone === true,
     humanActionOnly: options.humanActionOnly === true,
@@ -532,7 +547,7 @@ function sendTaskListRead(pending) {
 
 function requestTodoRefresh() {
   if (!connected) return false;
-  const appId = selectedApp;
+  const appId = globalTodoAppId;
   if (pendingTaskListReads.some((pending) => pending.kind === "todo-refresh" && pending.appId === appId)) {
     todoReadDirtyApps.add(appId);
     return true;
@@ -655,24 +670,8 @@ function taskProgress(task) {
 
 function renderApps(apps, pending) {
   if (!Array.isArray(apps)) return;
-  if (pending?.select && pending.selectionVersion !== appSelectionVersion) return;
-  const selected = pending?.select && apps.length === 1 && typeof apps[0]?.id === "string" && apps[0].id.trim();
-  if (selected) {
-    const nextApp = apps[0].id.trim();
-    selectAppContext(nextApp);
-  } else if (pending?.select) {
-    selectAppContext(pending.previousAppId);
-  }
-  const lines = [
-    "",
-    pending?.select
-      ? selected
-        ? `Selected App: ${selectedApp}`
-        : `App ${pending.appId} was not found; restored ${selectedApp}.`
-      : "Apps:",
-    "",
-  ];
-  if (apps.length === 0) lines.push("  Nothing found.");
+  const lines = ["", pending?.appId ? `App ${pending.appId} (read-only; chat is unchanged):` : "Apps:", ""];
+  if (apps.length === 0) lines.push(pending?.appId ? `  App ${pending.appId} was not found.` : "  Nothing found.");
   for (const app of apps) {
     if (typeof app.id === "string" && app.id.trim()) rememberCompletion(knownAppIds, app.id.trim(), 256);
     const active = Number(app.activeTasks || 0);
@@ -685,9 +684,9 @@ function renderApps(apps, pending) {
       ...(Number(app.waitingTasks || 0) ? [`${app.waitingTasks} waiting`] : []),
       ...(Number(app.attentionTasks || 0) ? [`${app.attentionTasks} attention`] : []),
     ];
-    const marker = app.id === selectedApp ? "*" : " ";
+    const marker = " ";
     lines.push(` ${marker} ${app.id} — ${details.join(" · ")}`);
-    if (pending?.select && typeof app.description === "string" && app.description.trim()) {
+    if (pending?.appId && typeof app.description === "string" && app.description.trim()) {
       lines.push(`    ${app.description.trim()}`);
     }
     lines.push("");
@@ -700,6 +699,7 @@ function renderApps(apps, pending) {
 }
 
 function renderTasks(page, pending) {
+  if (pending?.queryVersion !== taskListVersion) return;
   const tasks = Array.isArray(page?.items) ? page.items : [];
   const scope = pending?.appId ? ` for ${pending.appId}` : " across all Apps";
   const title = pending?.includeDone ? `Tasks${scope} (open and history):` : `Open Tasks${scope}:`;
@@ -813,11 +813,13 @@ function todoActionSignature(task) {
 }
 
 function renderTodos(page, pending) {
+  if (pending?.queryVersion !== todoListVersion) return;
   const tasks = Array.isArray(page?.items) ? page.items : [];
   const total = Number.isSafeInteger(page?.total) ? page.total : tasks.length;
   const scope = pending?.appId ? ` for ${pending.appId}` : " across all Apps";
   const lines = ["", `Actions needed${scope}:`, ""];
-  if (tasks.length === 0) lines.push("  Nothing needs your action.");
+  if (tasks.length === 0) lines.push(page?.total === 0 && !page?.nextCursor
+    ? "  Nothing needs your action." : "  No actions shown on this page.");
   for (const task of tasks) {
     if (typeof task.ref === "string" && task.ref.trim()) rememberCompletion(knownTaskRefs, task.ref.trim(), 512);
     const since = Number(task?.humanAction?.since);
@@ -827,9 +829,8 @@ function renderTodos(page, pending) {
     lines.push(...indentedLines(humanActionText(task), 4), "");
   }
   nextTodoPage = page?.nextCursor ? { appId: pending?.appId || null, cursor: page.nextCursor } : null;
-  if (total > tasks.length) {
-    lines.push(`  ${total - tasks.length} more action(s) are not shown.${nextTodoPage ? " Run /todo more." : ""}`);
-  }
+  lines.push(`  ${tasks.length} action(s) shown on this page; ${Number.isSafeInteger(page?.total) ? `${total} total in this query` : "total unknown"}.`);
+  if (nextTodoPage) lines.push("  More actions are available. Run /todo more.");
   if (lines.at(-1) !== "") lines.push("");
   presentView(pending?.command || "/todo", renderedLines(lines), {
     taskRefs: tasks.map(taskIdentity).filter(Boolean),
@@ -850,11 +851,11 @@ function applyTodoRefresh(page) {
     const text =
       todoCount === 1 && unwatched.length === 1
         ? `[todo] ${first.ref} · ${first.appId} needs you: ${humanActionText(first)}\nUse /task ${first.ref} to read and reply.`
-        : `[todo] ${todoCount} Tasks need you in ${selectedApp}. Run /todo.`;
+        : `[todo] ${Number.isSafeInteger(page?.total) ? todoCount : `${tasks.length} shown${page?.nextCursor ? "+" : ""}`} Tasks need you globally. Run /todo.`;
     presentView("/todo notification", text, {
       transient: true,
       taskRefs: tasks.map(taskIdentity).filter(Boolean),
-      idempotencyKey: `todo-notification:${source}:${selectedApp}:${first.appId}:${first.taskId}:${first.resourceVersion}`,
+      idempotencyKey: `todo-notification:${source}:${globalTodoAppId}:${first.appId}:${first.taskId}:${first.resourceVersion}`,
     });
   }
   shownTodoActions = next;
@@ -924,6 +925,8 @@ function renderTask(task, command, options = {}) {
     displayedTaskReplies.set(task.ref, {
       messageId,
       target: { appId: task.appId, taskId: task.taskId },
+      generation: task.generation,
+      condition: task.humanConditionAnchor,
       proposal: task.approvalProposal,
     });
     while (displayedTaskReplies.size > 100) displayedTaskReplies.delete(displayedTaskReplies.keys().next().value);
@@ -952,11 +955,11 @@ function taskPresentationKey(task) {
   return taskIdentity(task) ? `${task.appId}\0${task.taskId}` : "";
 }
 
-function rememberConversationResultTask(task, messageId) {
+function rememberConversationResultTask(task, text) {
   const key = taskPresentationKey(task);
   if (!key) return;
   if (conversationResultsByTask.has(key)) conversationResultsByTask.delete(key);
-  conversationResultsByTask.set(key, messageId);
+  conversationResultsByTask.set(key, text);
   while (conversationResultsByTask.size > 128) {
     conversationResultsByTask.delete(conversationResultsByTask.keys().next().value);
   }
@@ -1003,48 +1006,15 @@ function setWatchedTask(task) {
   watchedTaskSelectionVersion += 1;
   watchedTask = task && !task.terminal ? { appId: task.appId, taskId: task.taskId, ref: task.ref } : null;
   if (watchedTask) conversationResultsByTask.delete(taskPresentationKey(watchedTask));
-  const appChanged = watchedTask ? selectAppContext(watchedTask.appId) : false;
   watchedTaskDirty = false;
-  if (!appChanged) subscribe();
+  subscribe();
   refreshPrompt();
 }
 
-function autoFollowKey(task) {
+function taskWatchKey(task) {
   return task && typeof task.appId === "string" && typeof task.taskId === "string"
     ? `${task.appId}\0${task.taskId}`
     : "";
-}
-
-function requestDesiredAutoFollow() {
-  if (!connected || !desiredAutoFollow) return;
-  const key = autoFollowKey(desiredAutoFollow);
-  if (!key) return;
-  if (watchedTask && autoFollowKey(watchedTask) === key) {
-    desiredAutoFollow = null;
-    return;
-  }
-  if (
-    pendingTaskReads.some(
-      (pending) => pending.kind === "auto-follow" && `${pending.appId || ""}\0${pending.taskId || ""}` === key,
-    )
-  ) {
-    return;
-  }
-  requestTask({
-    kind: "auto-follow",
-    appId: desiredAutoFollow.appId,
-    taskId: desiredAutoFollow.taskId,
-    assignedFrom: desiredAutoFollow.assignedFrom,
-    command: "automatic Task follow",
-  });
-}
-
-function autoFollowTask(task) {
-  const appId = typeof task?.appId === "string" ? task.appId.trim() : "";
-  const taskId = typeof task?.taskId === "string" ? task.taskId.trim() : "";
-  if (!appId || !taskId) return;
-  desiredAutoFollow = { appId, taskId, ...(task?.assignedFrom ? { assignedFrom: task.assignedFrom } : {}) };
-  requestDesiredAutoFollow();
 }
 
 function refreshWatchedTask() {
@@ -1072,9 +1042,8 @@ function formatWorkTime(value) {
     .replace(/\.\d{3}Z$/, " UTC");
 }
 
-function renderConversation(messages, options = {}) {
+function renderConversation(messages) {
   if (!Array.isArray(messages)) return;
-  let latestFollowTask = null;
   for (const message of messages) {
     const id = typeof message.id === "string" ? message.id : "";
     const text = typeof message.text === "string" ? message.text.trim() : "";
@@ -1089,7 +1058,7 @@ function renderConversation(messages, options = {}) {
       rememberRenderedConversationMessage(id);
       continue;
     }
-    const baseSpeaker = kind === "human" ? "you" : kind === "agent" ? daemonAgent : kind;
+    const baseSpeaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind;
     const speaker = channel && channel !== source ? `${baseSpeaker}[${channel}]` : baseSpeaker;
     const metadataTaskRefs = Array.isArray(message.metadata?.taskRefs) ? message.metadata.taskRefs : [];
     const taskRefs = metadataTaskRefs.flatMap((task) =>
@@ -1104,35 +1073,10 @@ function renderConversation(messages, options = {}) {
     else printConversationText(speaker, renderedText);
     rememberRenderedConversationMessage(id);
     if (kind === "agent" && id.startsWith("result:")) {
-      for (const task of metadataTaskRefs) rememberConversationResultTask(task, id);
-    }
-    const followTask = message.metadata?.followTask;
-    if (
-      (kind === "agent" || taskActivity) &&
-      followTask &&
-      typeof followTask.appId === "string" &&
-      followTask.appId.trim() &&
-      typeof followTask.taskId === "string" &&
-      followTask.taskId.trim()
-    ) {
-      const assignedFrom = metadataTaskRefs.find(
-        (task) =>
-          task &&
-          typeof task.appId === "string" &&
-          typeof task.taskId === "string" &&
-          (task.appId !== followTask.appId || task.taskId !== followTask.taskId),
-      );
-      latestFollowTask = {
-        appId: followTask.appId.trim(),
-        taskId: followTask.taskId.trim(),
-        ...(assignedFrom ? { assignedFrom } : {}),
-      };
+      for (const task of metadataTaskRefs) rememberConversationResultTask(task, text);
     }
   }
-  // Catch-up history restores context for the human, but it must not change
-  // the current App or start watching old work. Only a live Conversation wake
-  // may turn a newly observed assignment into an automatic follow.
-  if (latestFollowTask && options.autoFollow === true) autoFollowTask(latestFollowTask);
+  // Assignment hints are attribution only. Following execution detail is opt-in.
 }
 
 function runtimeFrame(type) {
@@ -1153,7 +1097,7 @@ function subscribe() {
     type: "subscribe",
     sessions: subscribedSessions(),
     conversations: [conversationId],
-    taskApps: [selectedApp],
+    taskApps: ["*"],
     task: watchedTask ? { appId: watchedTask.appId, taskId: watchedTask.taskId } : null,
   });
 }
@@ -1167,12 +1111,11 @@ function rereadCanonicalState() {
   for (const pending of pendingAppReads) sendAppRead(pending);
   for (const pending of pendingTaskListReads) sendTaskListRead(pending);
   for (const pending of pendingTaskReads) sendTaskRead(pending);
-  if (!pendingTaskListReads.some((pending) => pending.kind === "todo-refresh" && pending.appId === selectedApp)) requestTodoRefresh();
+  if (!pendingTaskListReads.some((pending) => pending.kind === "todo-refresh" && pending.appId === globalTodoAppId)) requestTodoRefresh();
   if (watchedTask && !pendingTaskReads.some((pending) => pending.kind === "watch-refresh")) {
     watchedTaskReadInFlight = false;
     refreshWatchedTask();
   }
-  requestDesiredAutoFollow();
 }
 
 function formatToolArgs(tool, args) {
@@ -1225,7 +1168,7 @@ function handleEvent(event) {
     if (watchedTask && data.appId === watchedTask.appId && data.taskId === watchedTask.taskId) {
       refreshWatchedTask();
     }
-    if (data.appId === selectedApp) requestTodoRefresh();
+    requestTodoRefresh();
     return;
   }
   if (event.type === "conversation.updated") {
@@ -1239,7 +1182,6 @@ function handleEvent(event) {
   if (event.type === "subscribed") {
     subscriptionReady = true;
     rereadCanonicalState();
-    flushPendingCommands();
     flushPendingInput();
     refreshPrompt();
     return;
@@ -1292,7 +1234,8 @@ function handleEvent(event) {
         rememberRenderedConversationMessage(`event:${event.eventId}`);
       }
       if (receiptKind === "human-turn") {
-        printNotice(`[${daemonAgent}] Working on your request… Esc stops this turn.`);
+        printNotice(`[${daemonAgent}] Input admitted. This is not completion.`);
+        requestConversation("sync");
       }
       if (receiptKind === "stop-turn") {
         printNotice(event.delivery === "accepted" ? `[${daemonAgent}] Stop request accepted. Background Tasks continue.` : `[${daemonAgent}] Stop was not accepted; refresh and try again.`);
@@ -1312,7 +1255,7 @@ function handleEvent(event) {
         if (pending?.kind === "startup") {
           renderConversation(event.conversation?.messages);
         } else if (pending?.kind === "sync") {
-          renderConversation(event.conversation?.messages, { autoFollow: true });
+          renderConversation(event.conversation?.messages);
         }
         if (conversationSyncDirty) requestConversation("sync");
       }
@@ -1325,9 +1268,9 @@ function handleEvent(event) {
         const pending = event.__pending || pendingTaskListReads[0];
         removePending(pendingTaskListReads, pending);
         if (pending?.kind === "todo-refresh") {
-          if (pending.appId === selectedApp) applyTodoRefresh(event.tasks);
+          if (pending.appId === globalTodoAppId) applyTodoRefresh(event.tasks);
           const dirty = todoReadDirtyApps.delete(pending.appId);
-          if (dirty && pending.appId === selectedApp) requestTodoRefresh();
+          if (dirty && pending.appId === globalTodoAppId) requestTodoRefresh();
         } else if (pending?.kind === "todo-command") {
           renderTodos(event.tasks, pending);
         } else {
@@ -1340,7 +1283,7 @@ function handleEvent(event) {
         const task = event.task;
         if (pending?.kind === "watch-start") {
           if (pending.watchSelectionVersion !== watchedTaskSelectionVersion) {
-            // A newer human watch, unwatch, or App selection superseded this read.
+            // A newer human watch or unwatch superseded this read.
           } else if (task?.terminal) {
             renderWatchSnapshot(task, { catchUp: true });
             setWatchedTask(null);
@@ -1354,35 +1297,17 @@ function handleEvent(event) {
                 : `[watch] Following ${task.ref} · ${task.appId}; no new progress.`,
             );
           }
-        } else if (pending?.kind === "auto-follow") {
-          const pendingKey = `${pending.appId || ""}\0${pending.taskId || ""}`;
-          if (!desiredAutoFollow || autoFollowKey(desiredAutoFollow) !== pendingKey) {
-            // The human changed context or a newer assignment superseded this read.
-          } else if (!task) {
-            desiredAutoFollow = null;
-          } else if (task.terminal) {
-            desiredAutoFollow = null;
-          } else {
-            const previous = watchedTask;
-            desiredAutoFollow = null;
-            renderWatchSnapshot(task, { catchUp: Boolean(shownTaskRevisions.has(taskPresentationKey(task))) });
-            setWatchedTask(task);
-            const origin = pending.assignedFrom?.ref
-              ? ` (from ${pending.assignedFrom.ref} · ${pending.assignedFrom.appId})`
-              : "";
-            const prior = previous && autoFollowKey(previous) !== autoFollowKey(task) ? ` Previous: ${previous.ref}.` : "";
-            printNotice(`[watch] Following ${task.ref} · ${task.appId}${origin}.${prior}`);
-          }
-          requestDesiredAutoFollow();
         } else if (pending?.kind === "watch-refresh") {
           watchedTaskReadInFlight = false;
           const pendingWatchKey = `${pending.appId || ""}\0${pending.taskId || ""}`;
-          const currentWatchKey = autoFollowKey(watchedTask);
+          const currentWatchKey = taskWatchKey(watchedTask);
           const currentSelection =
             pending.watchSelectionVersion === watchedTaskSelectionVersion && pendingWatchKey === currentWatchKey;
           if (currentSelection) {
             const taskKey = taskPresentationKey(task);
-            const conversationAlreadyPresentedResult = Boolean(task?.terminal && conversationResultsByTask.has(taskKey));
+            // Mentioning this Task is not proof that its outcome was delivered.
+            const conversationAlreadyPresentedResult = Boolean(task?.terminal &&
+              conversationResultsByTask.get(taskKey) === String(currentTaskText(task)).trim());
             if (task && !conversationAlreadyPresentedResult) renderWatchSnapshot(task);
             else if (task && conversationAlreadyPresentedResult) {
               rememberTaskRevision(taskKey, taskPresentationRevision(task));
@@ -1424,26 +1349,19 @@ function handleEvent(event) {
       if (event.command === "apps.list") {
         const pending = event.__pending || pendingAppReads[0];
         removePending(pendingAppReads, pending);
-        if (pending?.select && pending.selectionVersion === appSelectionVersion) {
-          selectAppContext(pending.previousAppId);
-        }
       }
       if (event.command === "tasks.list") {
         const pending = event.__pending || pendingTaskListReads[0];
         removePending(pendingTaskListReads, pending);
         if (pending?.kind === "todo-refresh") {
           const dirty = todoReadDirtyApps.delete(pending.appId);
-          if (dirty && pending.appId === selectedApp) requestTodoRefresh();
+          if (dirty && pending.appId === globalTodoAppId) requestTodoRefresh();
         }
       }
       if (event.command === "task.get") {
         const pending = event.__pending || pendingTaskReads[0];
         removePending(pendingTaskReads, pending);
         if (pending?.kind === "watch-refresh") watchedTaskReadInFlight = false;
-        if (pending?.kind === "auto-follow" && desiredAutoFollow) {
-          const pendingKey = `${pending.appId || ""}\0${pending.taskId || ""}`;
-          if (autoFollowKey(desiredAutoFollow) === pendingKey) desiredAutoFollow = null;
-        }
       }
       printLine(`[error] ${event.message || "unknown error"}`);
       return;
@@ -1528,13 +1446,13 @@ function printHelp() {
     [
       "Conversation and Tasks:",
       "  Esc                        Stop this turn; background Tasks continue",
-      "  /apps [app]                 List or select an App",
-      "  /tasks [all] [history], /tasks more",
-      "  /todo [all], /todo more     Show Tasks that need your action",
+      "  /apps [app]                 Read Apps; never changes chat",
+      "  /tasks [all|app] [history], /tasks more",
+      "  /todo [all|app], /todo more  Show actual human actions globally by default",
       "  /task <ref>",
-      "  /reply <ref> <text>     Reply to a Task you opened with /task",
+      "  Advanced exact action: /reply <ref> <text> addresses the displayed /task (not discussion)",
       "  /watch [ref], /unwatch",
-      "  /cancel [ref]",
+      "  /cancel <ref>               Cancel only identified work",
       "",
       "Console:",
       "  /exit (/quit)              Close Console",
@@ -1544,7 +1462,7 @@ function printHelp() {
       "  /reload                    Reload definitions",
       "  /restart                   Restart the Host",
       "",
-      `Bare text goes to ${daemonAgent} in the selected App context. While watching, that Task is additional context.`,
+      "Bare text talks to May. Inspection and watches supply discussion context, never a recipient.",
     ].join("\n"),
   );
 }
@@ -1563,25 +1481,7 @@ function handleCommand(input) {
         printLine("Usage: /apps [app]");
         return;
       }
-      if (rest) {
-        const previousAppId = selectedApp;
-        let stoppedWatch = null;
-        if (rest !== selectedApp) {
-          desiredAutoFollow = null;
-          watchedTaskSelectionVersion += 1;
-          if (watchedTask) {
-            stoppedWatch = watchedTask.ref;
-            setWatchedTask(null);
-          }
-          selectAppContext(rest);
-        }
-        nextTaskPage = null;
-        const selectionVersion = ++appSelectionVersion;
-        printNotice(`[apps] Selecting ${rest}…`);
-        requestApps(rest, input, true, { previousAppId, selectionVersion, stoppedWatch });
-      } else {
-        requestApps(null, input, false);
-      }
+      requestApps(rest || null, input);
       return;
     case "tasks": {
       if (restParts.length === 1 && restParts[0].toLowerCase() === "more") {
@@ -1592,21 +1492,21 @@ function handleCommand(input) {
         requestTasks({ ...nextTaskPage, command: input });
         return;
       }
-      const tokens = restParts.map((part) => part.toLowerCase());
-      if (tokens.some((part) => part !== "all" && part !== "history") || new Set(tokens).size !== tokens.length) {
-        printLine("Usage: /tasks [all] [history], or /tasks more");
+      const lowerTokens = restParts.map((part) => part.toLowerCase());
+      const rawFilters = restParts.filter((part) => part.toLowerCase() !== "history");
+      if (rawFilters.length > 1 || new Set(lowerTokens).size !== lowerTokens.length) {
+        printLine("Usage: /tasks [all|app] [history], or /tasks more");
         return;
       }
-      const allApps = tokens.includes("all");
-      const includeDone = tokens.includes("history");
-      requestTasks({ appId: allApps ? null : selectedApp, includeDone, command: input });
+      requestTasks({ appId: !rawFilters.length || rawFilters[0].toLowerCase() === "all" ? null : rawFilters[0],
+        includeDone: lowerTokens.includes("history"), command: input });
       return;
     }
     case "todo": {
-      const tokens = restParts.map((part) => part.toLowerCase());
-      const more = tokens.length === 1 && tokens[0] === "more";
-      if (tokens.length > 1 || (tokens.length === 1 && tokens[0] !== "all" && !more)) {
-        printLine("Usage: /todo [all], or /todo more");
+      const lowerTokens = restParts.map((part) => part.toLowerCase());
+      const more = lowerTokens.length === 1 && lowerTokens[0] === "more";
+      if (restParts.length > 1) {
+        printLine("Usage: /todo [all|app], or /todo more");
         return;
       }
       if (more && !nextTodoPage) {
@@ -1616,7 +1516,7 @@ function handleCommand(input) {
       if (!more) nextTodoPage = null;
       requestTasks({
         kind: "todo-command",
-        appId: more ? nextTodoPage.appId : tokens.includes("all") ? null : selectedApp,
+        appId: more ? nextTodoPage.appId : !restParts.length || lowerTokens[0] === "all" ? null : restParts[0],
         humanActionOnly: true,
         limit: todoPageSize,
         ...(more ? { cursor: nextTodoPage.cursor } : {}),
@@ -1639,7 +1539,7 @@ function handleCommand(input) {
         return;
       }
       if (!reply) {
-        printLine(`Read /task ${ref} first, then reply to that displayed proposal.`);
+        printLine(`Read /task ${ref} first, then use /reply for exact feedback or the displayed question/proposal.`);
         return;
       }
       submitHumanInput(conversationInputFrame(input.replace(/^\/reply\s+\S+\s+/i, ""), reply));
@@ -1663,7 +1563,6 @@ function handleCommand(input) {
         printLine("Usage: /watch [ref]");
         return;
       }
-      desiredAutoFollow = null;
       watchedTaskSelectionVersion += 1;
       requestTask({
         kind: "watch-start",
@@ -1679,34 +1578,20 @@ function handleCommand(input) {
         return;
       }
       const pendingWatchStart = pendingTaskReads.some((pending) => pending.kind === "watch-start");
-      if (!watchedTask && !desiredAutoFollow && !pendingWatchStart) {
+      if (!watchedTask && !pendingWatchStart) {
         printNotice("[watch] No Task is watched.");
         return;
       }
-      desiredAutoFollow = null;
       watchedTaskSelectionVersion += 1;
       if (watchedTask) setWatchedTask(null);
       printNotice("[watch] Watch ended. The Task continues.");
       return;
     case "cancel": {
-      if (restParts.length > 1) {
-        printLine("Usage: /cancel [ref]");
+      if (restParts.length !== 1 || !rest) {
+        printLine("Usage: /cancel <ref>. Watching never selects a cancellation target.");
         return;
       }
-      if (rest) {
-        sendFrame({ type: "task.cancel", ref: rest, reason: "human requested cancellation" });
-        return;
-      }
-      if (!watchedTask) {
-        printLine("Usage: /cancel <ref>, or watch a Task first.");
-        return;
-      }
-      sendFrame({
-        type: "task.cancel",
-        appId: watchedTask.appId,
-        taskId: watchedTask.taskId,
-        reason: "human requested cancellation",
-      });
+      sendFrame({ type: "task.cancel", ref: rest, reason: "human requested cancellation" });
       return;
     }
     case "reload":
@@ -1749,15 +1634,6 @@ function commandNeedsConnection(input) {
   return command === "cancel" || command === "reload" || command === "restart";
 }
 
-function flushPendingCommands() {
-  while (pendingCommandLines.length > 0) {
-    const input = pendingCommandLines[0];
-    if (commandNeedsConnection(input) && !connected) return;
-    pendingCommandLines.shift();
-    handleCommand(input);
-  }
-}
-
 function handleInput(line) {
   const input = line.trim();
   if (!input) {
@@ -1767,13 +1643,11 @@ function handleInput(line) {
 
   // Commands are structured control reads/actions and do not depend on the
   // Conversation transcript. Reconnect-safe reads register immediately;
-  // direct controls wait only for a live socket. App selection is local
-  // presentation state, so following commands can use it without waiting for
-  // the asynchronous App read that validates and describes it.
+  // direct controls require a live connection and never queue. App reads and
+  // per-query filters cannot change the ordinary conversation destination.
   if (input.startsWith("/")) {
     if (commandNeedsConnection(input) && !connected) {
-      pendingCommandLines.push(input);
-      printLine("[waiting for daemon; command queued]");
+      printLine("[disconnected] Control not sent or queued. Reconnect and request it explicitly.");
       return;
     }
     handleCommand(input);
@@ -1787,19 +1661,19 @@ function handleInput(line) {
 }
 
 function submitHumanInput(frame) {
+  if (pendingInputFrames.length + pendingHumanWrites.size >= maxPendingInputFrames) {
+    printLine(`[unsent] Message not sent; this Console already holds ${maxPendingInputFrames} pending or unconfirmed messages.`);
+    return;
+  }
   if (!connected) {
-    if (pendingInputFrames.length >= maxPendingInputFrames) {
-      printLine(`[offline] Message not saved; this Console already holds ${maxPendingInputFrames} unsent messages.`);
-      return;
-    }
     pendingInputFrames.push(frame);
-    printLine("[offline] Message saved in this Console; it will send after reconnect.");
+    printLine("[offline] Message saved only in this Console (lost on exit); it will send after reconnect.");
     return;
   }
 
   if (!sendFrame(frame, { receiptKind: "human-turn" })) {
     pendingInputFrames.push(frame);
-    printLine("[offline] Message saved in this Console; it will send after reconnect.");
+    printLine("[offline] Message saved only in this Console (lost on exit); it will send after reconnect.");
   }
   refreshPrompt();
 }

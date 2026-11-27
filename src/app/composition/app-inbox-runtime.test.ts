@@ -354,7 +354,7 @@ describe("App inbox runtime", () => {
     expect(readConversationTopic(db, "may", "may:primary", "topic-review")?.taskRefs).toEqual([]);
   });
 
-  it("continues an exact focused Task when a human replies to it", async () => {
+  it("does not turn passive focus into an exact Task address for ordinary App ingress", async () => {
     mkdirSync(join(root, "may.app"), { recursive: true });
     writeFileSync(
       join(root, "may.app", "app.js"),
@@ -408,9 +408,9 @@ describe("App inbox runtime", () => {
     });
 
     await waitUntil(() => attachments.length === 1);
-    expect(attachments).toEqual([{ kind: "existing", taskId: "decision/deploy" }]);
+    expect(attachments[0]).toMatchObject({ kind: "desired", intent: { outcome: "Answer" } });
     const row = db.prepare("SELECT target_task_id FROM app_inbox_items WHERE source_id = 'human-reply-1'").get();
-    expect(row).toEqual({ target_task_id: "decision/deploy" });
+    expect(row).toEqual({ target_task_id: null });
   });
 
   it("routes a human reply focused on a retained Conversation executor through its stable Conversation", async () => {

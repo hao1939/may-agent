@@ -143,6 +143,8 @@ export type HumanTaskView = {
   humanAction?: HumanTaskAction;
   /** Exact proposal included only in a full Task read. */
   approvalProposal?: ApprovalProposal;
+  /** One actionable ordinary question, from the exact detail snapshot. */
+  humanConditionAnchor?: HumanConditionAnchor;
   /** Exact, bounded diagnostics; never included in compact list cards. */
   diagnostics?: HumanTaskDiagnostics;
   history?: HumanTaskHistory[];
@@ -1377,7 +1379,12 @@ export class HumanTaskService {
       ...(waitingOn.length > 0 ? { waitingOn } : {}),
     };
     const proposal = approvalProposalForTask(detail);
-    const approvalDetail = proposal ? { ...detail, approvalProposal: proposal } : detail;
+    const anchor = humanConditionAnchorForTask(detail);
+    const approvalDetail = {
+      ...detail,
+      ...(proposal ? { approvalProposal: proposal } : {}),
+      ...(anchor ? { humanConditionAnchor: anchor } : {}),
+    };
     const conditions = humanConditions(row);
     if (conditions.length > 0) return withHumanAction(approvalDetail, conditions);
     const inheritedAction = descendantHumanAction(this.db, detail);
@@ -1419,6 +1426,7 @@ export function approvalProposalForTask(task: HumanTaskView | null): ApprovalPro
 /** Correlate one ordinary help reply without turning it into approval or proof. */
 export function humanConditionAnchorForTask(task: HumanTaskView | null): HumanConditionAnchor | null {
   if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
+  if (task.diagnostics?.conditionsTruncated || task.diagnostics?.conditions.some(item => !item.condition)) return null;
   const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
     const condition = item.condition;
     return condition?.status.state !== "true" && isHumanActionOwner(condition?.spec.owner);
