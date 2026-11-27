@@ -1,5 +1,6 @@
 /** Test doubles for the canonical App authoring surface. */
 
+import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import type {
   AppRead,
   CallOptions,
@@ -548,4 +549,207 @@ export function runWorkflowTest<TInput = unknown>(
 ): Promise<WorkflowTestRunResult> {
   return runTargetTest(moduleOrTarget, options);
 }
+
+export type MockModelToolResult = {
+  toolCallId: string;
+  toolName?: string;
+  text: string;
+  isError: boolean;
+};
+
+export type MockModelTurnContext = {
+  callIndex: number;
+  lastUserMessage: string;
+  userMessages: string[];
+  toolResults: MockModelToolResult[];
+  tools: Array<{ name: string; description: string }>;
+};
+
+export type MockModelTurnReply =
+  | string
+  | {
+      text?: string;
+      toolCalls?: Array<{ id?: string; name: string; input: Record<string, unknown> }>;
+      finish?: {
+        status?: "done" | "blocked";
+        summary: string;
+        output?: unknown;
+        facts?: unknown;
+      };
+      usage?: { input?: number; output?: number };
+    };
+
+export type MockModelOptions = {
+  modelId?: string;
+  provider?: string;
+  contextWindow?: number;
+  maxTokens?: number;
+  respond?: MockModelTurnReply | ((ctx: MockModelTurnContext) => MockModelTurnReply | Promise<MockModelTurnReply>);
+};
+
+export interface MockModel {
+  id: string;
+  name: string;
+  api: string;
+  provider: string;
+  baseUrl: string;
+  reasoning: boolean;
+  input: string[];
+  cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
+  contextWindow: number;
+  maxTokens: number;
+}
+
+const MOCK_MODEL_STREAM_SYMBOL = Symbol.for("may-agent.mockModel.streamFn");
+
+function extractMockText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((part) => (part && typeof part === "object" && "text" in part && typeof part.text === "string" ? part.text : ""))
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * Deterministic in-memory fixture model (`eve`-style `mockModel`).
+ * Any agent prepared with this model runs locally with zero network or provider credentials.
+ */
+export function mockModel(
+  replyOrOptions:
+    | MockModelTurnReply
+    | ((ctx: MockModelTurnContext) => MockModelTurnReply | Promise<MockModelTurnReply>)
+    | MockModelOptions = "Mock response",
+): MockModel {
+  const opts: MockModelOptions =
+    typeof replyOrOptions === "object" &&
+    replyOrOptions !== null &&
+    ("respond" in replyOrOptions || "modelId" in replyOrOptions || "contextWindow" in replyOrOptions)
+      ? (replyOrOptions as MockModelOptions)
+      : { respond: replyOrOptions as MockModelOptions["respond"] };
+
+  const model: MockModel = {
+    id: opts.modelId ?? "mock-model",
+    name: opts.modelId ?? "Mock Model",
+    api: "openai-responses",
+    provider: opts.provider ?? "mock",
+    baseUrl: "http://127.0.0.1:0",
+    reasoning: false,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: opts.contextWindow ?? 200_000,
+    maxTokens: opts.maxTokens ?? 16_384,
+  };
+
+  let callIndex = 0;
+  const streamFn = (_runtimeModel: unknown, context: { messages?: unknown[]; tools?: Array<{ name: string; description: string }> }) => {
+    const stream = createAssistantMessageEventStream();
+    const currentCall = callIndex++;
+    void (async () => {
+      try {
+        const rawMessages = Array.isArray(context?.messages) ? (context.messages as Array<Record<string, unknown>>) : [];
+        const userMessages = rawMessages
+          .filter((m) => m?.role === "user")
+          .map((m) => extractMockText(m.content));
+        const toolResults: MockModelToolResult[] = rawMessages
+          .filter((m) => m?.role === "toolResult")
+          .map((m) => ({
+            toolCallId: String(m.toolCallId ?? ""),
+            ...(typeof m.toolName === "string" ? { toolName: m.toolName } : {}),
+            text: extractMockText(m.content),
+            isError: Boolean(m.isError),
+          }));
+        const responder = opts.respond ?? "Mock response";
+        const resolved =
+          typeof responder === "function"
+            ? await responder({
+                callIndex: currentCall,
+                lastUserMessage: userMessages[userMessages.length - 1] ?? "",
+                userMessages,
+                toolResults,
+                tools: Array.isArray(context?.tools) ? context.tools : [],
+              })
+            : responder;
+
+        const normalized = typeof resolved === "string" ? { text: resolved } : resolved;
+        const content: Array<Record<string, unknown>> = [];
+        if (normalized.text) content.push({ type: "text", text: normalized.text });
+        for (const [idx, call] of (normalized.toolCalls ?? []).entries()) {
+          content.push({
+            type: "toolCall",
+            id: call.id ?? `mock_tc_${currentCall}_${idx}`,
+            name: call.name,
+            arguments: call.input,
+          });
+        }
+        if (normalized.finish) {
+          content.push({
+            type: "toolCall",
+            id: `mock_finish_${currentCall}`,
+            name: "finish",
+            arguments: {
+              status: normalized.finish.status ?? "done",
+              summary: normalized.finish.summary,
+              ...(normalized.finish.output !== undefined ? { output: normalized.finish.output } : {}),
+              ...(normalized.finish.facts !== undefined ? { facts: normalized.finish.facts } : {}),
+            },
+          });
+        }
+        const inputTok = normalized.usage?.input ?? 10;
+        const outputTok = normalized.usage?.output ?? 10;
+        const message = {
+          role: "assistant" as const,
+          content,
+          api: model.api,
+          provider: model.provider,
+          model: model.id,
+          usage: {
+            input: inputTok,
+            output: outputTok,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: inputTok + outputTok,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+          },
+          stopReason: (content.some((c) => c.type === "toolCall") ? "toolUse" : "stop") as "toolUse" | "stop",
+          timestamp: Date.now(),
+        };
+        stream.push({ type: "done", reason: message.stopReason, message: message as never });
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        stream.push({
+          type: "error",
+          reason: "error",
+          error: {
+            role: "assistant",
+            content: [],
+            api: model.api,
+            provider: model.provider,
+            model: model.id,
+            usage: {
+              input: 0,
+              output: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 0,
+              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+            },
+            stopReason: "error",
+            errorMessage: errorMsg,
+            timestamp: Date.now(),
+          } as never,
+        });
+      }
+    })();
+    return stream;
+  };
+
+  Object.defineProperty(model, MOCK_MODEL_STREAM_SYMBOL, {
+    value: streamFn,
+    enumerable: false,
+    configurable: false,
+  });
+  return model;
+}
+
 

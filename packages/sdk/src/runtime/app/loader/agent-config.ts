@@ -36,6 +36,8 @@ export interface AgentConfig {
   tools: string[]; // preset names: "coding", "agents", "finish", etc.
   /** Enable automatic context compaction for long-running sessions. */
   compaction?: boolean;
+  /** Restrict direct LLM subagent tool visibility ("workflow" hides from LLM agents tool while allowing workflow calls). */
+  callableFrom?: "all" | "workflow";
   /** @experimental Agent-local synchronous preparer module. Omit for the full brief. */
   contextPreparation?: string;
 }
@@ -61,6 +63,14 @@ export function validateAgentConfig(
     (typeof config.contextPreparation !== "string" || !config.contextPreparation.trim())
   ) {
     errors.push({ agent: name, field: "contextPreparation", message: "Expected a non-empty module path" });
+  }
+
+  if (
+    config.callableFrom !== undefined &&
+    config.callableFrom !== "all" &&
+    config.callableFrom !== "workflow"
+  ) {
+    errors.push({ agent: name, field: "callableFrom", message: 'Expected "all" or "workflow"' });
   }
 
   for (const field of REQUIRED_FIELDS) {
@@ -407,6 +417,7 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     projectId: source.projectId,
     apiKey: options.model.apiKey,
     compaction: config.compaction,
+    ...(config.callableFrom !== undefined ? { callableFrom: config.callableFrom } : {}),
     contextPreparation,
     contextPreparationSource,
     skillCatalog,

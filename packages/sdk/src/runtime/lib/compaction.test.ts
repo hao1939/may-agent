@@ -1090,3 +1090,108 @@ describe("trimAccumulatedSummary", () => {
     expect(result).toContain("earlier compaction rounds trimmed");
   });
 });
+
+// ── Slice 1: usage-calibrated compaction, offloadContent, mockModel ────
+
+describe("usage-calibrated compaction & offloadContent & mockModel", () => {
+  it("calibrates trailing unmeasured CJK/JSON messages from prior assistant usage.input and trims kept tool results <= 50%", async () => {
+    const model = fakeModel(2000);
+    const onCompact = vi.fn();
+    const transform = createCompactionTransform(model, { threshold: 0.6, keepRatio: 0.4, onCompact });
+
+    // Prefix has 200 heuristic tokens, but provider actually billed 500 input tokens (2.5x CJK/JSON density).
+    const billedAssistant: AgentMessage = {
+      ...assistantMsg("分析完成"),
+      usage: {
+        input: 500,
+        output: 20,
+        cacheRead: 0,
+        cacheWrite: 0,
+        totalTokens: 520,
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+      },
+    } as AgentMessage;
+
+    // Appended trailing message has ~900 chars (~300 heuristic tokens, ~750 calibrated tokens -> crosses 1200 threshold!).
+    const hugeToolText = "中".repeat(2600);
+    const messages: AgentMessage[] = [
+      userMsg("请检查所有卡片 " + "甲".repeat(300)),
+      billedAssistant,
+      toolCallMsg("query_db", { sql: "SELECT *" }),
+      toolResultMsg("query_db", hugeToolText),
+    ];
+
+    const compacted = await transform(messages);
+    expect(onCompact).toHaveBeenCalledTimes(1);
+    const keptTool = compacted.find((m) => m.role === "toolResult") as any;
+    expect(keptTool.content[0].text).toContain("[compacted tool output]");
+    expect(keptTool.content[0].text.length).toBeLessThan(2100);
+  });
+
+  it("offloads >20KB structured tool results to tmpdir and runs mockModel without stream boilerplate", async () => {
+    const { mkdtempSync, rmSync, readFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { createFinishTool, createReadTool, executePreparedAgent, prepareAgentExecution } = await import(
+      "@may-agent/sdk/runtime"
+    );
+    const { mockModel } = await import("@may-agent/sdk/testing");
+
+    const root = mkdtempSync(join(tmpdir(), "slice1-harness-"));
+    try {
+      const bigRows = Array.from({ length: 600 }, (_, i) => ({ id: i, title: `Item ${i}`, state: "open" }));
+      const queryTool = {
+        name: "custom_list",
+        label: "Custom List",
+        description: "Returns many rows",
+        parameters: Type.Object({}),
+        execute: async () => ({
+          content: [{ type: "text" as const, text: JSON.stringify(bigRows) }],
+          details: { count: bigRows.length },
+        }),
+      };
+
+      let observedToolText = "";
+      const model = mockModel(({ callIndex, toolResults }) => {
+        if (callIndex === 0) {
+          return { toolCalls: [{ name: "custom_list", input: {} }] };
+        }
+        observedToolText = toolResults[0]?.text ?? "";
+        return {
+          finish: {
+            summary: "Inspected offloaded summary",
+            output: { ok: true },
+          },
+        };
+      });
+
+      const prepared = prepareAgentExecution({
+        definition: {
+          name: "tester",
+          description: "Test agent",
+          domain: "test",
+          systemPrompt: "Test",
+          model: model as any,
+          tools: [createReadTool(root) as any, queryTool as any, createFinishTool({ projectRoot: root })],
+        },
+        projectRoot: root,
+        sessionId: "slice1-session",
+        task: "List items",
+        requireFinish: true,
+        outputSchema: Type.Object({ ok: Type.Boolean() }),
+      });
+
+      const run = await executePreparedAgent(prepared);
+      expect(run.status).toBe("done");
+      expect(run.structuredResult).toEqual({ ok: true });
+      expect(observedToolText).toContain("was saved to ");
+      expect(observedToolText).toContain("JSON array of 600 objects with keys: id, title, state.");
+      const savedPath = observedToolText.match(/was saved to ([^\n]+)\./)?.[1];
+      expect(savedPath).toBeTruthy();
+      expect(JSON.parse(readFileSync(savedPath!, "utf8"))).toHaveLength(600);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+

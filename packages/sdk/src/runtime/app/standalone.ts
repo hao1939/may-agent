@@ -1415,9 +1415,10 @@ export async function runDirectWorkflow<TInput = unknown>(
     signal?: AbortSignal,
   ) => Promise<WorkflowKernelResolvedTarget>;
 
-  const captureCallableDescriptors = (): readonly CallableDescriptor[] => {
+  const captureCallableDescriptors = (excludeWorkflowOnly = false): readonly CallableDescriptor[] => {
     const definitions: CallableDefinition[] = [];
     for (const [name, entry] of preparedCatalog.prompts) {
+      if (excludeWorkflowOnly && entry.definition.config.callableFrom === "workflow") continue;
       const slash = name.indexOf("/");
       if (slash === -1) continue;
       definitions.push({
@@ -1471,8 +1472,13 @@ export async function runDirectWorkflow<TInput = unknown>(
           agents: () => ({
             tools: [createCommonKernelAgentsTool(
               stepControl,
-              captureCallableDescriptors,
-              (target, input, signal) => resolveDirectTarget(agent, target, input, signal),
+              () => captureCallableDescriptors(true),
+              (target, input, signal) => {
+                if (preparedCatalog.prompts?.get(target)?.definition.config.callableFrom === "workflow") {
+                  throw new Error(`Callable target "${target}" is restricted to workflow invocations`);
+                }
+                return resolveDirectTarget(agent, target, input, signal);
+              },
             )],
           }),
         };

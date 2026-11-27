@@ -110,7 +110,10 @@ function estimateTranscriptTokens(messages: AgentMessage[]): number {
   return messages.reduce((sum, message) => sum + estimateMessageTokens(message), 0);
 }
 
-function estimateTokens(messages: AgentMessage[]): number {
+function computeTokensWithScale(
+  messages: AgentMessage[],
+  stickyScale = 1,
+): { tokens: number; scale: number } {
   const isModelMessage = (message: AgentMessage): message is Message =>
     message.role === "system" ||
     message.role === "user" ||
@@ -118,15 +121,30 @@ function estimateTokens(messages: AgentMessage[]): number {
     message.role === "toolResult";
   const modelMessages = messages.filter(isModelMessage);
   const estimate = estimateContextTokens(modelMessages);
-  // The provider estimate excludes coding-agent custom messages. Add those
-  // after its last usage record so they cannot disappear behind a larger billed prefix.
   const usageMessage = estimate.lastUsageIndex === null ? undefined : modelMessages[estimate.lastUsageIndex];
   const usageIndex = usageMessage ? messages.indexOf(usageMessage) : -1;
   const customTrailingTokens = messages
     .slice(usageIndex + 1)
     .filter((message) => !isModelMessage(message))
     .reduce((sum, message) => sum + estimateMessageTokens(message), 0);
-  return Math.max(estimateTranscriptTokens(messages), estimate.tokens + customTrailingTokens);
+  const prefixHeuristic =
+    estimate.lastUsageIndex === null
+      ? 0
+      : estimateTranscriptTokens(modelMessages.slice(0, estimate.lastUsageIndex + 1));
+  const observedScale =
+    prefixHeuristic > 0 && estimate.usageTokens > prefixHeuristic
+      ? Math.min(2.5, estimate.usageTokens / prefixHeuristic)
+      : stickyScale;
+  const heuristicScaled = Math.ceil(estimateTranscriptTokens(messages) * observedScale);
+  const calibratedTotal =
+    estimate.lastUsageIndex === null
+      ? Math.max(heuristicScaled, estimate.tokens + customTrailingTokens)
+      : estimate.usageTokens + Math.ceil((estimate.trailingTokens + customTrailingTokens) * observedScale);
+  return { tokens: Math.max(heuristicScaled, calibratedTotal), scale: observedScale };
+}
+
+function estimateTokens(messages: AgentMessage[], stickyScale = 1): number {
+  return computeTokensWithScale(messages, stickyScale).tokens;
 }
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
@@ -352,15 +370,37 @@ function splitMessages(messages: AgentMessage[], keepRatio: number): number {
   return splitAt;
 }
 
+const KEPT_TOOL_RESULT_MAX_CHARS = 2_000;
+
+function trimKeptToolResults(messages: readonly AgentMessage[]): AgentMessage[] {
+  return messages.map((msg) => {
+    if (msg.role !== "toolResult" || !Array.isArray((msg as any).content)) return msg;
+    let changed = false;
+    const nextContent = (msg as any).content.map((block: any) => {
+      if (!block || block.type !== "text" || typeof block.text !== "string") return block;
+      if (block.text.length <= KEPT_TOOL_RESULT_MAX_CHARS) return block;
+      changed = true;
+      return {
+        ...block,
+        text: `${block.text.slice(0, KEPT_TOOL_RESULT_MAX_CHARS)}…\n[compacted tool output]`,
+      };
+    });
+    return changed ? ({ ...msg, content: nextContent } as AgentMessage) : msg;
+  });
+}
+
 export function createCompactionTransform(model: Model<any>, options: CompactionOptions = {}) {
   const threshold = options.threshold ?? DEFAULT_THRESHOLD;
   const keepRatio = options.keepRatio ?? DEFAULT_KEEP_RATIO;
   let compactionCount = 0;
+  let stickyUsageScale = 1;
 
   return async (messages: AgentMessage[]): Promise<AgentMessage[]> => {
     if (messages.length <= 1) return messages;
 
-    const tokensBefore = estimateTokens(messages);
+    const measured = computeTokensWithScale(messages, stickyUsageScale);
+    stickyUsageScale = measured.scale;
+    const tokensBefore = measured.tokens;
     if (tokensBefore < model.contextWindow * threshold) return messages;
 
     // Pi stores instructions and tool declarations in system messages. Replay
@@ -375,8 +415,12 @@ export function createCompactionTransform(model: Model<any>, options: Compaction
     const compacted = history.slice(0, splitAt);
     const kept = history.slice(splitAt);
     const summary = buildSummary(compacted, previousSummary);
-    const result = [...(baseline ? [baseline] : []), textMessage(summary), ...kept];
-    const tokensAfter = estimateTokens(result);
+    let result = [...(baseline ? [baseline] : []), textMessage(summary), ...kept];
+    let tokensAfter = estimateTokens(result, stickyUsageScale);
+    if (tokensAfter > model.contextWindow * 0.5) {
+      result = [...(baseline ? [baseline] : []), textMessage(summary), ...trimKeptToolResults(kept)];
+      tokensAfter = estimateTokens(result, stickyUsageScale);
+    }
 
     compactionCount += 1;
     options.onCompact?.({
@@ -392,6 +436,7 @@ export function createCompactionTransform(model: Model<any>, options: Compaction
 }
 import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import type { SubagentDefinition } from "./manager-utils.js";
+import { wrapToolsWithOffload } from "./offload-content.js";
 import { createWorkflowFinishTool } from "./tools/lifecycle.js";
 import { createReadTool } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
@@ -1451,7 +1496,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
     options.requireFinish === true || outputSchema !== undefined || options.validateOutput !== undefined;
   const normalizedOptions = { ...options, outputSchema };
   const tools = bindToolsToSession(
-    resolveTools(normalizedOptions, requireFinish),
+    wrapToolsWithOffload(resolveTools(normalizedOptions, requireFinish), options.sessionId),
     options.definition.name,
     options.sessionId,
   );
@@ -1492,6 +1537,10 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
       : "") +
     (options.systemPromptSuffix ? `\n\n${options.systemPromptSuffix}` : "");
 
+  const customMockStream = (options.definition.model as unknown as Record<symbol, unknown> | undefined)?.[
+    Symbol.for("may-agent.mockModel.streamFn")
+  ] as StreamFunction | undefined;
+
   return {
     definition: options.definition,
     sessionId: options.sessionId,
@@ -1504,7 +1553,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
     systemPrompt,
     tools,
     runner: {
-      streamFn: boundedStreamSimple,
+      streamFn: customMockStream ?? boundedStreamSimple,
       sessionId: options.sessionId,
       initialState: {
         systemPrompt,
