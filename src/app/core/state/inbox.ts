@@ -13,7 +13,6 @@ import { linkConversationRequestTask } from "./conversation-requests.js";
 import { linkConversationTopicTask } from "./conversations.js";
 import { assertResourceCreator } from "./resource-creator.js";
 import { AppTaskAdmissionError } from "./task-admission-error.js";
-import { currentHumanTaskReply, readHumanTaskReply, type HumanTaskReply } from "../events/task-reply.js";
 
 export class AppTaskRevisionAdmissionError extends AppTaskAdmissionError {
   readonly name = "AppTaskRevisionAdmissionError";
@@ -179,10 +178,6 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
       intent = { ...intent, parentId: current.spec.parentId };
     }
   }
-  const pendingReply = validatePendingHumanTaskReply(
-    { ...input, taskId: intent.id },
-    config.resourceStore.db,
-  );
   return observeAppTaskIntent(config, {
     intent,
     creator: input.creator,
@@ -190,75 +185,43 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
     appAgent: config.agent,
     admissionKey: idempotencyKey,
     trigger: {
-      ...taskInputRequestEvent(
-        { ...input, taskId: intent.id, agent: config.agent },
-        config.resourceStore.db,
-        pendingReply,
-      ),
+      ...taskInputRequestEvent({ ...input, taskId: intent.id, agent: config.agent }),
       ...(input.inputEventId !== undefined ? { eventId: input.inputEventId } : {}),
     },
   });
 }
 
-function validatePendingHumanTaskReply(
-  input: {
-    appId: string;
-    taskId: string;
-    inputContext: Readonly<AppInputContext>;
-    inboxInputId?: string;
-  },
-  db: SqliteDb,
-): HumanTaskReply | null {
-  if (input.inputContext.source.kind !== "human") return null;
+/** Pure canonical request shared by atomic admission and its journal publication. */
+export function taskInputRequestEvent(input: {
+  appId: string;
+  taskId: string;
+  agent: string;
+  idempotencyKey: string;
+  inputContext: Readonly<AppInputContext>;
+}) {
+  const idempotencyKey = input.idempotencyKey.trim();
   const data = input.inputContext.input.data;
   const context =
-    data && typeof data === "object" && !Array.isArray(data)
-      ? (data as Record<string, unknown>).context
-      : undefined;
-  const contextObj =
+    data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).context : undefined;
+  const displayed =
     context && typeof context === "object" && !Array.isArray(context)
-      ? (context as Record<string, unknown>)
+      ? (context as Record<string, unknown>).displayedHumanCondition
       : undefined;
-  if (!contextObj || contextObj.taskReply === undefined) return null;
-  const reply = readHumanTaskReply(contextObj, {
-    db,
-    hasExactApp: (candidate) => candidate === input.appId,
-  });
-  const item = input.inboxInputId ? getAppInboxItem(db, input.inboxInputId) : null;
-  if (
-    !reply ||
-    reply.target.appId !== input.appId ||
-    reply.target.taskId !== input.taskId ||
-    (item && (item.targetTaskId !== input.taskId || item.targetTaskGeneration !== reply.taskGeneration)) ||
-    !currentHumanTaskReply(db, reply)
-  ) {
-    throw new AppTaskAdmissionError(
-      "The displayed Task question or proposal changed before admission; inspect the current Task before sending new input",
-    );
-  }
-  return reply;
-}
-
-/** Canonical request shared by atomic admission and its journal publication.
- * Question receipt authority is revalidated against owning state, not display context. */
-export function taskInputRequestEvent(
-  input: {
-    appId: string;
-    taskId: string;
-    agent: string;
-    idempotencyKey: string;
-    inputContext: Readonly<AppInputContext>;
-    inboxInputId?: string;
-  },
-  db: SqliteDb,
-  validatedReply?: HumanTaskReply | null,
-) {
-  const idempotencyKey = input.idempotencyKey.trim();
-  const reply =
-    validatedReply !== undefined
-      ? validatedReply
-      : validatePendingHumanTaskReply(input, db);
-  const correlatedHumanCondition = reply?.condition ?? {};
+  const displayedHumanCondition =
+    displayed && typeof displayed === "object" && !Array.isArray(displayed)
+      ? (displayed as Record<string, unknown>)
+      : undefined;
+  const correlatedHumanCondition =
+    input.inputContext.source.kind === "human" &&
+    typeof displayedHumanCondition?.conditionId === "string" &&
+    Number.isSafeInteger(displayedHumanCondition.conditionGeneration) &&
+    Number.isSafeInteger(displayedHumanCondition.taskGeneration)
+      ? {
+          conditionId: displayedHumanCondition.conditionId,
+          conditionGeneration: displayedHumanCondition.conditionGeneration,
+          taskGeneration: displayedHumanCondition.taskGeneration,
+        }
+      : {};
   return {
     type: "app.task.requested",
     source:

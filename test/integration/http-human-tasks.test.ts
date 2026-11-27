@@ -813,60 +813,6 @@ describe("HTTP human Task reads and board", () => {
   });
 
 
-  test.skipIf(skipBrowser)("May navigation discovers canonical bounded human actions without taking the draft or operator route", async () => {
-    seedChat();
-    // These Apps are intentionally absent from the registry; disabling cannot hide obligations.
-    for (let n = 0; n < 21; n++) {
-      const appId = n % 2 ? "disabled" : "alpha";
-      const id = `choice-${n}`;
-      task(id, n + 10, "waiting", appId);
-      db.prepare("UPDATE app_tasks SET resource_json = json_set(resource_json, '$.status.conditionIds', json(?)) WHERE app_id = ? AND task_id = ?")
-        .run(JSON.stringify([id]), appId, id);
-      db.prepare("INSERT INTO app_task_conditions(app_id, condition_id, state, condition_json) VALUES (?, ?, 'unknown', ?)")
-        .run(appId, id, JSON.stringify({ metadata: { id, generation: 1, resourceVersion: 1 },
-          spec: { type: "fixture.question", subject: id, owner: "human", requestedAction: `Choose environment ${n}` },
-          status: { state: "unknown" } }));
-      db.prepare("INSERT INTO app_task_condition_routes(app_id, task_id, condition_id) VALUES (?, ?, ?)").run(appId, id, id);
-    }
-    task("not-a-human-action", 100, "attention");
-    expect(service.listTasks({ humanActionOnly: true, limit: 20 }).items).toHaveLength(20);
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
-    try {
-      const page = await browser.newPage(); page.setDefaultTimeout(5000);
-      await page.goto(base, { waitUntil: "domcontentloaded" });
-      await page.waitForSelector("#may-nav:not([hidden])");
-      await page.click("#may-nav");
-      await page.waitForFunction(() => location.pathname === "/agents/helper" && !document.querySelector("#chat")!.classList.contains("hidden"));
-      await page.waitForFunction("isMayConversation()");
-      await page.type("#chat-input", "Keep this discussion draft");
-      await page.click("#human-action-discovery summary");
-      await page.waitForFunction(() => document.querySelector("#human-action-list")!.textContent!.includes("20 shown of 21"));
-      expect(await page.$eval("#human-action-list", el => el.textContent)).toContain("disabled");
-      expect(await page.$eval("#human-action-list", el => el.textContent)).not.toContain("not-a-human-action");
-      await page.evaluate(() => [...document.querySelectorAll<HTMLButtonElement>("#human-action-list button")]
-        .find(button => button.textContent === "Next human actions")!.click());
-      await page.waitForFunction(() => document.querySelector("#human-action-list")!.textContent!.includes("1 shown"));
-      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Keep this discussion draft");
-      expect(published).toHaveLength(0);
-      // A stalled action read cannot undo later explicit navigation or take the composer.
-      await page.setRequestInterception(true);
-      const intercepted = Promise.withResolvers<import("puppeteer-core").HTTPRequest>();
-      page.on("request", request => {
-        if (request.url().includes("/api/tasks?") && request.url().includes("humanActionOnly")) intercepted.resolve(request);
-        else void request.continue();
-      });
-      await page.evaluate("void loadMayHumanActions()");
-      await page.waitForFunction(() => document.querySelector("#human-action-list")!.textContent!.includes("Reading"));
-      const held = await intercepted.promise;
-      await page.evaluate("routeTo('/metrics')");
-      await held.continue();
-      await page.waitForNetworkIdle({ idleTime: 50 });
-      expect(new URL(page.url()).pathname).toBe("/metrics");
-      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Keep this discussion draft");
-      expect(published).toHaveLength(0);
-    } finally { await browser.close(); }
-  });
-
   test.skipIf(skipBrowser)("specialist agents expose Overview and About with no session composer", async () => {
     const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     try {

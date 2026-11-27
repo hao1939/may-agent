@@ -60,8 +60,6 @@ import { conversationTaskId } from "../core/state/conversation-identity.js";
 import { listConversationTaskLinks } from "../core/state/conversation-task-links.js";
 import { readPendingConversationTaskChangePage, type ConversationTaskChangeCursor, type ConversationTaskChangeRef } from "../core/state/retained-conversation-task-returns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
-import { getAppInboxItem, hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
-import { currentHumanTaskReply, readHumanTaskReply } from "../core/events/task-reply.js";
 import { observationDemandReader, readTaskObservationInterests } from "../core/state/observation-demand.js";
 
 export type AppRegistryReloadPreparation = (input: {
@@ -834,12 +832,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     )
         return { accepted: true, by: "task-runtime-notification", route: "direct" };
       if (String(event.type) === "project.task.reconcile.started" || String(event.type) === "project.task.reconciled") {
-        const rows = options.db
-          .prepare(
-            `SELECT DISTINCT conversation_id FROM app_inbox_items
-            WHERE app_id = ? AND conversation_id IS NOT NULL AND
-              (execution_task_id = ? OR (waiting_on_kind = 'task' AND waiting_on_id = ?))`,
-          )
+      const rows = options.db
+        .prepare(
+          `SELECT DISTINCT conversation_id FROM app_inbox_items
+          WHERE app_id = ? AND conversation_id IS NOT NULL AND
+            (execution_task_id = ? OR (waiting_on_kind = 'task' AND waiting_on_id = ?))`,
+        )
           .all(String(data.project ?? ""), String(data.taskId ?? ""), String(data.taskId ?? ""));
         for (const row of rows) notifyConversationUpdated(String(data.project), String(row.conversation_id));
       }
@@ -873,71 +871,26 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
               ? (data.metadata as Record<string, unknown>)
               : {};
-          const approval = deliverConversationApproval(event, options.db, options.bus, (id) => host.hasExactApp(id));
+          const approval = deliverConversationApproval(event, options.db, options.bus);
           const persistedEventId = eventRowId(event);
           const fallbackSequence =
             typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
               ? metadata.channelMessageId
               : undefined;
-          // Preserve the surface's Topic as input context, not a committed turn decision.
+          // Preserve the surface's Topic and any replied card as Conversation
+          // context for May; Conversation messages never bypass into targetTaskId.
           const context: Record<string, unknown> = {
             ...record(data.context),
+            ...(data.taskReply && typeof data.taskReply === "object" && !Array.isArray(data.taskReply)
+              ? { taskReply: data.taskReply }
+              : {}),
             ...(approval ? { approval } : {}),
             ...(typeof metadata.topicId === "string" && metadata.topicId.trim()
               ? { conversationTopicId: metadata.topicId.trim() }
               : {}),
           };
-          // Resolve any already-saved inbox row for this journal event before
-          // revalidating a card so an uncertain-ack retry preserves its route.
-          const prior = persistedEventId
-            ? (options.db
-                .prepare("SELECT id FROM app_inbox_items WHERE origin_event_id = ? ORDER BY created_at, id LIMIT 1")
-                .get(persistedEventId) as { id: string } | undefined)
-            : undefined;
-          if (prior) {
-            const item = getAppInboxItem(options.db, prior.id)!;
-            host.recoverAdmission(item.id);
-            notifyConversationUpdated(item.appId, item.conversationId);
-            return { accepted: true, by: `conversation:${conversationId}:app-inbox:${item.appId}` };
-          }
-          const suppliedReply = readHumanTaskReply(data, {
-            trustedTelegram: event.source === "telegram",
-            hasExactApp: (id) => host.hasExactApp(id),
-            db: options.db,
-          });
-          const resolvedReplyAppId = suppliedReply ? host.resolveAppId(suppliedReply.target.appId) : undefined;
-          const resolvedReply =
-            suppliedReply && resolvedReplyAppId
-              ? { ...suppliedReply, target: { ...suppliedReply.target, appId: resolvedReplyAppId } }
-              : null;
-          // Conversation messages never jump into another App's inbox: cross-App
-          // non-decision replies remain in the configured Conversation with card
-          // context for May, while formal decisions emit project.approval.submitted.
-          const crossAppReply = Boolean(resolvedReply && resolvedReply.target.appId !== appId);
-          const sameAppReply =
-            resolvedReply &&
-            resolvedReply.target.appId === appId &&
-            !hasConversationExecutionTask(options.db, appId, resolvedReply.target.taskId) &&
-            currentHumanTaskReply(options.db, resolvedReply)
-              ? resolvedReply
-              : null;
-          delete context.taskReply;
-          if (sameAppReply) {
-            context.taskReply = sameAppReply;
-          } else if (crossAppReply && currentHumanTaskReply(options.db, resolvedReply!)) {
-            context.referencedTaskReply = resolvedReply;
-          } else if (data.taskReply || suppliedReply) {
-            context.taskReplyNotice =
-              "The displayed Task/question is unavailable or changed. Text retained as ordinary conversation; inspect it again to act.";
-          }
           const admitted = receiveInput({
             appId,
-            ...(sameAppReply
-              ? {
-                  targetTaskId: sameAppReply.target.taskId,
-                  targetTaskGeneration: sameAppReply.taskGeneration,
-                }
-              : {}),
             source: { kind: "human", id: authorId },
             input: {
               kind: "message",

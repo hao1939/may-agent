@@ -78,8 +78,6 @@ export type AdmitAppInput = {
   targetTaskGeneration?: number;
   /** Existing Conversation Topic that this admitted work belongs to. */
   topicId?: string;
-  /** Trusted return address, independent of exact work ownership. */
-  conversationAppId?: string;
   conversationId?: string;
   conversationSequence?: number;
   channel?: string;
@@ -96,8 +94,6 @@ export type AdmitAppInput = {
 export type AppInboxFailure = {
   agent?: string;
   requestId?: string;
-  /** Trusted return address, independent of exact work ownership. */
-  conversationAppId?: string;
   conversationId?: string;
   appId?: string;
   taskId?: string;
@@ -226,21 +222,8 @@ export class AppInboxHost {
     return [...this.#apps.keys()].sort();
   }
 
-  hasExactApp(appId: string): boolean {
-    return this.#apps.has(appId.trim());
-  }
-
-  resolveAppId(appId: string): string | undefined {
-    const raw = appId.trim();
-    if (!raw) return undefined;
-    if (this.#apps.has(raw)) return raw;
-    if (!raw.endsWith(".app")) return undefined;
-    const alias = raw.slice(0, -".app".length);
-    return alias && this.#apps.has(alias) ? alias : undefined;
-  }
-
   hasApp(appId: string): boolean {
-    return this.resolveAppId(appId) !== undefined;
+    return this.#apps.has(appId.trim().replace(/\.app$/, ""));
   }
 
   /** Atomically replace the live App definitions after a validated reload. */
@@ -422,8 +405,7 @@ export class AppInboxHost {
 
   #requiredApp(appId: string): RegisteredApp {
     const normalized = requiredText(appId, "App id");
-    const resolved = this.resolveAppId(normalized);
-    const app = resolved ? this.#apps.get(resolved) : undefined;
+    const app = this.#apps.get(normalized);
     if (!app) throw new Error(`Unknown App: ${normalized}`);
     return app;
   }

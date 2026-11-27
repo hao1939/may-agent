@@ -11,7 +11,6 @@ import { admitConversationTaskInput } from "../../src/app/core/state/conversatio
 import { admitTaskInput } from "../../src/app/core/state/inbox.js";
 import {
   claimObservedAppTask,
-  completeAppTask,
   deferAppTask,
   observeAppTaskIntent,
   recordAppTaskTrigger,
@@ -391,51 +390,20 @@ describe("telegram reply e2e", () => {
         },
       });
       await waitFor(() =>
-        expect(
-          db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'answer'").get(),
-        ).toEqual({ count: 1 }),
+        expect(ordinaryReply(13).input.data).toMatchObject({
+          message: "red",
+          context: {
+            focusedTask: { appId: "may", taskId: "answer" },
+            displayedHumanCondition: { taskGeneration: 1, conditionId: "answer-choice", conditionGeneration: 2 },
+          },
+        }),
       );
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'answer'").get()).toEqual({
+        count: 0,
+      });
       expect(store.readTaskContext({ taskIds: ["answer"] }).conditions?.["answer-choice"]?.status.state).toBe(
         "unknown",
       );
-      const answerClaim = claimObservedAppTask(config, { taskId: "answer", appAgent: "may", handler: "agent" });
-      if (answerClaim.kind !== "claimed") throw new Error("Expected current-answer claim");
-      const answerEvent = answerClaim.events
-        .map(({ event }) => event)
-        .find(
-          (event) => event.type === "app.task.requested" && (event.data.request as any)?.input?.data?.message === "red",
-        );
-      expect(answerEvent?.data).toMatchObject({
-        conditionId: "answer-choice",
-        conditionGeneration: 2,
-        taskGeneration: 1,
-      });
-      const answerRequest = answerEvent?.data.request as any;
-      expect(answerRequest.input.data).toMatchObject({
-        message: "red",
-        context: {
-          focusedTask: { appId: "may", taskId: "answer" },
-          displayedHumanCondition: { taskGeneration: 1, conditionId: "answer-choice", conditionGeneration: 2 },
-        },
-      });
-      expect(
-        completeAppTask(config, answerClaim, {
-          summary: "The human answered the displayed question",
-          facts: ["answer:red"],
-          actions: [
-            {
-              kind: "retire-condition",
-              conditionId: "answer-choice",
-              expectedConditionGeneration: 2,
-              reason: "The reply answered the exact displayed question",
-            },
-          ],
-          acceptedLiveEventIds: answerClaim.events
-            .map(({ event }) => Number(event.eventId))
-            .filter(Number.isSafeInteger),
-        }),
-      ).toMatchObject({ status: "applied", actionsApplied: ["retired condition answer-choice generation 2"] });
-      expect(store.readTaskContext({ taskIds: ["answer"] }).conditions?.["answer-choice"]).toBeUndefined();
       expect(routedEvents.filter((event) => event.type === "subscriber.failed")).toEqual([]);
 
       const externalCondition = {
@@ -468,24 +436,23 @@ describe("telegram reply e2e", () => {
         },
       });
       await waitFor(() =>
-        expect(
-          db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'external'").get(),
-        ).toEqual({ count: 1 }),
+        expect(ordinaryReply(14).input.data).toMatchObject({
+          message: "done",
+          context: {
+            focusedTask: { appId: "may", taskId: "external" },
+            displayedHumanCondition: displayed.humanCondition,
+          },
+        }),
       );
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'external'").get()).toEqual({
+        count: 0,
+      });
       expect(store.readTaskContext({ taskIds: ["external"] }).conditions?.["deployment-proof"]?.status.state).toBe(
         "unknown",
       );
+      recordAppTaskTrigger(config, "external", { type: "test.reconsider", eventId: 91, data: {} });
       const externalClaim = claimObservedAppTask(config, { taskId: "external", appAgent: "may", handler: "agent" });
-      if (externalClaim.kind !== "claimed") throw new Error("Expected external-action reply claim");
-      const externalRequest = externalClaim.events.find(({ event }) => event.type === "app.task.requested")?.event.data
-        .request as any;
-      expect(externalRequest.input.data).toMatchObject({
-        message: "done",
-        context: {
-          focusedTask: { appId: "may", taskId: "external" },
-          displayedHumanCondition: displayed.humanCondition,
-        },
-      });
+      if (externalClaim.kind !== "claimed") throw new Error("Expected external-action claim");
       const acceptedLiveEventIds = externalClaim.events
         .map(({ event }) => Number(event.eventId))
         .filter(Number.isSafeInteger);
@@ -533,7 +500,7 @@ describe("telegram reply e2e", () => {
         message: "later", context: { focusedTask: { appId: "may", taskId: "external" } },
       }));
       expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'external'").get())
-        .toEqual({ count: 1 });
+        .toEqual({ count: 0 });
       const openConditions = store.readTaskContext({ taskIds: ["external"] }).resources?.external?.status.conditionIds;
       expect(openConditions).toEqual(["deployment-proof", "rollout-window"]);
 

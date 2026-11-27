@@ -1,4 +1,3 @@
-import { currentHumanTaskReply, readHumanTaskReply } from "./task-reply.js";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -129,33 +128,6 @@ describe("Host verified approval contract", () => {
       expect(tree.conditions.tests.status.state).toBe("unknown");
       expect(tree.resources.work.status.result).toEqual({ retained: "previous accepted result" });
     }
-  });
-
-  it("keeps valid legacy proposal feedback but never selects a replaced proposal as Task feedback", () => {
-    const { db, proposal } = fixture();
-    const frame = { replyTo: "shown-card", text: "Please simplify before approval",
-      approvalReply: { target: { appId: "sample", taskId: "work" }, proposal } };
-    const reply = readHumanTaskReply(frame)!;
-    expect(currentHumanTaskReply(db, reply)).toBe(true);
-    for (const changed of [
-      { conditionGeneration: 2 }, { requestedAction: "Different action" }, { expected: { allowedDecisions: ["reject"] } },
-    ]) expect(currentHumanTaskReply(db, readHumanTaskReply({ ...frame,
-      approvalReply: { ...frame.approvalReply, proposal: { ...proposal, ...changed } } })!)).toBe(false);
-    // The shipped Console frame adds taskReply, but must retain the exact proposal.
-    const dual = { ...frame, taskReply: { target: frame.approvalReply.target, taskGeneration: 1 } };
-    expect(readHumanTaskReply(dual)!.proposal).toEqual(proposal);
-    expect(currentHumanTaskReply(db, readHumanTaskReply(dual)!)).toBe(true);
-    expect(currentHumanTaskReply(db, readHumanTaskReply({ ...dual,
-      approvalReply: { ...frame.approvalReply, proposal: { ...proposal, conditionGeneration: 2 } } })!)).toBe(false);
-    expect(readHumanTaskReply({ ...dual, taskReply: { ...dual.taskReply, taskGeneration: 2 } })).toBeNull();
-    expect(readHumanTaskReply({ ...dual, taskReply: { ...dual.taskReply,
-      target: { appId: "other", taskId: "work" } } })).toBeNull();
-    expect(readHumanTaskReply({ ...dual, replyTo: undefined })).toBeNull();
-    expect(readHumanTaskReply({ ...dual, taskReply: { ...dual.taskReply,
-      proposal: { ...proposal, requestedAction: "Another proposal" } } })).toBeNull();
-    // A separate deliberate generation-fenced feedback gesture is not a decision.
-    expect(currentHumanTaskReply(db, readHumanTaskReply({ taskReply: dual.taskReply })!)).toBe(true);
-    expect(db.prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = 'project.approval.submitted'").get()!.n).toBe(0);
   });
 
   it("denies forged and stale decisions and makes exact replay safe", () => {
