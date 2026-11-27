@@ -190,14 +190,14 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
 
     const attemptCandidates = db
       .prepare(
-        `WITH candidate_keys AS (
-           SELECT app_id, attempt_id FROM app_task_attempts
+        `WITH candidate_keys AS MATERIALIZED (
+           SELECT app_id, attempt_id FROM app_task_attempts INDEXED BY idx_app_task_attempts_running_started
            WHERE state = 'running'
            UNION
-           SELECT app_id, attempt_id FROM app_task_attempts
+           SELECT app_id, attempt_id FROM app_task_attempts INDEXED BY idx_app_task_attempts_started
            WHERE started_at > ?
            UNION
-           SELECT app_id, attempt_id FROM app_task_attempts
+           SELECT app_id, attempt_id FROM app_task_attempts INDEXED BY idx_app_task_attempts_finished_ms
            WHERE state IN ('completed', 'failed', 'interrupted')
              AND CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER) > ?
          )
@@ -216,10 +216,9 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
              NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
              NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
            ) AS owner
-         FROM candidate_keys ck
-         JOIN app_task_attempts a ON a.app_id = ck.app_id AND a.attempt_id = ck.attempt_id
+         FROM candidate_keys ck CROSS JOIN app_task_attempts a ON a.app_id = ck.app_id AND a.attempt_id = ck.attempt_id
          LEFT JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
-         ORDER BY a.started_at DESC
+         ORDER BY a.started_at DESC, a.app_id ASC, a.attempt_id ASC
          LIMIT ${ATTEMPT_TIMELINE_ROW_LIMIT + 1}`,
       )
       .all(since, since) as Array<{

@@ -13,8 +13,6 @@ export * from "@may-agent/sdk/runtime";
 /** Host capability profile persisted with a session so recovery cannot broaden its tools. */
 export type ToolPolicy = "full" | "readonly";
 
-const READONLY_TOOL_ALLOWLIST = new Set(["finish", "reconcile", "query_db", "task_inspect", "read"]);
-
 export type AgentPreparationOptions = Omit<SdkAgentPreparationOptions, "toolPolicy"> & {
   taskContext?: TaskExecutionContext;
   taskDecisionContext?: () => Promise<AgentMessage>;
@@ -62,13 +60,8 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
   const finishFactory = createFinish ?? (originalFinish ? () => originalFinish : undefined);
   return prepareSdkAgentExecution({
     ...sdkOptions,
-    definition: {
-      ...registeredDefinition,
-      tools: toolPolicy === "readonly"
-        ? registeredDefinition.tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name))
-        : [...registeredDefinition.tools],
-    },
-    toolPolicy: "full",
+    definition: registeredDefinition,
+    toolPolicy,
     sourceRoot,
     contextMessages,
     ...(finishFactory ? { createFinish: finishFactory } : {}),

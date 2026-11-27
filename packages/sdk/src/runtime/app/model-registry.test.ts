@@ -25,6 +25,14 @@ describe("model registry", () => {
       apiKey: "endpoint-key",
       contextWindow: 200_000,
     });
+    expect(registry["github_copilot/gemini-4-carbon"]).toMatchObject({
+      id: "github_copilot/gemini-4-carbon", name: "Gemini 4 Carbon", api: "openai-responses",
+      provider: "github-copilot", baseUrl: "http://model-endpoint:4000", apiKey: "endpoint-key",
+      contextWindow: 200_000, maxTokens: 65_536,
+      compat: { supportsStore: false, supportsDeveloperRole: false, supportsReasoningEffort: false },
+    });
+    expect(registry["github_copilot/gemini-4-carbon"]?.fallbackModel).toBeUndefined();
+    expect(Number.isNaN(registry["github_copilot/gemini-4-carbon"]?.cost.input)).toBe(true);
     expect(registry["gpt-6.1-sol"]).toMatchObject({
       id: "gpt-6.1-sol",
       baseUrl: "http://model-endpoint:4000",
@@ -135,7 +143,7 @@ describe("model registry", () => {
         Type.Object({ decision: Type.Literal("blocked"), reason: Type.String() }),
       ]),
     });
-    for (const name of ["gpt-5.4", "gpt-5.5", "gpt-5.6-sol", "gpt-6.1-sol", "gpt-6.2-sol", "gemini-4-argon", "deepseek-v4-flash"]) {
+    for (const name of ["gpt-5.4", "gpt-5.5", "gpt-5.6-sol", "gpt-6.1-sol", "gpt-6.2-sol", "gemini-4-argon", "github_copilot/gemini-4-carbon", "deepseek-v4-flash"]) {
       let payload: unknown;
       const model = registry[name]!;
       const response = streamSimple(

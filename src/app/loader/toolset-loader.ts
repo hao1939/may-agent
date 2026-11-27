@@ -116,15 +116,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
           projectRoot,
         });
         tools.push(finishTool);
-        if (!tools.some((t) => t.name === "reconcile")) {
-          tools.push({
-            ...finishTool,
-            name: "reconcile",
-            label: "Reconcile Turn",
-            description:
-              "Commit this Task attempt's reconciliation decision (state: 'waiting' | 'converged' | 'incomplete', summary, facts, and optional continue, inputKeys, requests, conditions, actions, communication) and end the current turn.",
-          });
-        }
         break;
       }
 

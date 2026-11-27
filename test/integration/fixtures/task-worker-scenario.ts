@@ -388,7 +388,9 @@ async function runCoordination() {
         }
       `,
     );
-    await run(f);
+    // Process startup has its own watchdog; the installed work ceiling below
+    // must remain 1000ms even on a busy test host.
+    await run(f, false, 10_000);
     const current = f.store.readTask("work/one")!;
     assert.equal(f.store.readTaskWorkspace("work/one", 1), undefined, "Coordination must not allocate a Task worktree");
     if (hangs) {

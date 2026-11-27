@@ -130,6 +130,8 @@ export interface RunOptions {
   validateOutput?: (result: unknown) => string | null;
   /** Current-invocation finish binding supplied by a trusted caller; never serialized. */
   createFinish?: () => AgentTool;
+  /** Trusted current-invocation bindings; never persisted or inherited by helpers. */
+  toolBindings?: readonly AgentTool[];
   /** Restrict the supplied capabilities for this session. */
   toolPolicy?: ToolPolicy;
   /** Effective filesystem root supplied by an enclosing workflow/task. */
@@ -157,6 +159,7 @@ export type CallAgentOptions = Pick<
   | "outputSchema"
   | "validateOutput"
   | "createFinish"
+  | "toolBindings"
   | "toolPolicy"
   | "executionRoot"
   | "deadlineAt"
@@ -449,6 +452,7 @@ export class SubagentManager {
             createFinishTool({
               projectRoot: opts?.executionRoot ?? def.projectRoot ?? this._projectRoot,
             })),
+        toolBindings: opts?.toolBindings,
         bashProcessGroupOwner: { persistDir: this._persistDir, sessionId },
         onCompact: (info, messages) => {
           log(
@@ -793,6 +797,7 @@ export class SubagentManager {
       outputSchema: opts?.outputSchema,
       validateOutput: opts?.validateOutput,
       createFinish: opts?.createFinish,
+      toolBindings: opts?.toolBindings,
       toolPolicy: opts?.toolPolicy,
       executionRoot: opts?.executionRoot,
     });

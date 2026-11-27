@@ -167,6 +167,7 @@ export const LEGACY_ENDPOINT_MODELS = {
 const ENDPOINT_CONTEXT_WINDOWS = {
   "gpt-6-astra": 400_000,
   "gemini-4-argon": 200_000,
+  "github_copilot/gemini-4-carbon": 200_000,
   "gpt-6.1-sol": 400_000,
   "gpt-6.2-sol": 400_000,
   "claude-opus-4-6": 72_000,
@@ -216,6 +217,29 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
       // catalog's Chat Completions protocol, and advertises a 200k input cap.
       api: "openai-responses",
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["gemini-4-argon"],
+      baseUrl,
+      apiKey,
+    },
+    "github_copilot/gemini-4-carbon": {
+      // The configured gateway advertises this provider-qualified route. Keep
+      // its exact identity; the upstream Pi catalog does not contain Carbon.
+      id: "github_copilot/gemini-4-carbon",
+      name: "Gemini 4 Carbon",
+      api: "openai-responses",
+      provider: "github-copilot",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: ENDPOINT_CONTEXT_WINDOWS["github_copilot/gemini-4-carbon"],
+      maxTokens: 65_536,
+      // No verified token tariff is available for this gateway route.
+      cost: { input: Number.NaN, output: Number.NaN, cacheRead: Number.NaN, cacheWrite: Number.NaN },
+      headers: {
+        "User-Agent": "GitHubCopilotChat/0.35.0",
+        "Editor-Version": "vscode/1.107.0",
+        "Editor-Plugin-Version": "copilot-chat/0.35.0",
+        "Copilot-Integration-Id": "vscode-chat",
+      },
+      compat: { supportsStore: false, supportsDeveloperRole: false, supportsReasoningEffort: false },
       baseUrl,
       apiKey,
     },

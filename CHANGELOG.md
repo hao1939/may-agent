@@ -1,5 +1,24 @@
 # Changelog
 
+## [6.1.0](https://github.com/hao1939/may-agent/compare/v6.0.0...v6.1.0) (2026-11-26)
+
+
+### Features
+
+* **context:** preserve hot human turns, open requests, and executive Task summary/facts ([#614](https://github.com/hao1939/may-agent/issues/614)) ([bfde0dc](https://github.com/hao1939/may-agent/commit/bfde0dc2429b1bf67aabebb9e68ef7516f2ff27d))
+* **tasks:** allow App closeOnResult policy to close finite delegated Tasks on convergence ([#623](https://github.com/hao1939/may-agent/issues/623)) ([9f352ba](https://github.com/hao1939/may-agent/commit/9f352bae6de659c8b457e8013f8123c18d686ba1))
+* **tools:** add task_inspect system state inspector and flat reconcile turn settlement ([#617](https://github.com/hao1939/may-agent/issues/617)) ([9f37aae](https://github.com/hao1939/may-agent/commit/9f37aaee7834834f15d8f6d17e163658b7f8d384))
+* **webui,metrics:** add top-down Host and Apps observability and scorecards ([#627](https://github.com/hao1939/may-agent/issues/627)) ([af51a5d](https://github.com/hao1939/may-agent/commit/af51a5da14af2361436a09132406bf70b29d9935))
+
+
+### Bug Fixes
+
+* **observability:** align Host settlement and burden metrics to Host failure taxonomy ([#629](https://github.com/hao1939/may-agent/issues/629)) ([88cf0f1](https://github.com/hao1939/may-agent/commit/88cf0f1bac3c5a59f132ffb4c38aeca56ac40f7c))
+* **runtime:** share helper preparation and preserve Task invocation ownership ([#631](https://github.com/hao1939/may-agent/issues/631)) ([20f1a43](https://github.com/hao1939/may-agent/commit/20f1a43042d0aa7bb6323319af521f98ee35e866))
+* **sdk:** support provider-qualified Gemini Carbon execution ([#632](https://github.com/hao1939/may-agent/issues/632)) ([1d22e1f](https://github.com/hao1939/may-agent/commit/1d22e1f49f792ccf4cf0018b1cacf99c23ba2fa9))
+* **tasks:** continue timer-only waits on new input and emit waiting conditions ([#616](https://github.com/hao1939/may-agent/issues/616)) ([35902a8](https://github.com/hao1939/may-agent/commit/35902a8ebaf4034aa07c2444bf2c0b75f10189c0))
+* **tasks:** deliver admitted inbox input to active executors ([#622](https://github.com/hao1939/may-agent/issues/622)) ([6d163d3](https://github.com/hao1939/may-agent/commit/6d163d3a19817a1e90921fd438a0bbd21009417d))
+
 ## [6.0.0](https://github.com/hao1939/may-agent/compare/v5.6.0...v6.0.0) (2026-11-19)
 
 
