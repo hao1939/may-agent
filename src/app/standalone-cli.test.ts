@@ -277,6 +277,13 @@ export async function execute(ctx) {
       writeFileSync(
         join(appDir, "app.ts"),
         `import { defineObserver } from "@may-agent/sdk/app";
+const wrongSameTypeObs = defineObserver({
+  appId: "demo",
+  id: "wrong-ci",
+  type: "ci.status",
+  timeoutMs: 2000,
+  inspect: async (resource) => ({ build: resource, green: false }),
+});
 const fastObs = defineObserver({
   appId: "demo",
   id: "build-check",
@@ -291,7 +298,7 @@ const stalledObs = defineObserver({
   timeoutMs: 60,
   inspect: async () => new Promise(() => {}),
 });
-export default { id: "demo", version: 1, agent: "owner", observers: [fastObs, stalledObs] };
+export default { id: "demo", version: 1, agent: "owner", observers: [wrongSameTypeObs, fastObs, stalledObs] };
 `,
       );
       writeFileSync(

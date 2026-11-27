@@ -831,6 +831,22 @@ it("refuses forged App human flags, discrete approval bypasses, pre-question con
     truncated: false,
   });
   expect(rAnchor.handlerResult.state).toBe("waiting");
+
+  // 4. Domain output containing an unrelated `state` string (e.g. `{ state: "published" }`) converges as ordinary output
+  const domainStateCase = makeRoot(
+    `export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       return ctx.done("Published", { state: "published", url: "https://example.test/pr/1" });
+     }`,
+    "human.review",
+  );
+  const rDomainState = await runCase(domainStateCase, { items: [], truncated: false });
+  expect(rDomainState.hostCompletion).toBe("finite-done");
+  expect(rDomainState.handlerResult).toMatchObject({
+    state: "converged",
+    summary: "Published",
+    result: { state: "published", url: "https://example.test/pr/1" },
+  });
 });
 
 

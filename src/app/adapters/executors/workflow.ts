@@ -249,12 +249,15 @@ async function executeTaskWorkflow(
           : `workflow-blocker-context:see workflow-run:${runId} (exceeds 8192-byte Task facts bound)`,
       );
     }
+    const outputRec =
+      done && result.output !== null && typeof result.output === "object" && !Array.isArray(result.output)
+        ? (result.output as Record<string, unknown>)
+        : undefined;
     const isExplicitReconcileResult =
       done &&
-      result.output !== null &&
-      typeof result.output === "object" &&
-      !Array.isArray(result.output) &&
-      typeof (result.output as Record<string, unknown>).state === "string";
+      outputRec !== undefined &&
+      (outputRec.state === "converged" || outputRec.state === "waiting" || outputRec.state === "incomplete") &&
+      typeof outputRec.summary === "string";
     const translatedDoneRun =
       done && !isExplicitReconcileResult
         ? translateHostedExecutionResult(

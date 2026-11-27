@@ -158,9 +158,10 @@ export function translateHostedBlockedContribution(
     }
   }
   const hint = translatedHint as DefaultWaitDescriptor | null | undefined;
-  const effectiveDomainFacts =
-    hint?.domainFacts && Array.isArray(hint.domainFacts) && hint.domainFacts.length > 0
-      ? hint.domainFacts
+  const effectiveDomainFacts = translator
+    ? facts
+    : translatedHint !== undefined
+      ? hint?.domainFacts
       : facts;
   if (hint && hint.actions !== undefined && !Array.isArray(hint.actions)) {
     return rejectedBlockedResult("Blocked result actions must be an array when supplied", runId);

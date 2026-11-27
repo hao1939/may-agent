@@ -1245,6 +1245,21 @@ describe("usage-calibrated compaction & offloadContent & mockModel", () => {
       expect(existsSync(join(rootResults, "session-old-1"))).toBe(false);
       const activeFiles = readdirSync(join(rootResults, "session-active-3")).sort();
       expect(activeFiles).toEqual(["dump-c3a.txt", "dump-c3b.txt"]);
+
+      // Verify owner-only permissions (0700 dirs, 0600 files) and symlink refusal
+      const { statSync, symlinkSync } = await import("node:fs");
+      expect(statSync(rootResults).mode & 0o777).toBe(0o700);
+      expect(statSync(join(rootResults, "session-active-3")).mode & 0o777).toBe(0o700);
+      expect(statSync(join(rootResults, "session-active-3", "dump-c3a.txt")).mode & 0o777).toBe(0o600);
+
+      const victim = join(baseDir, "victim.txt");
+      const { writeFileSync, readFileSync } = await import("node:fs");
+      writeFileSync(victim, "preserve-me");
+      symlinkSync(victim, join(rootResults, "session-active-3", "dump-symlink_call.txt"));
+      const symRes = await s3Tools[1]!.execute("symlink_call", {}, new AbortController().signal, () => {});
+      // Refuses to overwrite symlink and falls back to inline result cleanly
+      expect((symRes.content[0] as { text: string }).text).toBe("x".repeat(1500));
+      expect(readFileSync(victim, "utf8")).toBe("preserve-me");
     } finally {
       rmSync(baseDir, { recursive: true, force: true });
     }

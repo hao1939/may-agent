@@ -6,7 +6,7 @@
  */
 
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { mkdir, readdir, rmdir, stat, unlink, writeFile } from "node:fs/promises";
+import { chmod, lstat, mkdir, readdir, rmdir, stat, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -178,6 +178,19 @@ async function evictOldestResults(
   }
 }
 
+async function ensurePrivateDirectory(dirPath: string): Promise<void> {
+  await mkdir(dirPath, { recursive: true, mode: 0o700 });
+  const info = await lstat(dirPath);
+  if (!info.isDirectory() || info.isSymbolicLink()) {
+    throw new Error(`Offload directory ${dirPath} must be a non-symlink directory`);
+  }
+  const currentUid = typeof process.getuid === "function" ? process.getuid() : undefined;
+  if (currentUid !== undefined && info.uid !== currentUid) {
+    throw new Error(`Offload directory ${dirPath} is not owned by the current user`);
+  }
+  await chmod(dirPath, 0o700);
+}
+
 export function wrapToolsWithOffload(
   tools: readonly AgentTool[],
   sessionId: string,
@@ -186,7 +199,11 @@ export function wrapToolsWithOffload(
   const hasInspector = tools.some((t) => t.name === "read" || t.name === "bash");
   if (!hasInspector) return [...tools];
   const maxBytes = options.maxBytes ?? DEFAULT_OFFLOAD_MAX_BYTES;
-  const rootResultsDir = join(options.baseDir ?? tmpdir(), "may-agent-tool-results");
+  const uidSuffix = typeof process.getuid === "function" ? `-${process.getuid()}` : "";
+  const rootResultsDir = join(
+    options.baseDir ?? tmpdir(),
+    options.baseDir ? "may-agent-tool-results" : `may-agent-tool-results${uidSuffix}`,
+  );
   const resultsDir = join(rootResultsDir, boundedStem(sessionId));
   const retentionLimits = {
     maxFiles: options.maxDirectoryFiles ?? MAX_DIRECTORY_FILES,
@@ -225,8 +242,14 @@ export function wrapToolsWithOffload(
         const budget = Math.max(240, Math.floor(maxBytes / 4));
         const shape = isJson ? describeJsonShape(parsedJson, budget) : describeTextPreview(combined, budget);
         try {
-          await mkdir(resultsDir, { recursive: true });
-          await writeFile(filePath, combined, "utf8");
+          await ensurePrivateDirectory(rootResultsDir);
+          await ensurePrivateDirectory(resultsDir);
+          const existingFile = await lstat(filePath).catch(() => null);
+          if (existingFile?.isSymbolicLink()) {
+            throw new Error(`Refusing to overwrite symlink at ${filePath}`);
+          }
+          await writeFile(filePath, combined, { encoding: "utf8", mode: 0o600 });
+          await chmod(filePath, 0o600);
           await evictOldestResults(rootResultsDir, resultsDir, filePath, retentionLimits);
           const note = [
             `Output of ${tool.name} (${bytes.toLocaleString("en-US")} bytes) was saved to ${filePath}.`,

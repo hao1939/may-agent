@@ -2232,7 +2232,18 @@ async function inspectStandaloneResourceConditions(params: {
       params.signal?.throwIfAborted();
       if (!("type" in cond) || !("subject" in cond)) continue;
       if (params.observations[cond.id]?.state === "true") continue;
-      const obs = resourceObservers.find((candidate) => candidate.type === cond.type);
+      const expectedRec =
+        (cond as { expected?: unknown }).expected &&
+        typeof (cond as { expected?: unknown }).expected === "object" &&
+        !Array.isArray((cond as { expected?: unknown }).expected)
+          ? ((cond as { expected: Record<string, unknown> }).expected)
+          : undefined;
+      const expectedSource = typeof expectedRec?.source === "string" ? expectedRec.source : undefined;
+      const obs = resourceObservers.find(
+        (candidate) =>
+          candidate.type === cond.type &&
+          (!expectedSource || expectedSource === `app:${params.appId}:observer:${candidate.id}`),
+      );
       if (!obs) continue;
       const remainingMs =
         params.deadlineAt === undefined ? DEFAULT_STANDALONE_OBSERVER_TIMEOUT_MS : params.deadlineAt - Date.now();
