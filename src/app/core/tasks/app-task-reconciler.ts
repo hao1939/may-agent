@@ -4066,12 +4066,8 @@ function acceptedTaskClosure(
   let reason: string;
   let decidedBy: AppTaskCancellation["decidedBy"];
   let summary: string;
-  if (hostFiniteDone) {
-    reason = "Public execution returned done for the finite assignment";
-    summary = `Closed by Host settlement: ${reason}`;
-    decidedBy = { kind: "host-execution" };
-  } else {
-    const decision = config.closeOnResult!(structuredClone({
+  if (config.closeOnResult) {
+    const decision = config.closeOnResult(structuredClone({
       // Internal intents normalize assignment to owner; App policy receives the
       // public agent field, matching the Task read contract.
       task: { ...resourceIntent(resource), ...(resource.spec.owner ? { agent: resource.spec.owner } : {}) },
@@ -4084,6 +4080,10 @@ function acceptedTaskClosure(
     reason = decision.reason.trim();
     summary = `Closed by App policy: ${reason}`;
     decidedBy = { kind: "app-policy" };
+  } else {
+    reason = "Public execution returned done for the finite assignment";
+    summary = `Closed by Host settlement: ${reason}`;
+    decidedBy = { kind: "host-execution" };
   }
   return {
     kind: "closed", acceptedResultAttemptId: claim.attemptId,
