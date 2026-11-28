@@ -159,8 +159,8 @@ describe("may run / may list standalone CLI", () => {
     expect(stdout).toContain("may run <target>");
   });
 
-  test("executes unified WorkflowContext standalone, parks on ctx.ask, and resumes fresh attempt with --resume --answer", async () => {
-    const { mkdtempSync, mkdirSync, rmSync, writeFileSync } = await import("node:fs");
+  test("executes unified WorkflowContext standalone, logs events/Conditions simply, and resumes fresh attempt from external task.json update", async () => {
+    const { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
     const { run } = await import("@may-agent/sdk/standalone");
@@ -175,7 +175,15 @@ describe("may run / may list standalone CLI", () => {
       const helperDir = join(wsRoot, "projects", "demo.app", "agents", "specialist");
       mkdirSync(wfDir, { recursive: true });
       mkdirSync(helperDir, { recursive: true });
-      writeFileSync(join(wsRoot, "projects", "demo.app", "app.ts"), "export default { id: 'demo', version: 1, agent: 'lead' };\n");
+      mkdirSync(join(wsRoot, "projects", "evaluation.app"), { recursive: true });
+      writeFileSync(
+        join(wsRoot, "projects", "demo.app", "app.ts"),
+        "export default { id: 'demo', version: 1, agent: 'lead', tasks: {}, inputSchema: { type: 'object', properties: { prompt: { type: 'string' } } }, observers: [{ id: 'ci', type: 'ci.status', description: 'CI', inspect: async () => null }] };\n",
+      );
+      writeFileSync(
+        join(wsRoot, "projects", "evaluation.app", "app.ts"),
+        "export const app = { id: 'evaluation-canary', version: 1, agent: 'lead', tasks: {}, inputSchema: { type: 'object', properties: { canary: { type: 'boolean' } } }, observers: [{ id: 'canary', type: 'canary.health', description: 'Canary', inspect: async () => null }] };\n",
+      );
       writeFileSync(
         join(wsRoot, "projects", "demo.app", "agents", "lead", "agent.json"),
         JSON.stringify({ name: "lead", description: "Lead", domain: "demo", model: "mock", tools: ["finish"] }),
@@ -196,24 +204,48 @@ describe("may run / may list standalone CLI", () => {
         `export const name = "ship-flow";
 export const description = "Sequential unified ctx workflow";
 export async function execute(ctx) {
-  ctx.progress("Checking environment");
+  const contract = await ctx.read.contract("demo");
+  await ctx.events.emit({ type: "demo.checked", localKey: "check:1", data: { observers: contract.observations.length } });
   const echo = await ctx.exec(["echo", "ready"]);
   const helper = ctx.agent("demo/specialist");
-  const r1 = await helper.send("Turn 1 draft");
+  await helper.send("Turn 1 draft");
   const r2 = await helper.send("Turn 2 refine");
-  const decision = await ctx.ask({ id: "ship-gate", prompt: "Ship release?", options: ["approve", "hold"] });
+  const gate = ctx.observe("ci-green");
+  if (gate?.state !== "true") {
+    return ctx.park({
+      summary: "Waiting on CI",
+      conditions: [{ id: "ci-green", type: "ci.status", subject: "pr:1", expected: { green: true }, owner: "app:demo" }],
+    });
+  }
   return ctx.done(
     "Shipped",
     {
       attempt: ctx.task.attemptNumber,
       echo: echo.stdout.trim(),
       turnsSeenByHelper: r2.output,
-      decision: decision.value,
+      observers: contract.observations.length,
     },
     { facts: ["shipped:true"] },
   );
 }
 `,
+      );
+      writeFileSync(
+        join(wfDir, "other-flow.ts"),
+        `export const name = "other-flow"; export const description = "Other";
+export async function execute(ctx) {
+  const c1 = await ctx.read.contract("evaluation-canary");
+  (c1.inputSchema as any).mutated = true;
+  const c2 = await ctx.read.contract("evaluation-canary");
+  return ctx.done("checked", {
+    canaryId: c2.appId,
+    canaryObs: c2.observations.length,
+    hasWorkload: Boolean(c2.taskReads?.workload),
+    schemaMutated: Boolean((c2.inputSchema as any).mutated),
+    taskGen: ctx.task.generation,
+    taskFacts: ctx.task.facts,
+  });
+}`,
       );
 
       const models = {
@@ -222,23 +254,39 @@ export async function execute(ctx) {
         })) as any,
       };
 
-      // Attempt 1: runs multi-turn specialist + exec, then parks cleanly on await ctx.ask().
+      // Attempt 1: logs emitted event to stderr, parks with Condition summary to stdout, saves minimal task.json.
       const out1: string[] = [];
+      const err1: string[] = [];
       const res1 = await runStandaloneCli(
         ["run", "demo/ship-flow", '{"prompt":"Ship v1"}', "--project-root", wsRoot, "--state-dir", stateDir],
         {
           stdout: (l) => out1.push(l),
+          stderr: (l) => err1.push(l),
           execute: (target, input, opts) => run(target, input, { ...opts, models }),
         },
       );
       expect(res1.exitCode).toBe(1);
-      expect(out1[0]).toBe("[parked] Ship release?");
+      expect(err1).toContain("[event] demo.checked");
+      expect(out1[0]).toBe("[parked] Waiting on CI");
+      expect(out1.some((l) => l.includes("waiting on ci.status (pr:1)"))).toBe(true);
       expect(out1.some((l) => l.includes("resume with:"))).toBe(true);
 
-      // Attempt 2: manual --resume with --answer starts fresh attempt (#2), sees multi-turn history (2 user turns), and completes!
+      // Reusing stateDir without --resume or with mismatched target fails cleanly.
+      const reuseErr = await run("demo/ship-flow", { prompt: "Ship v1" }, { projectRoot: wsRoot, stateDir, models });
+      expect(reuseErr.status).toBe("error");
+      expect(reuseErr.summary).toContain("already contains task.json");
+      const wrongTarget = await run("demo/other-flow", { prompt: "Ship v1" }, { projectRoot: wsRoot, stateDir, resume: true, models });
+      expect(wrongTarget.status).toBe("error");
+      expect(wrongTarget.summary).toContain('saved for "demo/ship-flow"');
+
+      // External driver marks Condition satisfied in task.json and runs --resume.
+      const saved = JSON.parse(readFileSync(join(stateDir, "task.json"), "utf8"));
+      saved.observations["ci-green"] = { state: "true", observed: { green: true } };
+      writeFileSync(join(stateDir, "task.json"), JSON.stringify(saved, null, 2));
+
       const out2: string[] = [];
       const res2 = await runStandaloneCli(
-        ["run", "--resume", stateDir, "--answer", "approve", "--project-root", wsRoot],
+        ["run", "--resume", stateDir, "--project-root", wsRoot],
         {
           stdout: (l) => out2.push(l),
           execute: (target, input, opts) => run(target, input, { ...opts, models }),
@@ -250,254 +298,50 @@ export async function execute(ctx) {
         attempt: 2,
         echo: "ready",
         turnsSeenByHelper: 2,
-        decision: "approve",
+        observers: 1,
+      });
+
+      // Verify: (a) read.contract resolves declared App ID when directory differs & clones inputSchema,
+      // (b) reconciliation without stateDir derives ctx.task generation/facts instead of synthetic defaults,
+      // (c) spreading ctx.done(...) and forwarding via ctx.call() preserves requests and response.
+      const recRes = await run(
+        "demo/other-flow",
+        { prompt: "Check reconciliation + contract" },
+        {
+          projectRoot: wsRoot,
+          models,
+          reconciliation: {
+            appId: "demo",
+            taskId: "t-42",
+            generation: 3,
+            agent: "lead",
+            owner: "lead",
+            resourceVersion: 7,
+            outcome: "Reconciled outcome",
+            acceptance: ["Keep facts"],
+            input: {},
+            task: { id: "t-42", facts: ["retained:fact-1"] } as any,
+            waits: { open: [], note: "" },
+            children: { live: [], completed: [] },
+            taskSnapshot: { live: [], truncated: false },
+            events: { items: [], truncated: false },
+          },
+        },
+      );
+      expect(recRes).toMatchObject({
+        status: "done",
+        summary: "checked",
+        output: {
+          canaryId: "evaluation-canary",
+          canaryObs: 1,
+          hasWorkload: false,
+          schemaMutated: false,
+          taskGen: 3,
+          taskFacts: ["retained:fact-1"],
+        },
       });
     } finally {
       rmSync(wsRoot, { recursive: true, force: true });
     }
   });
-
-  test("enforces --state-dir fresh/target guards, --answer validation, nested worktree propagation, standalone finish isolation, and bounded observationCondition() resume", async () => {
-    const { mkdtempSync, mkdirSync, writeFileSync, rmSync, realpathSync, symlinkSync } = await import("node:fs");
-    const { execFileSync } = await import("node:child_process");
-    const { tmpdir } = await import("node:os");
-    const { join, resolve } = await import("node:path");
-    const { run } = await import("@may-agent/sdk/standalone");
-    const { mockModel } = await import("@may-agent/sdk/testing");
-
-    const wsRoot = mkdtempSync(join(tmpdir(), "standalone-guards-"));
-    try {
-      mkdirSync(join(wsRoot, "shared"), { recursive: true });
-      writeFileSync(join(wsRoot, ".gitignore"), "node_modules\n.state*\n");
-      writeFileSync(join(wsRoot, "shared", "common-sense.md"), "Test.\n");
-      const appDir = join(wsRoot, "projects", "demo.app");
-      const wfDir = join(appDir, "agents", "owner", "workflows");
-      mkdirSync(wfDir, { recursive: true });
-      mkdirSync(join(appDir, "agents", "helper"), { recursive: true });
-      writeFileSync(
-        join(appDir, "app.ts"),
-        `import { defineObserver } from "@may-agent/sdk/app";
-const wrongSameTypeObs = defineObserver({
-  appId: "demo",
-  id: "wrong-ci",
-  type: "ci.status",
-  timeoutMs: 2000,
-  inspect: async (resource) => ({ build: resource, green: false }),
-});
-const fastObs = defineObserver({
-  appId: "demo",
-  id: "build-check",
-  type: "ci.status",
-  timeoutMs: 2000,
-  inspect: async (resource) => ({ build: resource, green: true }),
-});
-const stalledObs = defineObserver({
-  appId: "demo",
-  id: "stalled-check",
-  type: "stalled.status",
-  timeoutMs: 60,
-  inspect: async () => new Promise(() => {}),
-});
-export default { id: "demo", version: 1, agent: "owner", observers: [wrongSameTypeObs, fastObs, stalledObs] };
-`,
-      );
-      writeFileSync(
-        join(appDir, "agents", "owner", "agent.json"),
-        JSON.stringify({ name: "owner", description: "Owner", domain: "demo", model: "mock", tools: ["finish"] }),
-      );
-      writeFileSync(join(appDir, "agents", "owner", "AGENTS.md"), "# Owner\n");
-      writeFileSync(
-        join(appDir, "agents", "helper", "agent.json"),
-        JSON.stringify({ name: "helper", description: "Helper", domain: "demo", model: "mock", callableFrom: "workflow", tools: ["finish"] }),
-      );
-      writeFileSync(join(appDir, "agents", "helper", "AGENTS.md"), "# Helper\n");
-
-      // Workflow A: discrete approval gate + second workflow B for target mismatch
-      writeFileSync(
-        join(wfDir, "gate-a.ts"),
-        `export const name = "gate-a"; export const description = "Gate A";
-export async function execute(ctx) {
-  const d = await ctx.ask({ id: "gate", prompt: "Approve?", options: ["approve", "reject"] });
-  return ctx.done("approved", { choice: d.value });
-}`,
-      );
-      writeFileSync(
-        join(wfDir, "gate-b.ts"),
-        `export const name = "gate-b"; export const description = "Gate B";
-export async function execute(ctx) { return ctx.done("b"); }`,
-      );
-      writeFileSync(
-        join(wfDir, "multi-ask.ts"),
-        `export const name = "multi-ask"; export const description = "Two pending human Conditions";
-export async function execute(ctx) {
-  return ctx.park({
-    summary: "Two questions",
-    conditions: [
-      { id: "q1", type: "human.review", subject: "s1", expected: { reviewed: true }, owner: "human" },
-      { id: "q2", type: "human.review", subject: "s2", expected: { reviewed: true }, owner: "human" },
-    ],
-  });
-}`,
-      );
-      writeFileSync(
-        join(wfDir, "child-pwd.ts"),
-        `export const name = "child-pwd"; export const description = "Reads child workspace";
-export async function execute(ctx) {
-  const pwd = await ctx.exec(["pwd"]);
-  return ctx.done("child", { root: ctx.workspace.root, pwd: pwd.stdout.trim() });
-}`,
-      );
-      writeFileSync(
-        join(wfDir, "parent-wt.ts"),
-        `export const name = "parent-wt"; export const description = "Auto worktree parent";
-export const workspace = "task";
-export async function execute(ctx) {
-  const child = await ctx.call("demo/child-pwd", { prompt: "check" });
-  const helper = ctx.agent("demo/helper");
-  const t1 = await helper.send("turn-1");
-  const t2 = await helper.send("turn-2-no-finish");
-  return ctx.done("parent", { parentRoot: ctx.workspace.root, childOut: child.output, t1: t1.status, t2: t2.status });
-}`,
-      );
-      writeFileSync(
-        join(wfDir, "obs-flow.ts"),
-        `import { defineObserver, observationCondition } from "@may-agent/sdk/app";
-export const name = "obs-flow"; export const description = "Observer condition + stalled observer timeout";
-const buildContract = defineObserver({ appId: "demo", id: "build-check", type: "ci.status", inspect: async () => null });
-export async function execute(ctx) {
-  const fast = ctx.observe("build-cond");
-  const stalled = ctx.observe("stalled-cond");
-  if (fast?.state === "true") {
-    const staleField = ctx.observe("stale-field-cond");
-    return ctx.done("observed", {
-      fastState: fast.state,
-      staleFieldState: staleField?.state ?? "pending",
-      stalledState: stalled?.state ?? "pending",
-    });
-  }
-  const cond = observationCondition(buildContract, {
-    id: "build-cond",
-    observerId: "build-check",
-    resource: "pr-42",
-    expected: { green: true },
-  });
-  // Ensure timestamp.gte <= resume clock even within the same millisecond
-  (cond.expected as any).timestamp = { gte: Date.now() - 10 };
-  return ctx.park({
-    summary: "Waiting on CI",
-    conditions: [
-      cond,
-      {
-        id: "stale-field-cond",
-        type: "ci.status",
-        subject: "resource:pr-42",
-        expected: { field: "green", equals: true, source: "app:demo:observer:build-check", timestamp: { gte: Date.now() + 600_000 } },
-        owner: "app:demo",
-      },
-      { id: "stalled-cond", type: "stalled.status", subject: "resource:hang", expected: { ok: true }, owner: "app:demo" },
-    ],
-  });
-}`,
-      );
-
-      execFileSync("git", ["init", "-b", "main"], { cwd: wsRoot });
-      execFileSync("git", ["config", "user.email", "t@t.com"], { cwd: wsRoot });
-      execFileSync("git", ["config", "user.name", "T"], { cwd: wsRoot });
-      execFileSync("git", ["add", "."], { cwd: wsRoot });
-      execFileSync("git", ["commit", "-m", "init"], { cwd: wsRoot });
-      mkdirSync(join(wsRoot, "node_modules", "@may-agent"), { recursive: true });
-      symlinkSync(resolve(import.meta.dir, "../../packages/sdk"), join(wsRoot, "node_modules", "@may-agent", "sdk"), "dir");
-
-      // 1. Fresh stateDir parks gate-a; reusing stateDir without --resume fails; mismatched target on --resume fails; invalid choice fails
-      const stateA = join(wsRoot, ".state-a");
-      const r1 = await run("demo/gate-a", { prompt: "go" }, { projectRoot: wsRoot, stateDir: stateA });
-      expect(r1.status).toBe("blocked");
-
-      const reuseWithoutResume = await run("demo/gate-a", { prompt: "go" }, { projectRoot: wsRoot, stateDir: stateA });
-      expect(reuseWithoutResume.status).toBe("error");
-      expect(reuseWithoutResume.summary).toContain("already contains task.json");
-
-      const wrongTargetResume = await run("demo/gate-b", { prompt: "go" }, { projectRoot: wsRoot, stateDir: stateA, resume: true });
-      expect(wrongTargetResume.status).toBe("error");
-      expect(wrongTargetResume.summary).toContain('saved for "demo/gate-a"');
-
-      const invalidChoice = await run("demo/gate-a", { prompt: "go" }, {
-        projectRoot: wsRoot,
-        stateDir: stateA,
-        resume: true,
-        answer: "maybe",
-      });
-      expect(invalidChoice.status).toBe("error");
-      expect(invalidChoice.summary).toContain("Invalid --answer");
-
-      // 2. Multiple pending human Conditions reject ambiguous --answer
-      const stateMulti = join(wsRoot, ".state-multi");
-      await run("demo/multi-ask", { prompt: "go" }, { projectRoot: wsRoot, stateDir: stateMulti });
-      const ambig = await run("demo/multi-ask", { prompt: "go" }, {
-        projectRoot: wsRoot,
-        stateDir: stateMulti,
-        resume: true,
-        answer: "yes",
-      });
-      expect(ambig.status).toBe("error");
-      expect(ambig.summary).toContain("requires exactly 1 pending human Condition, found 2");
-
-      // 3. Nested child workflow inherits auto-allocated worktree & standalone second send without finish() fails cleanly
-      const stateWt = join(wsRoot, ".state-wt");
-      const models = {
-        mock: mockModel(({ userMessages }) => {
-          const last = userMessages[userMessages.length - 1] ?? "";
-          if (last.includes("no-finish") || last.includes("has not returned its structured output")) {
-            return { text: "No finish call on turn 2" };
-          }
-          return { finish: { summary: "ok", output: { turn: 1 } } };
-        }) as any,
-      };
-      const wtRun = await run("demo/parent-wt", { prompt: "go" }, { projectRoot: wsRoot, workRoot: wsRoot, stateDir: stateWt, models });
-      expect(wtRun.status).toBe("done");
-      const wtOut = wtRun.output as { parentRoot: string; childOut: { root: string; pwd: string }; t1: string; t2: string };
-      expect(wtOut.parentRoot).toBe(join(stateWt, "worktree"));
-      expect(wtOut.childOut.root).toBe(wtOut.parentRoot);
-      expect(realpathSync(wtOut.childOut.pwd)).toBe(realpathSync(wtOut.parentRoot));
-      expect(wtOut.t1).toBe("done");
-      expect(wtOut.t2).toBe("error");
-
-      // 4. observationCondition() satisfies on --resume while stalled observer times out cleanly in ~60ms
-      const stateObs = join(wsRoot, ".state-obs");
-      const obs1 = await run("demo/obs-flow", { prompt: "go" }, { projectRoot: wsRoot, stateDir: stateObs });
-      expect(obs1.status).toBe("blocked");
-      const startedResume = Date.now();
-      const obs2 = await run("demo/obs-flow", { prompt: "go" }, { projectRoot: wsRoot, stateDir: stateObs, resume: true });
-      expect(Date.now() - startedResume).toBeLessThan(3000);
-      expect(obs2.status).toBe("done");
-      expect(obs2.output).toEqual({ fastState: "true", staleFieldState: "false", stalledState: "pending" });
-
-      // 5. Interactive/callback askHuman rejects out-of-options discrete choices
-      const invalidInteractive = await run("demo/gate-a", { prompt: "go" }, {
-        projectRoot: wsRoot,
-        askHuman: async () => "maybe",
-      });
-      expect(invalidInteractive.status).toBe("error");
-      expect(invalidInteractive.summary).toContain("allowed choices: approve, reject");
-
-      // 6. Stalled post-checkout hook during worktree allocation is bounded by timeoutMs with process-group cleanup
-      const hooksDir = join(wsRoot, ".git", "hooks");
-      mkdirSync(hooksDir, { recursive: true });
-      const hookPath = join(hooksDir, "post-checkout");
-      writeFileSync(hookPath, "#!/bin/sh\nsleep 30\n", { mode: 0o755 });
-      const startedHook = Date.now();
-      const stalledWt = await run("demo/parent-wt", { prompt: "go" }, {
-        projectRoot: wsRoot,
-        workRoot: wsRoot,
-        stateDir: join(wsRoot, ".state-stalled-wt"),
-        timeoutMs: 250,
-        models,
-      });
-      expect(Date.now() - startedHook).toBeLessThan(3000);
-      expect(stalledWt.status).toBe("error");
-    } finally {
-      rmSync(wsRoot, { recursive: true, force: true });
-    }
-  });
-
 });

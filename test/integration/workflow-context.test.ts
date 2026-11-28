@@ -87,7 +87,6 @@ describe("one workflow context", () => {
         output: {
           keys: [
             "agent",
-            "ask",
             "blocked",
             "call",
             "done",

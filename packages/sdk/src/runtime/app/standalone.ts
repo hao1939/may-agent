@@ -8,20 +8,16 @@
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { Type, type TSchema } from "typebox";
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { createInterface } from "node:readline/promises";
-import { isDeepStrictEqual } from "node:util";
-import { runCommand } from "@may-agent/sdk/command";
 import type {
   AgentCallOptions,
   AppRead,
   CallOptions,
   ConditionObservation,
-  ResourceObserver,
+  ExecutionResult,
   TaskCondition,
-  WorkflowAskRequest,
   WorkflowContext,
   WorkflowTaskView,
 } from "@may-agent/sdk/app";
@@ -65,7 +61,6 @@ import {
   validateCallableInput,
   type CallableDefinition,
   type CallableDescriptor,
-  type CallableResult,
 } from "../../callable.js";
 import { createCodingTools } from "../lib/tools/edit.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
@@ -703,12 +698,9 @@ export type DirectWorkflowRunOptions<TInput = unknown> = WorkflowExecutionEnviro
   executionId?: string;
   stateDir?: string;
   resume?: boolean;
-  answer?: string;
-  interactiveAsk?: boolean;
   task?: WorkflowTaskView;
   attemptNumber?: number;
   observations?: Readonly<Record<string, ConditionObservation>>;
-  askHuman?: (request: WorkflowAskRequest, signal: AbortSignal) => Promise<unknown>;
   onProgress?: (status: string) => void;
   onStep?: (step: WorkflowStepTrace) => void;
   onLog?: (entry: WorkflowLogEntry) => void;
@@ -1356,9 +1348,85 @@ export async function runDirectWorkflow<TInput = unknown>(
   const unavailableRead = (name: string) => async () => {
     throw new Error(`${name} read is not configured in standalone mode`);
   };
+  const standaloneReadContract = async (requestedAppId: string): Promise<import("@may-agent/sdk/app").AppContract> => {
+    const appId = requestedAppId.trim().replace(/\.app$/, "");
+    const pRoot = options.projectsRoot ?? join(options.projectRoot, "projects");
+    const candidateDirs = [
+      join(pRoot, `${appId}.app`),
+      ...(existsSync(pRoot)
+        ? readdirSync(pRoot, { withFileTypes: true })
+            .filter((entry) => entry.isDirectory() && entry.name.endsWith(".app") && entry.name !== `${appId}.app`)
+            .map((entry) => join(pRoot, entry.name))
+        : []),
+    ];
+    let matchedDef:
+      | {
+          id?: string;
+          agent?: string;
+          inputSchema?: TSchema;
+          tasks?: { closeOnResult?: boolean; coordination?: unknown };
+          conversation?: unknown;
+          observers?: Array<{
+            id?: string;
+            type?: string;
+            description?: string;
+            intervalMs?: number;
+            timeoutMs?: number;
+            inspect?: unknown;
+          }>;
+        }
+      | undefined;
+    for (const dir of candidateDirs) {
+      const appFile = ["app.ts", "app.js"].map((f) => join(dir, f)).find((c) => existsSync(c));
+      if (!appFile) continue;
+      const mod = await importRuntimeModule<{ default?: unknown; app?: unknown }>(appFile);
+      const exported = mod.default ?? mod.app;
+      if (!exported || typeof exported !== "object") continue;
+      const def = exported as NonNullable<typeof matchedDef>;
+      const declaredId = typeof def.id === "string" ? def.id.trim() : "";
+      if (declaredId === appId || (!declaredId && dir === join(pRoot, `${appId}.app`))) {
+        matchedDef = def;
+        break;
+      }
+    }
+    if (!matchedDef) throw new Error(`App "${appId}" was not found under ${pRoot}`);
+    const resolvedId = typeof matchedDef.id === "string" && matchedDef.id.trim() ? matchedDef.id.trim() : appId;
+    return {
+      appId: resolvedId,
+      agent: String(matchedDef.agent ?? "owner").trim().replace(/^agent:/, ""),
+      inputSchema: structuredClone(matchedDef.inputSchema ?? Type.Object({})),
+      ...((matchedDef.tasks || matchedDef.conversation) && readOverrides?.tasks?.workload
+        ? { taskReads: { workload: 1 as const } }
+        : {}),
+      ...(matchedDef.tasks?.closeOnResult || matchedDef.tasks?.coordination
+        ? {
+            taskPolicy: {
+              ...(matchedDef.tasks.closeOnResult ? { closeOnResult: true as const } : {}),
+              ...(matchedDef.tasks.coordination
+                ? { coordination: structuredClone(matchedDef.tasks.coordination) as never }
+                : {}),
+            },
+          }
+        : {}),
+      observations: (matchedDef.observers ?? []).flatMap((obs) =>
+        obs && typeof obs === "object" && "inspect" in obs && obs.id && obs.type
+          ? [
+              {
+                appId: resolvedId,
+                id: String(obs.id),
+                type: String(obs.type),
+                description: String(obs.description ?? ""),
+                intervalMs: typeof obs.intervalMs === "number" ? obs.intervalMs : 60_000,
+                timeoutMs: typeof obs.timeoutMs === "number" ? obs.timeoutMs : 15_000,
+              },
+            ]
+          : [],
+      ),
+    };
+  };
   const read: AppRead = standaloneTaskDetail
     ? {
-        contract: readOverrides?.contract ?? unavailableRead("read.contract"),
+        contract: readOverrides?.contract ?? standaloneReadContract,
         appResult: readOverrides?.appResult ?? (async () => null),
         tasks: {
           list: readOverrides?.tasks?.list ?? (async () => ({ items: [standaloneTaskDetail] })),
@@ -1372,7 +1440,7 @@ export async function runDirectWorkflow<TInput = unknown>(
         metric: readOverrides?.metric ?? (async () => null),
       }
     : {
-        contract: readOverrides?.contract ?? unavailableRead("read.contract"),
+        contract: readOverrides?.contract ?? standaloneReadContract,
         appResult: readOverrides?.appResult ?? unavailableRead("read.appResult"),
         tasks: {
           list: readOverrides?.tasks?.list ?? unavailableRead("read.tasks.list"),
@@ -1667,6 +1735,8 @@ export async function runDirectWorkflow<TInput = unknown>(
       summary: sub.result!.type === "done" ? sub.result!.summary : sub.result!.reason,
       ...(sub.result!.output !== undefined ? { output: sub.result!.output } : {}),
       ...(sub.result!.facts !== undefined ? { facts: sub.result!.facts } : {}),
+      ...(sub.result!.type === "done" && sub.result!.requests !== undefined ? { requests: [...sub.result!.requests] } : {}),
+      ...(sub.result!.type === "done" && sub.result!.response !== undefined ? { response: sub.result!.response } : {}),
       cleanupConfirmed: sub.report.cleanup.confirmed,
     };
   };
@@ -1708,52 +1778,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   };
 
-  const shouldAutoAllocateWorktree =
-    !nested &&
-    Boolean(options.stateDir) &&
-    !env?.workspace &&
-    !options.workspace &&
-    (targetModule.workspace === "task" ||
-      (typeof targetModule.workspace === "object" && targetModule.workspace?.kind === "task"));
-  const allocatedWorktreeRoot = shouldAutoAllocateWorktree ? resolve(options.stateDir!, "worktree") : undefined;
-  const ensureAllocatedWorktree = async (signal: AbortSignal): Promise<void> => {
-    if (!allocatedWorktreeRoot || existsSync(join(allocatedWorktreeRoot, ".git"))) return;
-    mkdirSync(resolve(options.stateDir!), { recursive: true });
-    const baseBranch =
-      typeof targetModule.workspace === "object" && targetModule.workspace?.baseBranch
-        ? targetModule.workspace.baseBranch
-        : "HEAD";
-    const srcRoot = resolve(options.workRoot);
-    const first = await runCommand(
-      srcRoot,
-      ["git", "-C", srcRoot, "worktree", "add", "--detach", allocatedWorktreeRoot, baseBranch],
-      signal,
-    );
-    if (first.exitCode !== 0) {
-      signal.throwIfAborted();
-      const fallback = await runCommand(
-        srcRoot,
-        ["git", "-C", srcRoot, "worktree", "add", "--detach", allocatedWorktreeRoot, "HEAD"],
-        signal,
-      );
-      if (fallback.exitCode !== 0) {
-        throw new Error(
-          `Failed to allocate standalone task worktree at ${allocatedWorktreeRoot}: ${(fallback.stderr || first.stderr).trim() || `exit ${fallback.exitCode}`}`,
-        );
-      }
-    }
-    const parentNodeModules = join(srcRoot, "node_modules");
-    const wtNodeModules = join(allocatedWorktreeRoot, "node_modules");
-    if (existsSync(parentNodeModules) && !existsSync(wtNodeModules)) {
-      try {
-        symlinkSync(parentNodeModules, wtNodeModules, "dir");
-      } catch {
-        /* optional convenience link */
-      }
-    }
-  };
-
-  const effectiveRoot = allocatedWorktreeRoot ?? resolve(options.workRoot);
+  const effectiveRoot = resolve(options.workRoot);
   const inferredAppRoot =
     callerOwner && callerOwner !== "global" && options.projectsRoot && existsSync(join(options.projectsRoot, `${callerOwner}.app`))
       ? join(options.projectsRoot, `${callerOwner}.app`)
@@ -1764,13 +1789,24 @@ export async function runDirectWorkflow<TInput = unknown>(
     root: effectiveRoot,
     output: options.stateDir ? resolve(options.stateDir) : resolve(options.outputRoot),
   };
+  // Standalone performs no complex event routing or persistence: emit simply logs a
+  // notice for the external human/agent driving the run.
+  const standaloneLoggingEvents =
+    standaloneTaskDetail || reconciliation
+      ? {
+          emit: async (ev: import("@may-agent/sdk/app").AppEvent) => {
+            options.onNotice?.(`[event] ${String((ev as { type?: unknown }).type ?? "event")}`);
+          },
+          read: async () => null,
+          onEvent: () => () => undefined,
+        }
+      : undefined;
   const authoredModule = targetModule;
   const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(
     {
       ...authoredModule,
       async execute(ctx) {
         activeScopeSignal = ctx.signal;
-        await ensureAllocatedWorktree(ctx.signal);
         if (!internal?.catalog && !catalogCapturedAtRoot) {
           const captured = await buildDirectPromptCatalog(
             { ...options, agentName: callerOwner },
@@ -1816,21 +1852,24 @@ export async function runDirectWorkflow<TInput = unknown>(
         ? {
             emit:
               (env?.events ?? options.events)!.emit ??
+              standaloneLoggingEvents?.emit ??
               (async () => {
                 throw new Error("events.emit is not configured in runDirectWorkflow");
               }),
             read:
               (env?.events ?? options.events)!.read ??
+              standaloneLoggingEvents?.read ??
               (async () => {
                 throw new Error("events.read is not configured in runDirectWorkflow");
               }),
             onEvent:
               (env?.events ?? options.events)!.onEvent ??
+              standaloneLoggingEvents?.onEvent ??
               (() => {
                 throw new Error("events.onEvent is not configured in runDirectWorkflow");
               }),
           }
-        : undefined,
+        : standaloneLoggingEvents,
       metrics: standaloneTaskDetail
         ? {
             define: (env?.metrics ?? options.metrics)?.define ?? (() => undefined),
@@ -1864,7 +1903,6 @@ export async function runDirectWorkflow<TInput = unknown>(
       ...(options.task ? { task: options.task } : {}),
       ...(options.attemptNumber !== undefined ? { attemptNumber: options.attemptNumber } : {}),
       ...(options.observations ? { observations: options.observations } : {}),
-      ...(options.askHuman ? { askHuman: options.askHuman } : {}),
       onProgress: (status) => {
         options.onProgress?.(status);
         options.onNotice?.(`[progress] ${status}`);
@@ -1980,7 +2018,7 @@ export type RunOptions<TInput = unknown> = Omit<
   models?: Record<string, ModelWithApiKey>;
 };
 
-export type RunResult<T = unknown> = CallableResult<T>;
+export type RunResult<T = unknown> = ExecutionResult<T>;
 
 export type TargetSummary = CallableDescriptor;
 
@@ -1992,7 +2030,6 @@ type StandaloneCatalogSnapshot = Readonly<{
 const standaloneCatalogSnapshots = new WeakMap<readonly TargetSummary[], StandaloneCatalogSnapshot>();
 
 export const DEFAULT_STANDALONE_LIST_TIMEOUT_MS = 15_000;
-const DEFAULT_STANDALONE_OBSERVER_TIMEOUT_MS = 15_000;
 
 export async function listTargets(
   options: {
@@ -2167,175 +2204,6 @@ type StandalonePersistedTask = {
   observations: Record<string, ConditionObservation>;
 };
 
-function matchesStandaloneExpectationField(actual: unknown, expected: unknown): boolean {
-  if (isDeepStrictEqual(actual, expected)) return true;
-  if (!expected || typeof expected !== "object" || Array.isArray(expected)) return false;
-  const spec = expected as Record<string, unknown>;
-  if ("equals" in spec && isDeepStrictEqual(actual, spec.equals)) return true;
-  if (Array.isArray(spec.anyOf) && spec.anyOf.some((item) => isDeepStrictEqual(actual, item))) return true;
-  const cmpKeys = ["gt", "gte", "lt", "lte"].filter((k) => k in spec);
-  if (cmpKeys.length > 0) {
-    const toComparable = (v: unknown): number | string | null => {
-      if (typeof v === "number" && Number.isFinite(v)) return v;
-      if (typeof v === "string") {
-        const n = Number(v);
-        return Number.isFinite(n) && v.trim() !== "" ? n : v;
-      }
-      return null;
-    };
-    const left = toComparable(actual);
-    if (left === null) return false;
-    return cmpKeys.every((op) => {
-      const right = toComparable(spec[op]);
-      if (right === null || typeof left !== typeof right) return false;
-      if (op === "gt") return left > right;
-      if (op === "gte") return left >= right;
-      if (op === "lt") return left < right;
-      return left <= right;
-    });
-  }
-  if (actual && typeof actual === "object" && !Array.isArray(actual)) {
-    const actualRec = actual as Record<string, unknown>;
-    return Object.entries(spec).every(([k, v]) => matchesStandaloneExpectationField(actualRec[k], v));
-  }
-  return false;
-}
-
-function matchesStandaloneConditionExpected(envelope: Record<string, unknown>, expected: unknown): boolean {
-  if (expected === undefined || expected === null) return true;
-  if (typeof expected !== "object" || Array.isArray(expected)) {
-    return isDeepStrictEqual(envelope.value ?? envelope, expected);
-  }
-  const spec = expected as Record<string, unknown>;
-  if ("field" in spec && typeof spec.field === "string") {
-    const fieldVal = envelope[spec.field];
-    const fieldMatched =
-      "equals" in spec
-        ? isDeepStrictEqual(fieldVal, spec.equals)
-        : Array.isArray(spec.anyOf)
-          ? spec.anyOf.some((item) => isDeepStrictEqual(fieldVal, item))
-          : false;
-    if (!fieldMatched) return false;
-    return Object.entries(spec)
-      .filter(([key]) => key !== "field" && key !== "equals" && key !== "anyOf")
-      .every(([key, val]) => matchesStandaloneExpectationField(envelope[key], val));
-  }
-  return Object.entries(spec).every(([key, val]) => matchesStandaloneExpectationField(envelope[key], val));
-}
-
-async function inspectStandaloneResourceConditions(params: {
-  projectsRoot: string;
-  appId: string;
-  conditions: readonly TaskCondition[];
-  observations: Record<string, ConditionObservation>;
-  signal?: AbortSignal;
-  deadlineAt?: number;
-}): Promise<void> {
-  if (!params.conditions.length) return;
-  const appFile = ["app.ts", "app.js"]
-    .map((f) => join(params.projectsRoot, `${params.appId}.app`, f))
-    .find((candidate) => existsSync(candidate));
-  if (!appFile) return;
-  try {
-    const mod = await importRuntimeModule<{ default?: { observers?: unknown[] } }>(appFile);
-    const observers = Array.isArray(mod.default?.observers) ? mod.default!.observers : [];
-    const resourceObservers = observers.filter(
-      (obs): obs is ResourceObserver =>
-        Boolean(obs) && typeof obs === "object" && "inspect" in (obs as Record<string, unknown>),
-    );
-    if (!resourceObservers.length) return;
-    for (const cond of params.conditions) {
-      params.signal?.throwIfAborted();
-      if (!("type" in cond) || !("subject" in cond)) continue;
-      if (params.observations[cond.id]?.state === "true") continue;
-      const expectedRec =
-        (cond as { expected?: unknown }).expected &&
-        typeof (cond as { expected?: unknown }).expected === "object" &&
-        !Array.isArray((cond as { expected?: unknown }).expected)
-          ? ((cond as { expected: Record<string, unknown> }).expected)
-          : undefined;
-      const expectedSource = typeof expectedRec?.source === "string" ? expectedRec.source : undefined;
-      const obs = resourceObservers.find(
-        (candidate) =>
-          candidate.type === cond.type &&
-          (!expectedSource || expectedSource === `app:${params.appId}:observer:${candidate.id}`),
-      );
-      if (!obs) continue;
-      const remainingMs =
-        params.deadlineAt === undefined ? DEFAULT_STANDALONE_OBSERVER_TIMEOUT_MS : params.deadlineAt - Date.now();
-      if (remainingMs <= 0) return;
-      const obsTimeoutCfg = (obs as { timeoutMs?: number }).timeoutMs;
-      const perInspectMs = Math.max(
-        1,
-        Math.min(
-          typeof obsTimeoutCfg === "number" && Number.isFinite(obsTimeoutCfg) && obsTimeoutCfg > 0
-            ? obsTimeoutCfg
-            : DEFAULT_STANDALONE_OBSERVER_TIMEOUT_MS,
-          remainingMs,
-        ),
-      );
-      const rawResource = cond.subject.startsWith("resource:") ? cond.subject.slice("resource:".length) : cond.subject;
-      const stepCtrl = new AbortController();
-      const onParentAbort = () => stepCtrl.abort(params.signal?.reason ?? new Error("Aborted"));
-      params.signal?.addEventListener("abort", onParentAbort, { once: true });
-      if (params.signal?.aborted) onParentAbort();
-      let inspectTimer: ReturnType<typeof setTimeout> | undefined;
-      try {
-        const observed = await Promise.race([
-          obs.inspect(rawResource, { signal: stepCtrl.signal }),
-          new Promise<never>((_, reject) => {
-            inspectTimer = setTimeout(() => {
-              const timeoutErr = new Error(`Observer "${obs.id}" timed out after ${perInspectMs}ms`);
-              stepCtrl.abort(timeoutErr);
-              reject(timeoutErr);
-            }, perInspectMs);
-            inspectTimer.unref?.();
-          }),
-          ...(params.signal
-            ? [
-                new Promise<never>((_, reject) => {
-                  if (params.signal!.aborted) reject(params.signal!.reason ?? new Error("Aborted"));
-                  else params.signal!.addEventListener("abort", () => reject(params.signal!.reason ?? new Error("Aborted")), { once: true });
-                }),
-              ]
-            : []),
-        ]);
-        if (observed !== null && observed !== undefined) {
-          const nowMs = Date.now();
-          const observedObj =
-            typeof observed === "object" && !Array.isArray(observed)
-              ? (observed as Record<string, unknown>)
-              : { value: observed };
-          const envelope: Record<string, unknown> = {
-            ...observedObj,
-            data: observedObj,
-            source: `app:${params.appId}:observer:${obs.id}`,
-            timestamp: typeof observedObj.timestamp === "number" ? observedObj.timestamp : nowMs,
-          };
-          const expected = (cond as { expected?: unknown }).expected;
-          const matchesExpected = matchesStandaloneConditionExpected(envelope, expected);
-          const nextObs: ConditionObservation = {
-            state: matchesExpected ? "true" : "false",
-            observed,
-            observedAt: new Date(nowMs).toISOString(),
-          };
-          params.observations[cond.id] = nextObs;
-          params.observations[cond.subject] = nextObs;
-        }
-      } catch (inspectErr) {
-        if (params.signal?.aborted) throw inspectErr;
-        /* Keep Condition pending when provider inspection fails or times out. */
-      } finally {
-        clearTimeout(inspectTimer);
-        params.signal?.removeEventListener("abort", onParentAbort);
-      }
-    }
-  } catch (outerErr) {
-    if (params.signal?.aborted) throw outerErr;
-    /* Optional standalone observer check must not fail execution. */
-  }
-}
-
 /**
  * Run any prompt agent, code procedure, or native CLI executor standalone—either
  * with positional `(target, input, options?)` or an options object `run(options)`—
@@ -2397,12 +2265,6 @@ export async function run<TInput = unknown>(
     return Object.freeze({
       status: "error",
       summary: `Cannot --resume: no saved task.json found in ${stateDir}`,
-    });
-  }
-  if (options.answer !== undefined && (!options.resume || !persistedState)) {
-    return Object.freeze({
-      status: "error",
-      summary: "--answer requires --resume with a saved task.json",
     });
   }
 
@@ -2481,49 +2343,6 @@ export async function run<TInput = unknown>(
     ...(persistedState?.observations ?? {}),
     ...(options.observations ?? {}),
   };
-  if (options.answer !== undefined) {
-    const pendingHuman = (persistedState?.conditions ?? []).filter(
-      (cond): cond is Extract<TaskCondition, { id: string; type: string; subject: string }> =>
-        "type" in cond &&
-        (cond.type === "human.review" || cond.type === "project.approval.submitted" || cond.owner === "human") &&
-        observations[cond.id]?.state !== "true",
-    );
-    if (pendingHuman.length !== 1) {
-      return preStartError(
-        `--answer requires exactly 1 pending human Condition, found ${pendingHuman.length}`,
-      );
-    }
-    const targetCond = pendingHuman[0]!;
-    const expectedRec =
-      targetCond.expected && typeof targetCond.expected === "object" && !Array.isArray(targetCond.expected)
-        ? (targetCond.expected as Record<string, unknown>)
-        : undefined;
-    const allowedChoices = Array.isArray(expectedRec?.anyOf)
-      ? expectedRec.anyOf.filter((c): c is string => typeof c === "string")
-      : undefined;
-    if (
-      (targetCond.type === "project.approval.submitted" || (allowedChoices && allowedChoices.length > 0)) &&
-      (!allowedChoices || !allowedChoices.includes(options.answer))
-    ) {
-      return preStartError(
-        `Invalid --answer ${JSON.stringify(options.answer)} for Condition "${targetCond.id}"; allowed choices: ${(allowedChoices ?? []).join(", ") || "none"}`,
-      );
-    }
-    const answeredAt = new Date().toISOString();
-    const obs: ConditionObservation = { state: "true", observed: options.answer, observedAt: answeredAt };
-    observations[targetCond.id] = obs;
-    observations[targetCond.subject] = obs;
-  }
-  if (persistedState?.conditions?.length && callerOwner && callerOwner !== "global") {
-    await inspectStandaloneResourceConditions({
-      projectsRoot,
-      appId: callerOwner,
-      conditions: persistedState.conditions,
-      observations,
-      signal: options.signal,
-      deadlineAt,
-    });
-  }
 
   const rawInputValue: unknown = input;
   const inputRecord =
@@ -2537,41 +2356,21 @@ export async function run<TInput = unknown>(
       : typeof rawInputValue === "string" && rawInputValue.trim()
         ? rawInputValue.trim()
         : rawTarget);
-  const standaloneTask: WorkflowTaskView | undefined = stateDir
-    ? {
-        appId: callerOwner && callerOwner !== "global" ? callerOwner : "standalone",
-        id: persistedState?.id ?? "standalone",
-        generation: persistedState?.generation ?? 1,
-        attemptNumber,
-        outcome: derivedOutcome,
-        acceptance: persistedState?.acceptance ?? [],
-        taskInput: inputRecord && "data" in inputRecord ? inputRecord.data : rawInputValue,
-        newInputs: [],
-        facts: persistedState?.facts ?? [],
-        ...(persistedState?.previousResult ? { previousResult: persistedState.previousResult } : {}),
-      }
-    : options.task;
-
-  const interactiveAsk =
-    options.askHuman ??
-    (options.interactiveAsk && process.stdin.isTTY && process.stdout.isTTY
-      ? async (req: WorkflowAskRequest, sig: AbortSignal) => {
-          const rl = createInterface({ input: process.stdin, output: process.stdout });
-          const onAbort = () => rl.close();
-          sig.addEventListener("abort", onAbort, { once: true });
-          try {
-            const suffix = req.options?.length ? ` (${req.options.join(" / ")})` : "";
-            const ans = (await rl.question(`${req.prompt}${suffix}: `)).trim();
-            if (req.options?.length && !req.options.includes(ans)) {
-              throw new Error(
-                `Invalid interactive answer ${JSON.stringify(ans)}; allowed choices: ${req.options.join(", ")}`,
-              );
-            }
-            return ans;
-          } finally {
-            sig.removeEventListener("abort", onAbort);
-            rl.close();
-          }
+  const hasReconciliation = Boolean(options.reconciliation ?? options.context?.reconciliation);
+  const standaloneTask: WorkflowTaskView | undefined =
+    options.task ??
+    (stateDir || !hasReconciliation
+      ? {
+          appId: callerOwner && callerOwner !== "global" ? callerOwner : "standalone",
+          id: persistedState?.id ?? "standalone",
+          generation: persistedState?.generation ?? 1,
+          attemptNumber,
+          outcome: derivedOutcome,
+          acceptance: persistedState?.acceptance ?? [],
+          taskInput: inputRecord && "data" in inputRecord ? inputRecord.data : rawInputValue,
+          newInputs: [],
+          facts: persistedState?.facts ?? [],
+          ...(persistedState?.previousResult ? { previousResult: persistedState.previousResult } : {}),
         }
       : undefined);
 
@@ -2584,7 +2383,6 @@ export async function run<TInput = unknown>(
       ...(standaloneTask ? { task: standaloneTask } : {}),
       attemptNumber,
       observations,
-      ...(interactiveAsk ? { askHuman: interactiveAsk } : {}),
       input: rawInputValue as TInput,
       deadlineAt,
       projectRoot,
@@ -2610,6 +2408,11 @@ export async function run<TInput = unknown>(
         : contribution.reason
       : res.report.error?.message ?? (res.error instanceof Error ? res.error.message : String(res.error ?? res.status));
     const finalStatus = contribution?.type ?? res.status;
+    if (contribution?.type === "done" && contribution.requests?.length) {
+      for (const req of contribution.requests) {
+        options.onNotice?.(`[request] ${req.appId} (${req.id})`);
+      }
+    }
     if (stateDir && stateFilePath) {
       mkdirSync(stateDir, { recursive: true });
       const factObj =
@@ -2651,6 +2454,8 @@ export async function run<TInput = unknown>(
       summary,
       ...(contribution?.output !== undefined ? { output: contribution.output } : {}),
       ...(contribution?.facts !== undefined ? { facts: contribution.facts } : {}),
+      ...(contribution?.type === "done" && contribution.requests !== undefined ? { requests: [...contribution.requests] } : {}),
+      ...(contribution?.type === "done" && contribution.response !== undefined ? { response: contribution.response } : {}),
     });
   } catch (err) {
     cleanupConfirmed =

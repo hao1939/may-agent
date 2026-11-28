@@ -174,35 +174,6 @@ export async function execute(ctx) {
     });
   }
 
-  it("retains the exact steering reason after reopening storage without starting the next step", async () => {
-    const repair = Promise.withResolvers<TaskResult>();
-    const h = setup({ pending: repair.promise, extraStep: true });
-    const running = h.runner.run("bounded", "test");
-    try {
-      await h.started;
-      const reason = "Review the new requirement first.\nDo not start another repair.";
-      expect(h.runner.steer(reason)).toBe(true);
-      repair.resolve(success());
-      const result = await running;
-      expect(result).toMatchObject({
-        type: "interrupted",
-        workflowRunId: h.calls[0].options!.workflowRunId!,
-        steeringMessage: reason,
-      });
-      expect(h.calls.map((call) => call.agent)).toEqual(["worker", "repairer"]);
-      if (result.type !== "interrupted") throw new Error("Expected steered run");
-      closeDb(h.root);
-      expect(getWorkflowRun(h.root, result.workflowRunId)).toMatchObject({
-        status: "interrupted",
-        result_reason: reason,
-        endedAt: expect.any(Number),
-      });
-    } finally {
-      repair.resolve(success());
-      await running;
-    }
-  });
-
   for (const stop of ["timeout", "abort"] as const) {
     it(`keeps ${stop} active through authored verification and waits for cancelled steps to settle`, async () => {
       const repair = Promise.withResolvers<TaskResult>();

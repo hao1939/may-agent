@@ -88,8 +88,6 @@ export type {
   TaskWorkload,
   TaskWorkloadOptions,
   WorkflowAgentSession,
-  WorkflowAskAnswer,
-  WorkflowAskRequest,
   WorkflowExecOptions,
   WorkflowInput,
   WorkflowMetricCapability,

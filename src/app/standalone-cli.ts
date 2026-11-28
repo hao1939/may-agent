@@ -209,16 +209,6 @@ export function parseStandaloneCliArgs(
       }
       continue;
     }
-    if (arg === "--answer" || arg.startsWith("--answer=")) {
-      const { value, nextIndex } = consumeOptionValue(argv, i, "--answer");
-      options.answer = value;
-      i = nextIndex;
-      continue;
-    }
-    if (arg === "--interactive-ask") {
-      options.interactiveAsk = true;
-      continue;
-    }
     if (arg.startsWith("-")) {
       throw new Error(`Unknown flag: ${arg}`);
     }
@@ -296,10 +286,8 @@ Options:
   --input <text|json>   Explicit domain input string or JSON object
   --cwd <dir>           Working directory for execution (default: current directory)
   --out <dir>           Output directory for run.json and sessions/
-  --state-dir <dir>     Persist standalone workflow Task state & worktree for manual --resume
-  --resume [dir]        Start a fresh attempt from <state-dir>/task.json after an external wait
-  --answer <value>      Supply the human answer for a parked human.review Condition on --resume
-  --interactive-ask     Prompt interactively in TTY when workflow calls ctx.ask()
+  --state-dir <dir>     Persist standalone workflow Task state in <dir>/task.json for manual --resume
+  --resume [dir]        Start a fresh attempt from <state-dir>/task.json after external state updates
   --timeout <duration>  Timeout (e.g. 45000, 45s, 2m)
   --skill <name>        Optional skill hint for prompt targets
   --app <name>          Optional App disambiguator if target exists in multiple Apps
@@ -393,6 +381,7 @@ export async function runStandaloneCli(
 
     const execute = deps.execute ?? run;
     const runResult = await execute(parsed.target, effectiveInput, {
+      onNotice: (msg) => writeErr(msg),
       ...parsed.options,
       signal: sigController.signal,
     });
