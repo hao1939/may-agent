@@ -179,9 +179,9 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
     outcome: rec?.outcome ?? "test outcome",
     acceptance: rec?.acceptance ?? [],
     taskInput: (rec?.input ?? options.input) as TReconciliationInput,
-    newInputs: rec?.events.items ?? [],
-    facts: rec?.task.facts ?? [],
-    ...(rec?.task.result ? { previousResult: rec.task.result } : {}),
+    newInputs: rec?.events?.items ?? [],
+    facts: rec?.task?.facts ?? [],
+    ...(rec?.task?.result ? { previousResult: rec.task.result } : {}),
   };
   return {
     input: options.input,
@@ -276,6 +276,9 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
     }),
   };
 }
+
+/** Canonical unified name for creating a test `WorkflowContext`. */
+export const createTestWorkflowContext = createTestAppWorkflowContext;
 
 export type ScriptedStepResponse = {
   id?: string;

@@ -2275,6 +2275,7 @@ function matchesStandaloneExpectationField(actual: unknown, expected: unknown): 
   if (!expected || typeof expected !== "object" || Array.isArray(expected)) return false;
   const spec = expected as Record<string, unknown>;
   if ("equals" in spec && isDeepStrictEqual(actual, spec.equals)) return true;
+  if ("notEquals" in spec && !isDeepStrictEqual(actual, spec.notEquals)) return true;
   if (Array.isArray(spec.anyOf) && spec.anyOf.some((item) => isDeepStrictEqual(actual, item))) return true;
   const cmpKeys = ["gt", "gte", "lt", "lte"].filter((k) => k in spec);
   if (cmpKeys.length > 0) {
@@ -2315,12 +2316,14 @@ function matchesStandaloneConditionExpected(envelope: Record<string, unknown>, e
     const fieldMatched =
       "equals" in spec
         ? isDeepStrictEqual(fieldVal, spec.equals)
-        : Array.isArray(spec.anyOf)
-          ? spec.anyOf.some((item) => isDeepStrictEqual(fieldVal, item))
-          : false;
+        : "notEquals" in spec
+          ? !isDeepStrictEqual(fieldVal, spec.notEquals)
+          : Array.isArray(spec.anyOf)
+            ? spec.anyOf.some((item) => isDeepStrictEqual(fieldVal, item))
+            : false;
     if (!fieldMatched) return false;
     return Object.entries(spec)
-      .filter(([key]) => key !== "field" && key !== "equals" && key !== "anyOf")
+      .filter(([key]) => key !== "field" && key !== "equals" && key !== "notEquals" && key !== "anyOf")
       .every(([key, val]) => matchesStandaloneExpectationField(envelope[key], val));
   }
   return Object.entries(spec).every(([key, val]) => matchesStandaloneExpectationField(envelope[key], val));

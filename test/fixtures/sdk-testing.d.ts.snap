@@ -41,6 +41,8 @@ export type TestAppWorkflowContextOptions<TInput, TReconciliationInput = unknown
 };
 /** Small fake with no database, queue, or global runtime paths. */
 export declare function createTestAppWorkflowContext<TInput, TReconciliationInput = unknown>(options: TestAppWorkflowContextOptions<TInput, TReconciliationInput>): import("./workflow.js").AppWorkflowContext<TInput, TReconciliationInput>;
+/** Canonical unified name for creating a test `WorkflowContext`. */
+export declare const createTestWorkflowContext: typeof createTestAppWorkflowContext;
 export type ScriptedStepResponse = {
     id?: string;
     kind?: "agent" | "workflow";
