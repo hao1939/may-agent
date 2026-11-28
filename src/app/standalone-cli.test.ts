@@ -178,11 +178,11 @@ describe("may run / may list standalone CLI", () => {
       mkdirSync(join(wsRoot, "projects", "evaluation.app"), { recursive: true });
       writeFileSync(
         join(wsRoot, "projects", "demo.app", "app.ts"),
-        "export default { id: 'demo', version: 1, agent: 'lead', inputSchema: { type: 'object', properties: { prompt: { type: 'string' } } }, observers: [{ id: 'ci', type: 'ci.status', description: 'CI' }] };\n",
+        "export default { id: 'demo', version: 1, agent: 'lead', tasks: {}, inputSchema: { type: 'object', properties: { prompt: { type: 'string' } } }, observers: [{ id: 'ci', type: 'ci.status', description: 'CI', inspect: async () => null }] };\n",
       );
       writeFileSync(
         join(wsRoot, "projects", "evaluation.app", "app.ts"),
-        "export default { id: 'evaluation-canary', version: 1, agent: 'lead', inputSchema: { type: 'object', properties: { canary: { type: 'boolean' } } }, observers: [{ id: 'canary', type: 'canary.health', description: 'Canary' }] };\n",
+        "export const app = { id: 'evaluation-canary', version: 1, agent: 'lead', tasks: {}, inputSchema: { type: 'object', properties: { canary: { type: 'boolean' } } }, observers: [{ id: 'canary', type: 'canary.health', description: 'Canary', inspect: async () => null }] };\n",
       );
       writeFileSync(
         join(wsRoot, "projects", "demo.app", "agents", "lead", "agent.json"),
@@ -237,20 +237,14 @@ export async function execute(ctx) {
   const c1 = await ctx.read.contract("evaluation-canary");
   (c1.inputSchema as any).mutated = true;
   const c2 = await ctx.read.contract("evaluation-canary");
-  const child = await ctx.call("demo/child-done", { prompt: "delegate" });
-  return { ...child, output: { canaryId: c2.appId, schemaMutated: Boolean((c2.inputSchema as any).mutated), taskGen: ctx.task.generation, taskFacts: ctx.task.facts } };
-}`,
-      );
-      writeFileSync(
-        join(wfDir, "child-done.ts"),
-        `export const name = "child-done"; export const description = "Child done options";
-export async function execute(ctx) {
-  return {
-    ...ctx.done("child-finished", { ok: true }, {
-      requests: [{ id: "r1", appId: "demo", input: { kind: "message", data: { message: "hi" } } }],
-      response: "Child reply",
-    }),
-  };
+  return ctx.done("checked", {
+    canaryId: c2.appId,
+    canaryObs: c2.observations.length,
+    hasWorkload: Boolean(c2.taskReads?.workload),
+    schemaMutated: Boolean((c2.inputSchema as any).mutated),
+    taskGen: ctx.task.generation,
+    taskFacts: ctx.task.facts,
+  });
 }`,
       );
 
@@ -336,10 +330,15 @@ export async function execute(ctx) {
       );
       expect(recRes).toMatchObject({
         status: "done",
-        summary: "child-finished",
-        output: { canaryId: "evaluation-canary", schemaMutated: false, taskGen: 3, taskFacts: ["retained:fact-1"] },
-        requests: [{ id: "r1", appId: "demo" }],
-        response: "Child reply",
+        summary: "checked",
+        output: {
+          canaryId: "evaluation-canary",
+          canaryObs: 1,
+          hasWorkload: false,
+          schemaMutated: false,
+          taskGen: 3,
+          taskFacts: ["retained:fact-1"],
+        },
       });
     } finally {
       rmSync(wsRoot, { recursive: true, force: true });

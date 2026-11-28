@@ -16,7 +16,6 @@ import type {
   AppRead,
   CallOptions,
   ConditionObservation,
-  ExecutionResult,
   TaskCondition,
   WorkflowContext,
   WorkflowTaskView,
@@ -61,6 +60,7 @@ import {
   validateCallableInput,
   type CallableDefinition,
   type CallableDescriptor,
+  type CallableResult,
 } from "../../callable.js";
 import { createCodingTools } from "../lib/tools/edit.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
@@ -1379,8 +1379,10 @@ export async function runDirectWorkflow<TInput = unknown>(
     for (const dir of candidateDirs) {
       const appFile = ["app.ts", "app.js"].map((f) => join(dir, f)).find((c) => existsSync(c));
       if (!appFile) continue;
-      const mod = await importRuntimeModule<{ default?: Record<string, unknown> }>(appFile);
-      const def = (mod.default ?? {}) as NonNullable<typeof matchedDef>;
+      const mod = await importRuntimeModule<{ default?: unknown; app?: unknown }>(appFile);
+      const exported = mod.default ?? mod.app;
+      if (!exported || typeof exported !== "object") continue;
+      const def = exported as NonNullable<typeof matchedDef>;
       const declaredId = typeof def.id === "string" ? def.id.trim() : "";
       if (declaredId === appId || (!declaredId && dir === join(pRoot, `${appId}.app`))) {
         matchedDef = def;
@@ -1393,7 +1395,9 @@ export async function runDirectWorkflow<TInput = unknown>(
       appId: resolvedId,
       agent: String(matchedDef.agent ?? "owner").trim().replace(/^agent:/, ""),
       inputSchema: structuredClone(matchedDef.inputSchema ?? Type.Object({})),
-      ...(matchedDef.tasks || matchedDef.conversation ? { taskReads: { workload: 1 as const } } : {}),
+      ...((matchedDef.tasks || matchedDef.conversation) && readOverrides?.tasks?.workload
+        ? { taskReads: { workload: 1 as const } }
+        : {}),
       ...(matchedDef.tasks?.closeOnResult || matchedDef.tasks?.coordination
         ? {
             taskPolicy: {
@@ -1405,7 +1409,7 @@ export async function runDirectWorkflow<TInput = unknown>(
           }
         : {}),
       observations: (matchedDef.observers ?? []).flatMap((obs) =>
-        obs && typeof obs === "object" && obs.id && obs.type
+        obs && typeof obs === "object" && "inspect" in obs && obs.id && obs.type
           ? [
               {
                 appId: resolvedId,
@@ -1731,8 +1735,6 @@ export async function runDirectWorkflow<TInput = unknown>(
       summary: sub.result!.type === "done" ? sub.result!.summary : sub.result!.reason,
       ...(sub.result!.output !== undefined ? { output: sub.result!.output } : {}),
       ...(sub.result!.facts !== undefined ? { facts: sub.result!.facts } : {}),
-      ...(sub.result!.type === "done" && sub.result!.requests !== undefined ? { requests: [...sub.result!.requests] } : {}),
-      ...(sub.result!.type === "done" && sub.result!.response !== undefined ? { response: sub.result!.response } : {}),
       cleanupConfirmed: sub.report.cleanup.confirmed,
     };
   };
@@ -2014,7 +2016,7 @@ export type RunOptions<TInput = unknown> = Omit<
   models?: Record<string, ModelWithApiKey>;
 };
 
-export type RunResult<T = unknown> = ExecutionResult<T>;
+export type RunResult<T = unknown> = CallableResult<T>;
 
 export type TargetSummary = CallableDescriptor;
 
@@ -2404,11 +2406,6 @@ export async function run<TInput = unknown>(
         : contribution.reason
       : res.report.error?.message ?? (res.error instanceof Error ? res.error.message : String(res.error ?? res.status));
     const finalStatus = contribution?.type ?? res.status;
-    if (contribution?.type === "done" && contribution.requests?.length) {
-      for (const req of contribution.requests) {
-        options.onNotice?.(`[request] ${req.appId} (${req.id})`);
-      }
-    }
     if (stateDir && stateFilePath) {
       mkdirSync(stateDir, { recursive: true });
       const factObj =
@@ -2450,8 +2447,6 @@ export async function run<TInput = unknown>(
       summary,
       ...(contribution?.output !== undefined ? { output: contribution.output } : {}),
       ...(contribution?.facts !== undefined ? { facts: contribution.facts } : {}),
-      ...(contribution?.type === "done" && contribution.requests !== undefined ? { requests: [...contribution.requests] } : {}),
-      ...(contribution?.type === "done" && contribution.response !== undefined ? { response: contribution.response } : {}),
     });
   } catch (err) {
     cleanupConfirmed =

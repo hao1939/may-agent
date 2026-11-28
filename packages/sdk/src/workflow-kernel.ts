@@ -149,7 +149,7 @@ export type PreparedTargetCatalog<TPromptDef = unknown> = PreparedCatalog<TPromp
 export const resolveCallableTarget = resolveCallable;
 
 export type NormalizedWorkflowContribution = (
-  | { type: "done"; summary: string; requests?: import("./task.js").TaskAppRequest[]; response?: string }
+  | { type: "done"; summary: string }
   | { type: "blocked" | "error" | "interrupted"; reason: string; context?: unknown }
 ) & { output?: unknown; facts?: unknown };
 
@@ -456,13 +456,7 @@ export function normalizeWorkflowContribution(
     ...(value.facts !== undefined ? { facts: value.facts } : {}),
   };
   if (value.status === "done") {
-    return {
-      type: "done",
-      summary: value.summary as string,
-      ...payload,
-      ...(Array.isArray(value.requests) ? { requests: [...(value.requests as import("./task.js").TaskAppRequest[])] } : {}),
-      ...(typeof value.response === "string" ? { response: value.response } : {}),
-    };
+    return { type: "done", summary: value.summary as string, ...payload };
   }
   if (value.status === "blocked" || value.status === "error" || value.status === "interrupted") {
     return {
@@ -1336,8 +1330,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
       summary,
       ...(output !== undefined ? { output } : {}),
       ...(options?.facts !== undefined ? { facts: options.facts } : {}),
-      ...(options?.requests !== undefined ? { requests: [...options.requests] } : {}),
-      ...(options?.response !== undefined ? { response: options.response } : {}),
     }),
     blocked: (reason: string, facts?: unknown): ExecutionResult<never> => ({
       status: "blocked",

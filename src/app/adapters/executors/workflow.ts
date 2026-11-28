@@ -271,8 +271,6 @@ async function executeTaskWorkflow(
       typeof outputRec.summary === "string" &&
       Array.isArray(outputRec.facts) &&
       Object.keys(outputRec).every((key) => EXPLICIT_RECONCILE_KEYS.has(key));
-    const doneRequests = done ? result.requests : undefined;
-    const doneResponse = done ? result.response : undefined;
     const translatedDoneRun =
       done && !isExplicitReconcileResult
         ? translateHostedExecutionResult(
@@ -287,20 +285,12 @@ async function executeTaskWorkflow(
                   : [summary],
             },
             input,
-            {
-              ...(doneRequests !== undefined ? { requests: doneRequests } : {}),
-              ...(doneResponse !== undefined ? { response: doneResponse } : {}),
-            },
           )
         : null;
     const handlerResult = done
       ? isExplicitReconcileResult
         ? normalizeTaskHandlerResult(
-            {
-              ...outputRec!,
-              ...(doneRequests !== undefined && outputRec!.requests === undefined ? { requests: doneRequests } : {}),
-              ...(doneResponse !== undefined && outputRec!.response === undefined ? { response: doneResponse } : {}),
-            },
+            result.output,
             { type: "done", summary, runId },
             {
               validateAction: input.descriptor.app.tasks?.validateAction,

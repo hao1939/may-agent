@@ -414,15 +414,12 @@ export async function execute(ctx) {
   expect(observedPrompt).toContain('"continuedInputs"');
 });
 
-it("converges plain domain outputs (including unrelated state strings), structured facts, and DoneOptions requests/response", async () => {
-  const makeCase = (workflowBody: string, extraFiles: Record<string, string> = {}) => {
+it("converges plain domain outputs (including unrelated state strings) and structured facts", async () => {
+  const makeCase = (workflowBody: string) => {
     const r = mkdtempSync(join(tmpdir(), "task-workflow-done-opts-"));
     roots.push(r);
     mkdirSync(join(r, "owner", "workflows"), { recursive: true });
     writeFileSync(join(r, "owner", "workflows", "sec.ts"), workflowBody);
-    for (const [name, content] of Object.entries(extraFiles)) {
-      writeFileSync(join(r, "owner", "workflows", name), content);
-    }
     AppTaskResourceStore.fromDb(getDb(r), "fixture").bootstrapSnapshot(
       {
         project: "fixture",
@@ -480,35 +477,10 @@ it("converges plain domain outputs (including unrelated state strings), structur
     } as unknown as TaskWorkflowInput);
 
   const rDomainState = await runCase(
-    makeCase(
-      `export const name = "sec"; export const description = "s";
-       export async function execute(ctx) {
-         const child = await ctx.call("fixture/child-pub", { prompt: "publish" });
-         return { ...child };
-       }`,
-      {
-        "child-pub.ts": `export const name = "child-pub"; export const description = "child";
-         export async function execute(ctx) {
-           return {
-             ...ctx.done(
-               "Published",
-               { state: "published", url: "https://example.test/pr/1" },
-               {
-                 facts: ["published:1"],
-                 requests: [
-                   {
-                     id: "digest-1",
-                     appId: "scout",
-                     input: { kind: "message", data: { message: "Record digest for https://example.test/pr/1" } },
-                   },
-                 ],
-                 response: "PR #1 published.",
-               },
-             ),
-           };
-         }`,
-      },
-    ),
+    makeCase(`export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       return ctx.done("Published", { state: "published", url: "https://example.test/pr/1" }, { facts: ["published:1"] });
+     }`),
   );
   expect(rDomainState.hostCompletion).toBe("finite-done");
   expect(rDomainState.handlerResult).toMatchObject({
@@ -516,8 +488,6 @@ it("converges plain domain outputs (including unrelated state strings), structur
     summary: "Published",
     result: { state: "published", url: "https://example.test/pr/1" },
     facts: ["published:1"],
-    requests: [{ id: "digest-1", appId: "scout" }],
-    response: "PR #1 published.",
   });
 
   const rStructFacts = await runCase(

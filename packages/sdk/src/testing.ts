@@ -261,8 +261,6 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
       summary,
       ...(output !== undefined ? { output } : {}),
       ...(doneOptions?.facts !== undefined ? { facts: doneOptions.facts } : {}),
-      ...(doneOptions?.requests !== undefined ? { requests: [...doneOptions.requests] } : {}),
-      ...(doneOptions?.response !== undefined ? { response: doneOptions.response } : {}),
     }),
     blocked: (reason: string, facts?: unknown) => ({
       status: "blocked",
