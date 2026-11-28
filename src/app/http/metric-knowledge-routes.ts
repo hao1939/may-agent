@@ -238,6 +238,7 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
     }>;
     const attemptsTruncated = attemptCandidates.length > ATTEMPT_TIMELINE_ROW_LIMIT;
     const attemptRows = attemptCandidates.slice(0, ATTEMPT_TIMELINE_ROW_LIMIT);
+    const runningAttemptKeys = new Set<string>();
 
     for (const r of attemptRows.reverse()) {
       const appId = normalizeTimelineApp(r.appId);
@@ -287,7 +288,9 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
         endedAt: r.state === "running" ? null : (r.finishedAt ?? linkedSession?.endedAt ?? r.startedAt),
       };
       timelineItems.push(item);
-      attemptItemByKey.set(`${r.appId}::${r.attemptId}`, item);
+      const attemptKey = `${r.appId}::${r.attemptId}`;
+      attemptItemByKey.set(attemptKey, item);
+      if (r.state === "running") runningAttemptKeys.add(attemptKey);
     }
 
     const wfCandidates = db
@@ -317,20 +320,26 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       const wfKey = wf.appId && wf.attemptId ? `${wf.appId}::${wf.attemptId}` : null;
       const existingAttemptItem = wfKey ? attemptItemByKey.get(wfKey) : undefined;
       if (existingAttemptItem) {
+        const isAttemptRunning = wfKey !== null && runningAttemptKeys.has(wfKey);
         if (wf.status === "error") {
           existingAttemptItem.status = "error";
         } else if (wf.status === "blocked" && existingAttemptItem.status !== "error") {
           existingAttemptItem.status = "blocked";
         } else if (wf.status === "interrupted" && existingAttemptItem.status === "done") {
           existingAttemptItem.status = "interrupted";
-        } else if (wf.status === "running") {
+        } else if (wf.status === "running" && isAttemptRunning) {
           existingAttemptItem.status = "running";
         }
         const params = new URLSearchParams({ workflow: wf.workflow, runs: "true" });
         if (existingAttemptItem.appId) params.set("appId", existingAttemptItem.appId);
         existingAttemptItem.href = `/metrics?${params.toString()}`;
-        existingAttemptItem.detail = `${existingAttemptItem.detail || "workflow"} · ${wf.status} (${wf.runId})`;
-        if (wf.endedAt !== null && (existingAttemptItem.endedAt === null || wf.endedAt > existingAttemptItem.endedAt)) {
+        const wfStatusLabel = wf.status === "running" && !isAttemptRunning ? "stale-running" : wf.status;
+        existingAttemptItem.detail = `${existingAttemptItem.detail || "workflow"} · ${wfStatusLabel} (${wf.runId})`;
+        if (
+          !isAttemptRunning &&
+          wf.endedAt !== null &&
+          (existingAttemptItem.endedAt === null || wf.endedAt > existingAttemptItem.endedAt)
+        ) {
           existingAttemptItem.endedAt = wf.endedAt;
         }
         continue;

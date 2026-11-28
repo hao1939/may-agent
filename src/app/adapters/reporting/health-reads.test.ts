@@ -73,6 +73,27 @@ describe("SQLite health observations", () => {
     });
   });
 
+  test("excludes workflow rows whose owning attempt is already terminal from running count and exposes staleRunning", () => {
+    db.prepare(
+      `INSERT INTO app_task_attempts
+       (app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+       VALUES
+       ('alex', 'att-stopped', 't-1', 1, 'interrupted', ?, '{}'),
+       ('alex', 'att-live', 't-2', 1, 'running', ?, '{}')`,
+    ).run(now - 500, now - 400);
+    db.prepare(
+      `INSERT INTO workflow_runs
+       (runId, workflow, task, status, app_id, task_id, task_generation, attempt_id, startedAt, endedAt)
+       VALUES
+       ('wf-stale', 'develop-change', 'Work', 'running', 'alex', 't-1', 1, 'att-stopped', ?, NULL),
+       ('wf-live', 'develop-change', 'Work', 'running', 'alex', 't-2', 1, 'att-live', ?, NULL)`,
+    ).run(now - 500, now - 400);
+
+    const report = readWorkflowHealth(db, query(), now);
+    expect(report.running).toBe(1);
+    expect(report.coverage.staleRunning).toBe(1);
+  });
+
   test("exact source groups and keyset paging do not drop equal-time runs or truncate totals", () => {
     for (let i = 0; i < HEALTH_GROUP_LIMIT + 5; i++)
       run(`run_${String(i).padStart(3, "0")}`, "done", now - 1, null, now - 10, `source-${i}`);

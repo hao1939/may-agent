@@ -103,4 +103,36 @@ describe("stale workflow run cleanup", () => {
     // Should not throw
     manager.cleanupStaleSessions();
   });
+
+  it("interrupts dead pre-restart workflow runs even when an unrelated live session is active", async () => {
+    const { markSessionActive, markSessionInactive } = await import("../../src/lib/persistence.js");
+
+    insertWorkflowRun(persistDir, {
+      ...makeStaleRun("stopped-owner-workflow"),
+      parentSessionId: null,
+      startedAt: 1,
+    });
+    insertWorkflowRun(persistDir, {
+      ...makeStaleRun("live-parent-workflow"),
+      parentSessionId: "unrelated-live-owner",
+      startedAt: 2,
+    });
+
+    const manager = new SubagentManager({ persistDir });
+    manager.registry.saveSession("unrelated-live-owner", {
+      agent: "fixture",
+      task: "Independent live work",
+      kind: "call",
+      status: "running",
+      startedAt: Date.now(),
+    });
+    markSessionActive(persistDir, "unrelated-live-owner");
+
+    manager.cleanupStaleSessions();
+
+    expect(getWorkflowRun(persistDir, "stopped-owner-workflow")?.status).toBe("interrupted");
+    expect(getWorkflowRun(persistDir, "live-parent-workflow")?.status).toBe("running");
+
+    markSessionInactive(persistDir, "unrelated-live-owner");
+  });
 });

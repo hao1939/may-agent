@@ -116,11 +116,24 @@ export function readWorkflowHealth(db: SqliteDb, query: Query, now = Date.now())
       LIMIT ?`,
       )
       .all(...values, HEALTH_GROUP_LIMIT + 1) as Group[];
-    const running = (
-      db
-        .prepare(`SELECT COUNT(*) AS count FROM workflow_runs WHERE ${identity} AND status = 'running'`)
-        .get(...bindings) as { count: number }
-    ).count;
+    const terminalAttemptClause = `EXISTS (
+      SELECT 1 FROM app_task_attempts a
+      WHERE a.app_id = workflow_runs.app_id
+        AND a.task_id = workflow_runs.task_id
+        AND a.task_generation = workflow_runs.task_generation
+        AND a.attempt_id = workflow_runs.attempt_id
+        AND a.state IN ('completed', 'failed', 'interrupted')
+    )`;
+    const runningCounts = db
+      .prepare(
+        `SELECT
+          COUNT(CASE WHEN NOT ${terminalAttemptClause} THEN 1 END) AS running,
+          COUNT(CASE WHEN ${terminalAttemptClause} THEN 1 END) AS staleRunning
+         FROM workflow_runs WHERE ${identity} AND status = 'running'`,
+      )
+      .get(...bindings) as { running: number; staleRunning: number };
+    const running = runningCounts.running;
+    const staleRunning = runningCounts.staleRunning;
     const undated = (
       db
         .prepare(
@@ -168,7 +181,11 @@ export function readWorkflowHealth(db: SqliteDb, query: Query, now = Date.now())
       matchingRuns,
       outcome: selectedOutcome,
       next: candidates.length > limit && last ? { before: last.endedAt, beforeId: last.runId } : null,
-      coverage: { undatedFinishedStartedInWindow: undated, retainedOnly: true },
+      coverage: {
+        undatedFinishedStartedInWindow: undated,
+        ...(staleRunning > 0 ? { staleRunning } : {}),
+        retainedOnly: true,
+      },
     };
   } catch (error) {
     db.exec("ROLLBACK TO workflow_health_read");

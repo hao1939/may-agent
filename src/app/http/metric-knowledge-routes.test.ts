@@ -191,4 +191,35 @@ describe("liveness attempt candidates", () => {
     expect(body.timeline.truncatedSources).toEqual([]);
     expect(body.timeline.truncated).toBe(false);
   });
+
+  test("does not overwrite a terminal attempt status with running when a joined workflow row is stale", async () => {
+    insert("alpha", "interrupted-attempt", since + 10, "interrupted", since + 50);
+    insert("alpha", "active-attempt", since + 20, "running");
+    db.prepare(
+      `INSERT INTO workflow_runs
+       (runId, workflow, task, status, app_id, task_id, task_generation, attempt_id, startedAt, endedAt)
+       VALUES
+       ('wf-stale', 'scout-explore', 'Explore', 'running', 'alpha', 'task-interrupted-attempt', 1, 'interrupted-attempt', ?, NULL),
+       ('wf-prior-err', 'scout-explore', 'Explore', 'error', 'alpha', 'task-active-attempt', 1, 'active-attempt', ?, ?),
+       ('wf-live', 'scout-explore', 'Explore', 'running', 'alpha', 'task-active-attempt', 1, 'active-attempt', ?, NULL)`,
+    ).run(since + 10, since + 21, since + 22, since + 25);
+
+    const body = (await read()) as Timeline & {
+      timeline: { appLanes: Array<{ items: Array<{ id: string; status: string; detail: string; endedAt: number | null }> }> };
+    };
+    const items = body.timeline.appLanes.flatMap((lane) => lane.items);
+    const interruptedItem = items.find((item) => item.id === "att:alpha:interrupted-attempt");
+    const activeItem = items.find((item) => item.id === "att:alpha:active-attempt");
+
+    expect(interruptedItem).toMatchObject({
+      status: "interrupted",
+      endedAt: since + 50,
+      detail: expect.stringContaining("stale-running (wf-stale)"),
+    });
+    expect(activeItem).toMatchObject({
+      status: "running",
+      endedAt: null,
+      detail: expect.stringContaining("running (wf-live)"),
+    });
+  });
 });
