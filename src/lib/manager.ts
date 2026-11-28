@@ -1024,7 +1024,6 @@ export class SubagentManager {
       if (run?.status === "running" && run.startedAt < this._createdAt && !isProtected(run)) {
         updateWorkflowRun(this._persistDir, runId, {
           status: "interrupted",
-          endedAt: Date.now(),
           result_reason: "Process restarted",
         });
       }
