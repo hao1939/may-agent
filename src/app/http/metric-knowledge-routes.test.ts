@@ -200,8 +200,9 @@ describe("liveness attempt candidates", () => {
        (runId, workflow, task, status, app_id, task_id, task_generation, attempt_id, startedAt, endedAt)
        VALUES
        ('wf-stale', 'scout-explore', 'Explore', 'running', 'alpha', 'task-interrupted-attempt', 1, 'interrupted-attempt', ?, NULL),
+       ('wf-prior-err', 'scout-explore', 'Explore', 'error', 'alpha', 'task-active-attempt', 1, 'active-attempt', ?, ?),
        ('wf-live', 'scout-explore', 'Explore', 'running', 'alpha', 'task-active-attempt', 1, 'active-attempt', ?, NULL)`,
-    ).run(since + 10, since + 20);
+    ).run(since + 10, since + 21, since + 22, since + 25);
 
     const body = (await read()) as Timeline & {
       timeline: { appLanes: Array<{ items: Array<{ id: string; status: string; detail: string; endedAt: number | null }> }> };
@@ -218,6 +219,7 @@ describe("liveness attempt candidates", () => {
     expect(activeItem).toMatchObject({
       status: "running",
       endedAt: null,
+      detail: expect.stringContaining("running (wf-live)"),
     });
   });
 });
