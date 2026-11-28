@@ -167,7 +167,11 @@ export const LEGACY_ENDPOINT_MODELS = {
 const ENDPOINT_CONTEXT_WINDOWS = {
   "gpt-6-astra": 400_000,
   "gemini-4-argon": 200_000,
+  "gemini-4-carbon": 200_000,
+  "gemini-4-hydrogen": 200_000,
+  "gemini-4-neon": 200_000,
   "gpt-6.1-sol": 400_000,
+  "gpt-6.1-terra": 400_000,
   "gpt-6.2-sol": 400_000,
   "claude-opus-4-6": 72_000,
   "gpt-5.4": 400_000,
@@ -203,6 +207,24 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
     apiKey,
   };
 
+  const gemini4Base = getBuiltinModel("github-copilot", "gemini-4-argon");
+  const gemini4Route = (
+    id: "gemini-4-argon" | "gemini-4-carbon" | "gemini-4-hydrogen" | "gemini-4-neon",
+    name: string,
+    fallbackModel?: ModelWithApiKey,
+  ): ModelWithFallback => ({
+    ...gemini4Base,
+    id,
+    name,
+    // This gateway serves Gemini 4 tool calls through Responses, not the
+    // catalog's Chat Completions protocol, and advertises a 200k input cap.
+    api: "openai-responses",
+    contextWindow: ENDPOINT_CONTEXT_WINDOWS[id],
+    baseUrl,
+    apiKey,
+    ...(fallbackModel ? { fallbackModel } : {}),
+  });
+
   const registry: ModelRegistry = {
     "gpt-6-astra": {
       ...getBuiltinModel("github-copilot", "gpt-6-astra"),
@@ -210,18 +232,20 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
       baseUrl,
       apiKey,
     },
-    "gemini-4-argon": {
-      ...getBuiltinModel("github-copilot", "gemini-4-argon"),
-      // This gateway serves Argon tool calls through Responses, not the
-      // catalog's Chat Completions protocol, and advertises a 200k input cap.
-      api: "openai-responses",
-      contextWindow: ENDPOINT_CONTEXT_WINDOWS["gemini-4-argon"],
-      baseUrl,
-      apiKey,
-    },
+    "gemini-4-argon": gemini4Route("gemini-4-argon", "Gemini 4 Argon"),
+    "gemini-4-carbon": gemini4Route("gemini-4-carbon", "Gemini 4 Carbon", claudeOpus5),
+    "gemini-4-hydrogen": gemini4Route("gemini-4-hydrogen", "Gemini 4 Hydrogen"),
+    "gemini-4-neon": gemini4Route("gemini-4-neon", "Gemini 4 Neon", claudeOpus5),
     "gpt-6.1-sol": {
       ...getBuiltinModel("github-copilot", "gpt-6.1-sol"),
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-6.1-sol"],
+      baseUrl,
+      apiKey,
+      fallbackModel: claudeOpus5,
+    },
+    "gpt-6.1-terra": {
+      ...getBuiltinModel("github-copilot", "gpt-6.1-terra"),
+      contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-6.1-terra"],
       baseUrl,
       apiKey,
       fallbackModel: claudeOpus5,
