@@ -21,7 +21,7 @@ import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/t
 import type { TaskDefinitionSource, TaskWorkflowInput, TaskWorkflowRunner } from "../../core/tasks/execution.js";
 import { getWorkflowRun } from "../../../lib/db/workflows.js";
 import { localAgentDir } from "../discovery/local-agents.js";
-import { translateHostedBlockedContribution } from "./hosted-result-settlement.js";
+import { translateHostedBlockedContribution, translateHostedExecutionResult } from "./hosted-result-settlement.js";
 
 const MAX_INLINE_WORKFLOW_FACT_BYTES = 8192;
 
@@ -92,6 +92,24 @@ function requireWorkflowRuntimeOptions(opts: TaskDefinitionSource): {
     sharedRoot: opts.sharedRoot,
   };
 }
+
+const EXPLICIT_RECONCILE_KEYS = new Set([
+  "state",
+  "summary",
+  "facts",
+  "result",
+  "response",
+  "conditions",
+  "requests",
+  "actions",
+  "communication",
+  "inputKeys",
+  "acceptedLiveEventIds",
+  "reviewAt",
+  "report",
+  "continue",
+  "acceptanceBasis",
+]);
 
 function appWorkflowRuntimePaths(
   opts: TaskDefinitionSource,
@@ -191,7 +209,14 @@ async function executeTaskWorkflow(
       agentName,
     });
     const taskContext = taskExecutionContext(input, definitions);
-    const { result, runId, verifier } = await runWorkflowDirect({
+    const attemptCountRow = runtimeCtx
+      .getDb()
+      .prepare(
+        "SELECT COUNT(*) AS n FROM app_task_attempts WHERE app_id = ? AND task_id = ? AND task_generation = ?",
+      )
+      .get(descriptor.id, taskDetail.id, taskDetail.generation) as { n?: number } | null;
+    const attemptNumber = Math.max(1, Number(attemptCountRow?.n ?? 1));
+    const { result, runId, verifier, answeredHumanConditions } = await runWorkflowDirect({
       workflowName: capability.workflow,
       task,
       manager,
@@ -208,6 +233,7 @@ async function executeTaskWorkflow(
       persistDir: runtime.persistDir,
       workflowDir: paths.workflowDir,
       projectId: descriptor.id,
+      attemptNumber,
       ...taskContext,
       taskContext,
       trace,
@@ -218,31 +244,68 @@ async function executeTaskWorkflow(
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
+    const answeredActions = (answeredHumanConditions ?? []).map((item) => ({
+      kind: "retire-condition" as const,
+      conditionId: item.conditionId,
+      expectedConditionGeneration: item.expectedConditionGeneration,
+      reason: "Answered by human task input",
+    }));
+    const answeredFactItems = (answeredHumanConditions ?? []).map((item) => `human-answer:${item.conditionId}`);
     const storedWorkflowFacts = workflowFactsForTaskStorage(result.facts, runId);
     const missingProjectedFacts = !done
       && storedWorkflowFacts.projected
       && !workflowRunRetainsFacts(runtime.persistDir, runId);
-    let diagnosticFacts: string[] = [];
+    const diagnosticFacts: string[] = [...answeredFactItems];
     // A deliberate blocker is not a transport retry, but its diagnostic
     // context must remain visible to the same Task and its caller. The shared
     // settlement boundary admits this evidence with the contribution facts.
     if (result.type === "blocked" && result.context !== undefined) {
       const context = JSON.stringify(result.context);
-      diagnosticFacts = [
+      diagnosticFacts.push(
         Buffer.byteLength(context, "utf8") <= 8192
           ? `workflow-blocker-context:${context}`
           : `workflow-blocker-context:see workflow-run:${runId} (exceeds 8192-byte Task facts bound)`,
-      ];
+      );
     }
-    const handlerResult = done
-      ? normalizeTaskHandlerResult(
-          result.output,
-          { type: "done", summary, runId },
-          {
-            validateAction: input.descriptor.app.tasks?.validateAction,
-            validateCondition: input.descriptor.app.tasks?.validateCondition,
-          },
-        )
+    const outputRec =
+      done && result.output !== null && typeof result.output === "object" && !Array.isArray(result.output)
+        ? (result.output as Record<string, unknown>)
+        : undefined;
+    const isExplicitReconcileResult =
+      done &&
+      outputRec !== undefined &&
+      typeof outputRec.state === "string" &&
+      typeof outputRec.summary === "string" &&
+      Array.isArray(outputRec.facts) &&
+      Object.keys(outputRec).every((key) => EXPLICIT_RECONCILE_KEYS.has(key));
+    const translatedDoneRun =
+      done && !isExplicitReconcileResult
+        ? translateHostedExecutionResult(
+            {
+              id: runId,
+              status: "done",
+              summary,
+              ...(result.output !== undefined ? { output: result.output } : {}),
+              facts:
+                result.facts !== undefined && !(Array.isArray(result.facts) && result.facts.length === 0)
+                  ? storedWorkflowFacts.facts
+                  : [summary],
+            },
+            input,
+            answeredFactItems.length > 0 ? { diagnosticFacts: answeredFactItems } : {},
+          )
+        : null;
+    let handlerResult = done
+      ? isExplicitReconcileResult
+        ? normalizeTaskHandlerResult(
+            result.output,
+            { type: "done", summary, runId },
+            {
+              validateAction: input.descriptor.app.tasks?.validateAction,
+              validateCondition: input.descriptor.app.tasks?.validateCondition,
+            },
+          )
+        : translatedDoneRun!.handlerResult
       : missingProjectedFacts
         ? {
             state: "error" as const,
@@ -260,6 +323,57 @@ async function executeTaskWorkflow(
               storageFacts: storedWorkflowFacts.facts,
             },
           ).handlerResult;
+    if (
+      answeredActions.length > 0 &&
+      !isExplicitReconcileResult &&
+      (handlerResult.state === "converged" || handlerResult.state === "waiting")
+    ) {
+      let expandedInputKeys: string[] | undefined;
+      if (handlerResult.state === "converged") {
+        const answeredSet = new Set(
+          answeredActions.map((action) => `${action.conditionId}:${action.expectedConditionGeneration}`),
+        );
+        const taskRow = runtimeCtx
+          .getDb()
+          .prepare("SELECT resource_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
+          .get(descriptor.id, taskDetail.id) as { resource_json?: string } | null;
+        const parsedResource = taskRow?.resource_json
+          ? (JSON.parse(taskRow.resource_json) as {
+              status?: {
+                inputWaits?: Record<
+                  string,
+                  { conditions?: Array<{ id: string; generation: number }>; reviewAt?: number }
+                >;
+              };
+            })
+          : null;
+        const unblockedWaitKeys = Object.entries(parsedResource?.status?.inputWaits ?? {}).flatMap(
+          ([key, wait]) =>
+            wait.reviewAt === undefined &&
+            Array.isArray(wait.conditions) &&
+            wait.conditions.length > 0 &&
+            wait.conditions.every((cond) => answeredSet.has(`${cond.id}:${cond.generation}`))
+              ? [key]
+              : [],
+        );
+        if (unblockedWaitKeys.length > 0) {
+          const currentAttemptKeys = [
+            ...reconciliationEvents.items,
+            ...(reconciliationEvents.continuedInputs ?? []),
+          ].flatMap((entry) =>
+            entry.event.type === "app.task.requested" && typeof entry.event.data.idempotencyKey === "string"
+              ? [entry.event.data.idempotencyKey]
+              : [],
+          );
+          expandedInputKeys = [...new Set([...unblockedWaitKeys, ...currentAttemptKeys])];
+        }
+      }
+      handlerResult = {
+        ...handlerResult,
+        actions: [...handlerResult.actions, ...answeredActions],
+        ...(expandedInputKeys ? { inputKeys: expandedInputKeys } : {}),
+      };
+    }
     bus.emit({
       [EVENT_RECORD_ONLY]: true,
       type: "handler.workflow_dispatched",
@@ -283,6 +397,7 @@ async function executeTaskWorkflow(
     return {
       handlerResult,
       runId,
+      ...(translatedDoneRun?.hostCompletion ? { hostCompletion: translatedDoneRun.hostCompletion } : {}),
       ...(!done ? { handlerBlocked: true as const } : {}),
       ...(verifier
         ? {

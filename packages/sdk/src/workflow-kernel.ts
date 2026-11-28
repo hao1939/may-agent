@@ -10,8 +10,26 @@
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
-import { validateCallableInput, validateCallableOptions, type CallableDescriptor } from "./callable.js";
-import type { AgentExecutableModule, AppWorkflowContext as WorkflowContext, Logger } from "./workflow.js";
+import {
+  validateCallableInput,
+  validateCallableOptions,
+  type CallableDescriptor,
+  type ExecutionInput,
+} from "./callable.js";
+import { runCommand } from "./command.js";
+import type {
+  AgentExecutableModule,
+  AppWorkflowContext as WorkflowContext,
+  ConditionObservation,
+  DoneOptions,
+  Logger,
+  WorkflowAgentSession,
+  WorkflowAskAnswer,
+  WorkflowAskRequest,
+  WorkflowParkInput,
+  WorkflowTaskView,
+  WorkflowWorkspace,
+} from "./workflow.js";
 
 const DEFAULT_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 const MAX_TIMER_MS = 2_147_483_647;
@@ -201,6 +219,8 @@ export type WorkflowRunReport = {
   };
   cleanup: WorkflowCleanupStatus;
   observerErrors: string[];
+  /** Verified `human.review` Conditions answered via post-creation human Task input during this run. */
+  answeredHumanConditions?: Array<{ conditionId: string; expectedConditionGeneration: number }>;
 };
 
 export class WorkflowValidationError extends Error {
@@ -348,7 +368,20 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   read?: AppRead;
   events?: WorkflowContext["events"];
   metrics?: WorkflowMetricCapability;
-  workspace?: WorkflowContext["workspace"];
+  workspace?: Partial<WorkflowWorkspace>;
+  task?: WorkflowTaskView;
+  attemptNumber?: number;
+  observations?: Readonly<Record<string, ConditionObservation>>;
+  askHuman?: (request: WorkflowAskRequest, signal: AbortSignal) => Promise<unknown>;
+  invokeAgentSession?: (
+    sessionKey: string,
+    target: string,
+    input: ExecutionInput,
+    options: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+    stepControl: WorkflowKernelStepControl,
+  ) => Promise<WorkflowStepInvocationResult>;
+  closeAgentSessions?: () => Promise<void>;
+  onProgress?: (status: string) => void;
   reconciliation?: WorkflowContext<TInput>["reconciliation"];
   reviseTask?: WorkflowContext["reviseTask"];
   closeTask?: WorkflowContext["closeTask"];
@@ -451,6 +484,67 @@ function defaultUnavailableRead(): AppRead {
     tasks: { list: unavailable, get: unavailable },
     execution: unavailable,
     metric: unavailable,
+  };
+}
+
+class WorkflowParkedSignal extends Error {
+  constructor(readonly parkedResult: ExecutionResult<never>) {
+    super(parkedResult.summary);
+    this.name = "WorkflowParkedSignal";
+  }
+}
+
+function buildWorkflowTaskView<TInput>(bindings: WorkflowKernelBindings<TInput>): WorkflowTaskView {
+  if (bindings.task) return bindings.task;
+  const rec = bindings.reconciliation;
+  if (rec) {
+    const prevAccepted = rec.previousAttempt?.acceptedResult;
+    return {
+      appId: rec.appId ?? "unknown",
+      id: rec.taskId ?? "unknown",
+      generation: rec.generation ?? 1,
+      attemptNumber: bindings.attemptNumber ?? 1,
+      outcome: rec.outcome ?? "",
+      acceptance: rec.acceptance ?? [],
+      taskInput: rec.input,
+      newInputs: rec.events?.items ?? [],
+      facts: prevAccepted?.facts ?? rec.task?.facts ?? [],
+      ...(prevAccepted?.result !== undefined
+        ? { previousResult: prevAccepted.result }
+        : rec.task?.result !== undefined
+          ? { previousResult: rec.task.result }
+          : {}),
+    };
+  }
+  const inputRecord = isRecord(bindings.input) ? bindings.input : undefined;
+  const promptOutcome =
+    typeof inputRecord?.prompt === "string" && inputRecord.prompt.trim()
+      ? inputRecord.prompt.trim()
+      : typeof bindings.input === "string" && bindings.input.trim()
+        ? bindings.input.trim()
+        : "Standalone workflow invocation";
+  return {
+    appId: "standalone",
+    id: "standalone",
+    generation: 1,
+    attemptNumber: bindings.attemptNumber ?? 1,
+    outcome: promptOutcome,
+    acceptance: [],
+    taskInput: inputRecord && "data" in inputRecord ? inputRecord.data : bindings.input,
+    newInputs: [],
+    facts: [],
+  };
+}
+
+function buildWorkflowWorkspace<TInput>(bindings: WorkflowKernelBindings<TInput>): WorkflowWorkspace {
+  const fallback = process.cwd();
+  const ws = bindings.workspace;
+  const root = ws?.root ?? ws?.projectRoot ?? ws?.appRoot ?? fallback;
+  return {
+    appRoot: ws?.appRoot ?? root,
+    projectRoot: ws?.projectRoot ?? root,
+    root,
+    output: ws?.output ?? root,
   };
 }
 
@@ -1035,9 +1129,64 @@ export async function runWorkflowInvocation<TInput = unknown>(
     })()) as Promise<ExecutionResult<Static<S>>>;
   }) as WorkflowContext["call"];
 
+  const effectiveWorkspace = buildWorkflowWorkspace(bindings);
+  const effectiveTaskView = buildWorkflowTaskView(bindings);
+  let agentSessionCounter = 0;
+  const answeredHumanConditions: Array<{ conditionId: string; expectedConditionGeneration: number }> = [];
+
+  const parkResult = (wait: WorkflowParkInput): ExecutionResult<never> => {
+    assertActive();
+    const waitDescriptor: Record<string, unknown> = {
+      ...(wait.conditions !== undefined ? { conditions: wait.conditions } : {}),
+      ...(wait.requests !== undefined ? { requests: wait.requests } : {}),
+      ...(wait.retryAfterMs !== undefined ? { retryAfterMs: wait.retryAfterMs } : {}),
+      ...(wait.continue === true ? { continue: true } : {}),
+      ...(wait.facts !== undefined ? { domainFacts: wait.facts } : {}),
+    };
+    return {
+      status: "blocked",
+      summary: wait.summary,
+      ...(wait.result !== undefined ? { output: wait.result as never } : {}),
+      ...(Object.keys(waitDescriptor).length > 0 ? { facts: waitDescriptor } : {}),
+    };
+  };
+
+  const observeCondition = <T = unknown>(subjectOrConditionId: string): ConditionObservation<T> | null => {
+    assertActive();
+    const key = subjectOrConditionId.trim();
+    if (!key) return null;
+    if (bindings.observations && Object.hasOwn(bindings.observations, key)) {
+      return bindings.observations[key] as ConditionObservation<T>;
+    }
+    const cond = bindings.reconciliation?.task?.conditions?.find(
+      (item) => item.id === key || item.subject === key,
+    );
+    if (!cond?.observation) return null;
+    return {
+      state: cond.observation.state,
+      ...(cond.observation.observed !== undefined ? { observed: cond.observation.observed as T } : {}),
+      ...(cond.observation.facts ? { facts: cond.observation.facts } : {}),
+      ...(cond.observation.observedAt ? { observedAt: cond.observation.observedAt } : {}),
+    };
+  };
+
   const ctx: WorkflowContext<TInput> = {
     input: bindings.input as WorkflowContext<TInput>["input"],
     signal: controller.signal,
+    task: effectiveTaskView,
+    workspace: effectiveWorkspace,
+    exec: (argv, execOpts) => {
+      try {
+        assertActive();
+      } catch (err) {
+        return Promise.reject(err);
+      }
+      if (enclosingReadonly) {
+        return Promise.reject(new Error(`Workflow "${module.name}" is read-only and cannot execute shell commands`));
+      }
+      const cwd = execOpts?.cwd ?? effectiveWorkspace.root;
+      return trackOperation(runCommand(cwd, [...argv], controller.signal));
+    },
     list: () => {
       assertActive();
       return bindings.listTargets?.() ?? Object.freeze([]);
@@ -1045,6 +1194,221 @@ export async function runWorkflowInvocation<TInput = unknown>(
     ...(bindings.reconciliation ? { reconciliation: bindings.reconciliation } : {}),
     read: rawRead,
     log: logger,
+    progress: (status: string) => {
+      if (fenced || controller.signal.aborted) return;
+      logAt("info", `[progress] ${status}`);
+      invokeObserver(bindings.onProgress ? () => bindings.onProgress!(status) : undefined);
+    },
+    observe: observeCondition,
+    park: parkResult,
+    ask: async <T = unknown>(request: WorkflowAskRequest): Promise<WorkflowAskAnswer<T>> => {
+      assertActive();
+      const condId = request.id?.trim() || `ask-${(request.subject?.trim() || "human").replace(/[^A-Za-z0-9._:-]/g, "_")}`;
+      const subject = request.subject?.trim() || `workflow-ask:${effectiveTaskView.id}:${condId}`;
+      const hasDiscreteChoices = Boolean(request.options && request.options.length > 0);
+      const existing = observeCondition<T>(condId) ?? observeCondition<T>(subject);
+      if (existing?.state === "true") {
+        const obsRecord =
+          existing.observed && typeof existing.observed === "object" && !Array.isArray(existing.observed)
+            ? (existing.observed as Record<string, unknown>)
+            : undefined;
+        const obsData =
+          obsRecord?.data && typeof obsRecord.data === "object" && !Array.isArray(obsRecord.data)
+            ? (obsRecord.data as Record<string, unknown>)
+            : undefined;
+        const resolved =
+          obsData?.decision !== undefined
+            ? obsData.decision
+            : obsRecord?.decision !== undefined
+              ? obsRecord.decision
+              : existing.observed ?? existing.facts?.[0] ?? true;
+        return {
+          status: "answered",
+          value: resolved as T,
+        };
+      }
+      const openWait = bindings.reconciliation?.waits?.open?.find(
+        (item) => item.conditionId === condId || item.subject === subject,
+      );
+      const parkedCond = bindings.reconciliation?.task?.conditions?.find(
+        (item) => item.id === condId || item.subject === subject,
+      );
+      const condType = openWait?.type ?? parkedCond?.type;
+      // Discrete approvals (`options` / `project.approval.submitted`) require the
+      // Host's verified approval proposal tracker; only freeform `human.review`
+      // questions accept addressed human Task messages.
+      if (!hasDiscreteChoices && (parkedCond || openWait) && condType === "human.review") {
+        const resolvedCondId = openWait?.conditionId ?? parkedCond?.id ?? condId;
+        const resolvedGen = openWait?.conditionGeneration ?? parkedCond?.observation?.generation ?? 1;
+        const openHumanReviewIds = new Set<string>([
+          ...(bindings.reconciliation?.waits?.open ?? [])
+            .filter((item) => item.type === "human.review" && item.state !== "true")
+            .map((item) => item.conditionId),
+          ...(bindings.reconciliation?.task?.conditions ?? [])
+            .filter((item) => item.type === "human.review" && item.observation?.state !== "true")
+            .map((item) => item.id),
+        ]);
+        const inputsByKey = new Map(
+          (bindings.reconciliation?.events?.inputs ?? []).map((inputItem) => [inputItem.key, inputItem]),
+        );
+        const currentItems = bindings.reconciliation?.events?.items ?? [];
+        for (let idx = currentItems.length - 1; idx >= 0; idx--) {
+          const entry = currentItems[idx]!;
+          const ev = entry.event;
+          if (ev.type !== "app.task.requested") continue;
+          const evData =
+            ev.data && typeof ev.data === "object" && !Array.isArray(ev.data)
+              ? (ev.data as Record<string, unknown>)
+              : undefined;
+          if (typeof evData?.idempotencyKey !== "string") continue;
+          const evRequest =
+            evData.request && typeof evData.request === "object" && !Array.isArray(evData.request)
+              ? (evData.request as Record<string, unknown>)
+              : undefined;
+          // Require Host-projected admission provenance matching the exact request ID.
+          const admittedInput = inputsByKey.get(evData.idempotencyKey);
+          if (!admittedInput || admittedInput.source.kind !== "human" || evRequest?.id !== admittedInput.id) {
+            continue;
+          }
+          const rawInputObj = evRequest?.input;
+          const evInput =
+            rawInputObj && typeof rawInputObj === "object" && !Array.isArray(rawInputObj)
+              ? (rawInputObj as Record<string, unknown>)
+              : undefined;
+          const evInputData =
+            evInput?.data && typeof evInput.data === "object" && !Array.isArray(evInput.data)
+              ? (evInput.data as Record<string, unknown>)
+              : undefined;
+          const evContext =
+            evInputData?.context && typeof evInputData.context === "object" && !Array.isArray(evInputData.context)
+              ? (evInputData.context as Record<string, unknown>)
+              : undefined;
+          if (
+            evContext?.expectedGeneration !== undefined &&
+            Number(evContext.expectedGeneration) !== effectiveTaskView.generation
+          ) {
+            continue;
+          }
+          const anchoredCondId =
+            typeof evContext?.conditionId === "string" && evContext.conditionId.trim()
+              ? evContext.conditionId.trim()
+              : undefined;
+          if (anchoredCondId !== undefined) {
+            if (anchoredCondId !== resolvedCondId) continue;
+            if (
+              evContext?.conditionGeneration !== undefined &&
+              Number(evContext.conditionGeneration) !== resolvedGen
+            ) {
+              continue;
+            }
+          } else if (openHumanReviewIds.size > 1) {
+            // Refuse unanchored freeform replies when multiple human.review Conditions are open.
+            continue;
+          }
+          const replyValue =
+            evInputData?.message ??
+            evData?.answer ??
+            evData?.message;
+          if (replyValue !== undefined) {
+            if (
+              Number.isSafeInteger(resolvedGen) &&
+              resolvedGen > 0 &&
+              !answeredHumanConditions.some((item) => item.conditionId === resolvedCondId)
+            ) {
+              answeredHumanConditions.push({
+                conditionId: resolvedCondId,
+                expectedConditionGeneration: resolvedGen,
+              });
+            }
+            return { status: "answered", value: replyValue as T };
+          }
+        }
+      }
+      if (bindings.askHuman) {
+        const rawValue = await trackOperation(bindings.askHuman(request, controller.signal));
+        assertActive();
+        const normalizedValue = typeof rawValue === "string" ? rawValue.trim() : rawValue;
+        if (
+          hasDiscreteChoices &&
+          (typeof normalizedValue !== "string" || !request.options!.includes(normalizedValue))
+        ) {
+          throw new Error(
+            `Invalid answer ${JSON.stringify(normalizedValue)} for "${condId}"; allowed choices: ${request.options!.join(", ")}`,
+          );
+        }
+        return { status: "answered", value: normalizedValue as T };
+      }
+      throw new WorkflowParkedSignal(
+        parkResult({
+          summary: request.prompt,
+          conditions: [
+            hasDiscreteChoices
+              ? {
+                  id: condId,
+                  type: "project.approval.submitted",
+                  subject,
+                  expected: { anyOf: [...request.options!] },
+                  owner: "human",
+                  requestedAction: request.prompt,
+                }
+              : {
+                  id: condId,
+                  type: "human.review",
+                  subject,
+                  expected: { reviewed: true },
+                  owner: "human",
+                  requestedAction: request.prompt,
+                },
+          ],
+        }),
+      );
+    },
+    agent: (target: string): WorkflowAgentSession => {
+      assertActive();
+      if (!target || typeof target !== "string" || !target.trim()) {
+        throw new Error("ctx.agent() requires a non-empty target name");
+      }
+      const normalizedTarget = target.trim();
+      const sessionKey = `${executionId}:agent:${agentSessionCounter++}:${normalizedTarget}`;
+      let closed = false;
+      let chain: Promise<unknown> = Promise.resolve();
+      const sendImpl = <TOut = unknown>(
+        rawInput: ExecutionInput | string,
+        callOpts?: CallOptions<TSchema> & { schema?: TSchema },
+      ): Promise<ExecutionResult<TOut>> => {
+        try {
+          assertActive();
+          if (closed) throw new Error(`Agent session "${normalizedTarget}" is closed`);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+        const envelope: ExecutionInput = typeof rawInput === "string" ? { prompt: rawInput } : rawInput;
+        const next = chain.then(async () => {
+          assertActive();
+          if (closed) throw new Error(`Agent session "${normalizedTarget}" is closed`);
+          if (bindings.invokeAgentSession) {
+            return runBoundStep(
+              "agent",
+              normalizedTarget,
+              safePromptPreview(envelope),
+              callOpts,
+              (stepControl, effectiveOptions) =>
+                bindings.invokeAgentSession!(sessionKey, normalizedTarget, envelope, effectiveOptions, stepControl),
+            ) as Promise<ExecutionResult<TOut>>;
+          }
+          return callOverload(normalizedTarget, envelope, callOpts as any) as Promise<ExecutionResult<TOut>>;
+        });
+        chain = next.then(() => undefined, () => undefined);
+        return trackOperation(next);
+      };
+      return {
+        send: sendImpl as WorkflowAgentSession["send"],
+        close: async () => {
+          closed = true;
+          await chain;
+        },
+      };
+    },
     metrics: {
       define: (definition) => {
         assertActive();
@@ -1067,7 +1431,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
         return rawMetrics.evaluate(id);
       },
     },
-    ...(bindings.workspace ? { workspace: bindings.workspace } : {}),
     ...(!enclosingReadonly && bindings.reviseTask
       ? {
           reviseTask: (change) => {
@@ -1137,10 +1500,11 @@ export async function runWorkflowInvocation<TInput = unknown>(
         return tracked;
       },
     },
-    done: <T>(summary: string, output?: T): ExecutionResult<T> => ({
+    done: <T = undefined>(summary: string, output?: T, options?: DoneOptions): ExecutionResult<T> => ({
       status: "done",
       summary,
       ...(output !== undefined ? { output } : {}),
+      ...(options?.facts !== undefined ? { facts: options.facts } : {}),
     }),
     blocked: (reason: string, facts?: unknown): ExecutionResult<never> => ({
       status: "blocked",
@@ -1189,7 +1553,16 @@ export async function runWorkflowInvocation<TInput = unknown>(
   try {
     const execution = (async () => {
       assertActive();
-      const authored = await module.execute(ctx);
+      let authored: unknown;
+      try {
+        authored = await module.execute(ctx);
+      } catch (err) {
+        if (err instanceof WorkflowParkedSignal) {
+          authored = err.parkedResult;
+        } else {
+          throw err;
+        }
+      }
       assertActive();
       const normalized = normalizeWorkflowContribution(authored, Boolean(bindings.taskOwned));
       const shouldValidateOutput = normalized.type === "done" || normalized.output !== undefined;
@@ -1241,6 +1614,13 @@ export async function runWorkflowInvocation<TInput = unknown>(
         unsubscribe();
       } catch {
         // Ignore unsubscribe errors during finalization.
+      }
+    }
+    if (bindings.closeAgentSessions) {
+      try {
+        await bindings.closeAgentSessions();
+      } catch {
+        // Best-effort session cleanup.
       }
     }
     await Promise.allSettled([...activeOperations]);
@@ -1387,6 +1767,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       limits,
       cleanup,
       observerErrors,
+      ...(answeredHumanConditions.length > 0 ? { answeredHumanConditions } : {}),
     },
   };
 }

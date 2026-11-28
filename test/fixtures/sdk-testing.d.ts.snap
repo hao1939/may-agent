@@ -111,3 +111,66 @@ export type WorkflowTestRunResult = {
 export declare function runTargetTest<TInput = unknown>(moduleOrTarget: WorkflowExecutableModule<TInput> | string, options: TargetTestOptions<TInput>): Promise<WorkflowTestRunResult>;
 /** @deprecated Use `runTargetTest(moduleOrTarget, { input, mocks })`. */
 export declare function runWorkflowTest<TInput = unknown>(moduleOrTarget: WorkflowExecutableModule<TInput> | string, options: TargetTestOptions<TInput>): Promise<WorkflowTestRunResult>;
+export type MockModelToolResult = {
+    toolCallId: string;
+    toolName?: string;
+    text: string;
+    isError: boolean;
+};
+export type MockModelTurnContext = {
+    callIndex: number;
+    lastUserMessage: string;
+    userMessages: string[];
+    toolResults: MockModelToolResult[];
+    tools: Array<{
+        name: string;
+        description: string;
+    }>;
+};
+export type MockModelTurnReply = string | {
+    text?: string;
+    toolCalls?: Array<{
+        id?: string;
+        name: string;
+        input: Record<string, unknown>;
+    }>;
+    finish?: {
+        status?: "done" | "blocked";
+        summary: string;
+        output?: unknown;
+        facts?: unknown;
+    };
+    usage?: {
+        input?: number;
+        output?: number;
+    };
+};
+export type MockModelOptions = {
+    modelId?: string;
+    provider?: string;
+    contextWindow?: number;
+    maxTokens?: number;
+    respond?: MockModelTurnReply | ((ctx: MockModelTurnContext) => MockModelTurnReply | Promise<MockModelTurnReply>);
+};
+export interface MockModel {
+    id: string;
+    name: string;
+    api: string;
+    provider: string;
+    baseUrl: string;
+    reasoning: boolean;
+    input: string[];
+    cost: {
+        input: number;
+        output: number;
+        cacheRead: number;
+        cacheWrite: number;
+    };
+    contextWindow: number;
+    maxTokens: number;
+}
+/**
+ * Deterministic in-memory fixture model (`eve`-style `mockModel`).
+ * Any agent prepared with this model runs locally with zero network or provider credentials.
+ */
+export declare function mockModel(replyOrOptions?: MockModelTurnReply | ((ctx: MockModelTurnContext) => MockModelTurnReply | Promise<MockModelTurnReply>) | MockModelOptions): MockModel;

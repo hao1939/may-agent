@@ -91,16 +91,18 @@ function outputResult(output: unknown): Pick<NormalizedTaskHandlerResult, "resul
   };
 }
 
-const DEFAULT_WAIT_HINT_KEYS = new Set(["retryAfterMs", "conditions", "requests"]);
+const DEFAULT_WAIT_HINT_KEYS = new Set(["retryAfterMs", "conditions", "requests", "continue", "domainFacts"]);
 const TRANSLATED_WAIT_HINT_KEYS = new Set([...DEFAULT_WAIT_HINT_KEYS, "actions", "report", "continue"]);
 
-function isPlainWaitDescriptor(value: unknown): value is AppTaskBlockedSettlement {
+type DefaultWaitDescriptor = AppTaskBlockedSettlement & { domainFacts?: string[] };
+
+function isPlainWaitDescriptor(value: unknown): value is DefaultWaitDescriptor {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
 
-function fallbackWaitHint(facts: unknown): AppTaskBlockedSettlement | null | undefined {
+function fallbackWaitHint(facts: unknown): DefaultWaitDescriptor | null | undefined {
   if (!isPlainWaitDescriptor(facts)) return undefined;
   const keys = Object.keys(facts);
   if (!keys.some((key) => DEFAULT_WAIT_HINT_KEYS.has(key))) return undefined;
@@ -155,13 +157,18 @@ export function translateHostedBlockedContribution(
       return rejectedBlockedResult("Blocked result translator wait descriptor contains unsupported fields", runId);
     }
   }
-  const hint = translatedHint as AppTaskBlockedSettlement | null | undefined;
+  const hint = translatedHint as DefaultWaitDescriptor | null | undefined;
+  const effectiveDomainFacts = translator
+    ? facts
+    : translatedHint !== undefined
+      ? hint?.domainFacts
+      : facts;
   if (hint && hint.actions !== undefined && !Array.isArray(hint.actions)) {
     return rejectedBlockedResult("Blocked result actions must be an array when supplied", runId);
   }
   if (
     (hint?.report === true || hint?.continue === true || (hint?.actions?.length ?? 0) > 0)
-    && !hasDomainProgressFacts(facts)
+    && !hasDomainProgressFacts(effectiveDomainFacts)
   ) {
     return rejectedBlockedResult(
       "Blocked result report, continuation, or actions require non-empty contribution facts; Host diagnostics are not agent evidence",
@@ -174,13 +181,13 @@ export function translateHostedBlockedContribution(
   if (hint && hint.continue !== undefined && hint.continue !== true) {
     return rejectedBlockedResult("Blocked result continue must be true when supplied", runId);
   }
-  if (hint?.report === true && !hasDomainProgressFacts(facts)) {
+  if (hint?.report === true && !hasDomainProgressFacts(effectiveDomainFacts)) {
     return rejectedBlockedResult(
       "Handler result was rejected: report requires waiting or incomplete, true, and non-empty facts",
       runId,
     );
   }
-  if (hint?.continue === true && !hasDomainProgressFacts(facts)) {
+  if (hint?.continue === true && !hasDomainProgressFacts(effectiveDomainFacts)) {
     return rejectedBlockedResult(
       "Handler result was rejected: continue requires waiting and progress facts",
       runId,
@@ -199,11 +206,18 @@ export function translateHostedBlockedContribution(
     }
   }
 
+  const storedFactsSource =
+    hint?.domainFacts && Array.isArray(hint.domainFacts)
+      ? hint.domainFacts
+      : options.storageFacts === undefined
+        ? facts
+        : options.storageFacts;
+
   const handlerResult = normalizeTaskHandlerResult(
     {
       state: "waiting",
       summary,
-      facts: factStrings(options.storageFacts === undefined ? facts : options.storageFacts, options.diagnosticFacts),
+      facts: factStrings(storedFactsSource, options.diagnosticFacts),
       actions: hint?.actions === undefined ? [] : hint.actions,
       ...(hint?.report === true ? { report: true as const } : {}),
       ...(hint?.continue === true ? { continue: true as const } : {}),
@@ -265,12 +279,36 @@ export function translateHostedExecutionResult(
     facts = result.facts;
   }
 
+  const answeredActions = isDirectWorkflowResult(result)
+    ? (result.report.answeredHumanConditions ?? []).map((item) => ({
+        kind: "retire-condition" as const,
+        conditionId: item.conditionId,
+        expectedConditionGeneration: item.expectedConditionGeneration,
+        reason: "Answered by human task input",
+      }))
+    : [];
+  const answeredFacts = isDirectWorkflowResult(result)
+    ? (result.report.answeredHumanConditions ?? []).map((item) => `human-answer:${item.conditionId}`)
+    : [];
+
   if (status === "blocked") {
-    return translateHostedBlockedContribution(
+    const blocked = translateHostedBlockedContribution(
       input,
       { summary, output, facts, runId: resultRunId(result) },
-      options,
+      {
+        ...options,
+        ...(answeredFacts.length > 0
+          ? { diagnosticFacts: [...(options.diagnosticFacts ?? []), ...answeredFacts] }
+          : {}),
+      },
     );
+    if (answeredActions.length > 0 && blocked.handlerResult.state === "waiting") {
+      blocked.handlerResult = {
+        ...blocked.handlerResult,
+        actions: [...blocked.handlerResult.actions, ...answeredActions],
+      };
+    }
+    return blocked;
   }
 
   const runId = resultRunId(result);
@@ -278,8 +316,8 @@ export function translateHostedExecutionResult(
     {
       state: "converged",
       summary,
-      facts: factStrings(facts),
-      actions: [],
+      facts: factStrings(facts, [...(options.diagnosticFacts ?? []), ...answeredFacts]),
+      actions: answeredActions,
       ...outputResult(output),
     },
     { type: "done", summary, runId },

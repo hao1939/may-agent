@@ -301,7 +301,10 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     const agentDefinitions = new Map(prepared.entries.flatMap((entry) => entry.kind === "agent"
       ? [[canonicalCallableName(entry.appId, entry.definition.name), entry.definition] as const]
       : []));
-    return new CallableCatalog(prepared.entries.map((entry): CallableDefinition => {
+    const visibleEntries = prepared.entries.filter(
+      (entry) => !(entry.kind === "agent" && entry.definition.callableFrom === "workflow"),
+    );
+    return new CallableCatalog(visibleEntries.map((entry): CallableDefinition => {
       if (entry.kind === "agent") {
         return {
           appId: entry.appId,

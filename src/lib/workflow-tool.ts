@@ -284,6 +284,8 @@ export interface RunWorkflowDirectOpts {
   workflowInput?: unknown;
   /** Bounded durable-task facts exposed without requiring prompt parsing. */
   reconciliation?: TaskReconciliationContext;
+  /** 1-based attempt number for the owning Task generation. */
+  attemptNumber?: number;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
   /** Host ceiling; workflow declarations may shorten but never extend this bound. */
@@ -302,10 +304,12 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
   result: WorkflowResult;
   runId: string;
   verifier?: { name: string; sourcePath: string; verify: NonNullable<WorkflowModule["verify"]> };
+  answeredHumanConditions?: Array<{ conditionId: string; expectedConditionGeneration: number }>;
 }> {
   // Execution and its verifier must come from the same dispatch snapshot.
   const { catalog, allowance } = await prepareRootWorkflow({ ...opts, workflowDir: opts.workflowDir ?? "" }, opts.workflowName);
   const { workflow } = findWorkflow(catalog, opts.workflowName);
+  let answeredHumanConditions: Array<{ conditionId: string; expectedConditionGeneration: number }> | undefined;
   const runner = createPreparedWorkflowRunner({
     manager: opts.manager,
     agentDefinitions: opts.agentDefinitions,
@@ -328,6 +332,10 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     executionPaths: opts.executionPaths,
     ...(opts.workflowInput !== undefined ? { workflowInput: opts.workflowInput } : {}),
     ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
+    ...(opts.attemptNumber !== undefined ? { attemptNumber: opts.attemptNumber } : {}),
+    onAnsweredHumanConditions: (items) => {
+      answeredHumanConditions = items;
+    },
     executionTimeoutMs: opts.executionTimeoutMs,
     executionTimeoutLimitMs: opts.executionTimeoutLimitMs,
     signal: opts.signal,
@@ -343,6 +351,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
       result: { type: "done", summary: parsed.summary, output: parsed.output, facts: parsed.facts },
       runId: parsed.workflowRunId,
       ...(verifier ? { verifier } : {}),
+      ...(answeredHumanConditions ? { answeredHumanConditions } : {}),
     };
   }
   if (parsed.type === "error") {
@@ -358,6 +367,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
       result: { type: "blocked", reason: parsed.reason, context: parsed.context, output: parsed.output, facts: parsed.facts },
       runId: parsed.workflowRunId,
       ...(verifier ? { verifier } : {}),
+      ...(answeredHumanConditions ? { answeredHumanConditions } : {}),
     };
   }
   if (parsed.type === "interrupted") {
@@ -424,6 +434,10 @@ export interface WorkflowToolOptions {
   trace?: EventTrace;
   /** Resolve the active caller turn trace for long-lived chat sessions. */
   callerTrace?: () => EventTrace | undefined;
+  /** 1-based attempt number for the owning Task generation. */
+  attemptNumber?: number;
+  /** Internal callback receiving verified `human.review` Conditions answered during the root run. */
+  onAnsweredHumanConditions?: (items: Array<{ conditionId: string; expectedConditionGeneration: number }>) => void;
 }
 
 /** Typed workflow execution for SDK, handlers, and other system callers. */
@@ -813,11 +827,14 @@ function createPreparedWorkflowRunner(
       const hostEnv = prepareHostWorkflowEnvironment();
       const recordDiagnostic = createWorkflowDiagnostics(persistDir, runId);
 
+      const agentSessionHistories = new Map<string, import("@earendil-works/pi-agent-core").AgentMessage[]>();
+
       const executePromptStep = async (
         agentName: string,
         agentTask: string,
         stepOpts: (AgentCallOptions & { schema?: TSchema }) | undefined,
         stepControl: WorkflowKernelStepControl,
+        sessionKey?: string,
       ): Promise<WorkflowStepInvocationResult> => {
         const steering = steeringQueue.shift();
         if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
@@ -841,6 +858,7 @@ function createPreparedWorkflowRunner(
             stepIndex: stepControl.stepIndex,
           },
         });
+        const priorMessages = sessionKey ? agentSessionHistories.get(sessionKey) : undefined;
         const stepCallOptions = {
           parentSessionId,
           source: opts.sessionSource ?? `workflow:${workflow.name}`,
@@ -860,10 +878,14 @@ function createPreparedWorkflowRunner(
           outputSchema: stepOpts?.schema,
           toolPolicy: stepControl.tools,
           executionRoot: opts.executionPaths?.workspaceDir,
+          ...(priorMessages ? { initialMessages: priorMessages } : {}),
         };
         let taskResult = definition
           ? await manager.callAgentDefinition(definition, agentTask, stepCallOptions)
           : await manager.callAgent(agentName, agentTask, stepCallOptions);
+        if (sessionKey && Array.isArray(taskResult.messages)) {
+          agentSessionHistories.set(sessionKey, [...taskResult.messages]);
+        }
         let sid = taskResult.sessionId;
         stepControl.signal.throwIfAborted();
 
@@ -996,10 +1018,44 @@ function createPreparedWorkflowRunner(
         timeoutMs: declaredTimeoutMs,
         timeoutLimitMs: executionTimeoutLimitMs,
         allowance: inheritedAllowance,
+        ...(opts.attemptNumber !== undefined ? { attemptNumber: opts.attemptNumber } : {}),
         ...(hostEnv as Pick<
           WorkflowKernelBindings,
           "read" | "metrics" | "workspace" | "reconciliation" | "reviseTask" | "closeTask" | "readCommunication" | "applyTaskChanges" | "events"
         >),
+        onProgress: (status) => {
+          if (run.status !== "running") return;
+          emitRuntimeEvent({
+            [EVENT_RECORD_ONLY]: true,
+            type: "project.task.executor.progress",
+            source: `workflow:${workflow.name}`,
+            owner: normalizeEventOwner(opts.agentName),
+            data: {
+              workflowRunId: runId,
+              workflow: workflow.name,
+              projectId: effectiveProjectId,
+              status,
+              ...(opts.taskBinding ? { appId: opts.taskBinding.appId, taskId: opts.taskBinding.taskId } : {}),
+            },
+          });
+        },
+        invokeAgentSession: async (sessionKey, target, envelope, callOptions, stepControl) => {
+          const steering = steeringQueue.shift();
+          if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
+          const routedTarget = targetCatalog.canonicalRoutes?.get(target);
+          const resolved = routedTarget
+            ? routedTarget.kind === "prompt"
+              ? resolveCallable(callerOwner, routedTarget.owner, targetCatalog)
+              : null
+            : resolveCallable(callerOwner, target, targetCatalog);
+          if (!resolved || resolved.kind !== "prompt") {
+            throw new Error(`ctx.agent("${target}") requires a prompt agent target`);
+          }
+          return executePromptStep(resolved.name, formatExecutionInput(envelope), callOptions, stepControl, sessionKey);
+        },
+        closeAgentSessions: async () => {
+          agentSessionHistories.clear();
+        },
         onLog: ({ level, message }) => {
           if (run.status !== "running") return;
           const safe = recordDiagnostic(level, message);
@@ -1073,6 +1129,9 @@ function createPreparedWorkflowRunner(
         throw outcome.error;
       }
       const result = outcome.result;
+      if (depth === 1 && outcome.report.answeredHumanConditions?.length) {
+        opts.onAnsweredHumanConditions?.(outcome.report.answeredHumanConditions);
+      }
 
       // Finalize the workflow run
       run.endedAt = Date.now();

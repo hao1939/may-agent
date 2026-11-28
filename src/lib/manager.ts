@@ -26,6 +26,7 @@ import {
   invokeCatalogSkill,
   parseExplicitSkill,
   recoverCapturedWorkflowFinish,
+  restoreAgentMessages,
   shouldAttemptWorkflowFinishRecovery,
   validateOperationAllowance,
   workflowFinishRecoveryPrompt,
@@ -136,6 +137,8 @@ export interface RunOptions {
   toolPolicy?: ToolPolicy;
   /** Effective filesystem root supplied by an enclosing workflow/task. */
   executionRoot?: string;
+  /** Optional prior turn messages for multi-turn in-attempt workflow agent sessions. */
+  initialMessages?: AgentMessage[];
 }
 
 export type CallAgentOptions = Pick<
@@ -162,6 +165,7 @@ export type CallAgentOptions = Pick<
   | "toolBindings"
   | "toolPolicy"
   | "executionRoot"
+  | "initialMessages"
   | "deadlineAt"
 > & {
   timeout?: number;
@@ -173,6 +177,7 @@ interface ActiveSession {
   usage?: ReturnType<typeof observeExecutionUsage>;
   executionCleanupConfirmed?: boolean;
   scopedChildren?: Set<Promise<TaskResult>>;
+  restoredMessages?: ReadonlySet<unknown>;
   sessionId: string;
   agent: AgentRun;
   agentName: string;
@@ -488,6 +493,8 @@ export class SubagentManager {
         ...prepared.runner,
         initialState: { ...prepared.runner.initialState, tools },
       });
+      if (opts?.initialMessages) restoreAgentMessages(agent, opts.initialMessages);
+      const restoredMessages = new Set<unknown>(agent.state.messages as unknown[]);
       agent.subscribe(usage.observe);
 
       // JSONL persistence
@@ -499,6 +506,7 @@ export class SubagentManager {
 
       const session: ActiveSession = {
         usage,
+        restoredMessages,
         sessionId,
         agent,
         agentName: def.name,
@@ -800,7 +808,9 @@ export class SubagentManager {
       toolBindings: opts?.toolBindings,
       toolPolicy: opts?.toolPolicy,
       executionRoot: opts?.executionRoot,
+      initialMessages: opts?.initialMessages,
     });
+    const liveResultPromise = this.results.get(sessionId);
     this.callDepths.set(sessionId, parentDepth + 1);
     const cancel = () => {
       try {
@@ -819,9 +829,12 @@ export class SubagentManager {
       await this.waitFor(sessionId);
       throw error;
     }
-    const result = await this.waitFor(sessionId);
+    const result = liveResultPromise ? await liveResultPromise : await this.waitFor(sessionId);
     opts?.signal?.throwIfAborted();
-    return { ...result, messages: this.progress(sessionId, 1000) };
+    return {
+      ...result,
+      messages: Array.isArray(result.messages) && result.messages.length > 0 ? result.messages : this.progress(sessionId, 1000),
+    };
   }
 
   runAgent(
@@ -1147,6 +1160,13 @@ export class SubagentManager {
     const { agent, sessionId, agentName, task, startedAt } = session;
     let errorText: string | undefined;
 
+    const currentSendMessages = (): AgentMessage[] => {
+      const all = agent.state.messages as AgentMessage[];
+      return session.restoredMessages?.size
+        ? all.filter((message) => !session.restoredMessages!.has(message))
+        : all;
+    };
+
     try {
       await this.withExecutionScope(session, async () => {
         let recoveredThrownFailure = false;
@@ -1157,23 +1177,25 @@ export class SubagentManager {
           if (session.status === "interrupted") throw initialCause;
           const initialError = initialCause instanceof Error ? initialCause.message : String(initialCause);
           const messages = agent.state.messages as AgentMessage[];
-          const beforeRecovery = messages.length;
+          const sendMessages = currentSendMessages();
+          const beforeSendLen = sendMessages.length;
           const captured = session.requireFinish
             ? await recoverCapturedWorkflowFinish({
                 sessionId,
-                messages,
+                messages: sendMessages,
                 tools: session.tools ?? [],
                 reason: initialError,
               })
             : { disposition: "ineligible" as const };
-          for (const message of messages.slice(beforeRecovery)) {
+          for (const message of sendMessages.slice(beforeSendLen)) {
+            if (sendMessages !== messages) messages.push(message);
             appendSessionMessage(this._persistDir, sessionId, message);
           }
           if (captured.disposition === "recovered" || captured.disposition === "already-committed") {
             recoveredThrownFailure = true;
           } else if (
             session.requireFinish &&
-            !extractFinishParams(messages as any[]) &&
+            !extractFinishParams(currentSendMessages() as any[]) &&
             shouldAttemptWorkflowFinishRecovery(initialError)
           ) {
             recoveredThrownFailure = true;
@@ -1193,12 +1215,12 @@ export class SubagentManager {
         }
         if (session.status === "interrupted") throw new Error("Session interrupted");
         if (session.requireFinish && !recoveredThrownFailure) {
-          const initialMessages = agent.state.messages as AgentMessage[];
-          const missingFinish = !extractFinishParams(initialMessages as any[]);
+          const sendMessages = currentSendMessages();
+          const missingFinish = !extractFinishParams(sendMessages as any[]);
           const terminalError =
-            extractLastAssistantError(initialMessages) ?? classifyTerminalAssistantFailure(initialMessages);
+            extractLastAssistantError(sendMessages) ?? classifyTerminalAssistantFailure(sendMessages);
           if (missingFinish && shouldAttemptWorkflowFinishRecovery(terminalError)) {
-            if (isRetryableEmptyAssistantFailure(terminalError)) {
+            if (isRetryableEmptyAssistantFailure(terminalError) && sendMessages.length > 0) {
               this.trimAndPersistTerminalEmptyAssistant(session);
             }
             await agent.prompt(workflowFinishRecoveryPrompt(session.outputSchema, terminalError));
@@ -1227,9 +1249,10 @@ export class SubagentManager {
       } catch {}
     }
 
-    // Extract result
+    // Extract result from this send's messages while retaining full conversation history
     const messages = agent.state.messages as AgentMessage[];
-    const finishParams = extractFinishParams(messages as any[]);
+    const sendMessages = currentSendMessages();
+    const finishParams = extractFinishParams(sendMessages as any[]);
     // A committed finish survives cancellation while the turn unwinds. Clear
     // that interruption before validation so a missing required payload stays
     // an execution error. Without a receipt, retain the interruption reason.
@@ -1238,9 +1261,9 @@ export class SubagentManager {
     } else if (!finishParams && session.status === "interrupted" && session.lastError) {
       errorText = session.lastError;
     }
-    const assistantText = extractLastAssistantText(messages);
-    const assistantError = !finishParams ? extractLastAssistantError(messages) : undefined;
-    const terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
+    const assistantText = extractLastAssistantText(sendMessages);
+    const assistantError = !finishParams ? extractLastAssistantError(sendMessages) : undefined;
+    const terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(sendMessages) : undefined;
     if (!errorText && assistantError) {
       errorText = assistantError;
     }
