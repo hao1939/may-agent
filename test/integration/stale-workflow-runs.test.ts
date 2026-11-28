@@ -47,7 +47,7 @@ describe("stale workflow run cleanup", () => {
     const updated = getWorkflowRun(persistDir, "wr_stale_1");
     expect(updated).not.toBeNull();
     expect(updated!.status).toBe("interrupted");
-    expect(updated!.endedAt).toBeTypeOf("number");
+    expect(updated!.endedAt).toBeNull();
     expect(updated!.result_reason).toBe("Process restarted");
     expect(readWorkflowFacts(persistDir, "wr_stale_1")!.diagnostics.entries[0]?.message).toBe("prepared before restart");
   });
