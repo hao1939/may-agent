@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -60,6 +60,7 @@ describe("session DB progress", () => {
 
   it("discovers only running session rows with an exact terminal Task attempt", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "may-session-db-"));
+    const prepare = spyOn(getDb(persistDir), "prepare");
     try {
       const db = getDb(persistDir);
       const addAttempt = (id: string, taskId: string, generation: number, state: string, sessionId?: string) =>
@@ -70,13 +71,15 @@ describe("session DB progress", () => {
           [id, taskId, generation, state, JSON.stringify({ sessionId })],
         );
       addAttempt("terminal", "task-one", 2, "completed", "eligible");
-      addAttempt("live", "task-two", 1, "running");
-      addAttempt("wrong-generation", "task-three", 3, "failed");
+      addAttempt("live", "task-two", 1, "running", "still-running");
+      addAttempt("wrong-generation", "task-three", 3, "failed", "mismatched");
+      addAttempt("wrong-task", "other-task", 1, "interrupted", "wrong-task-session");
       for (const [sessionId, taskId, generation, attemptId] of [
         ["eligible", "task-one", 2, "terminal"],
         ["inherited-helper", "task-one", 2, "terminal"],
         ["still-running", "task-two", 1, "live"],
         ["mismatched", "task-three", 2, "wrong-generation"],
+        ["wrong-task-session", "task-five", 1, "wrong-task"],
         ["missing", "task-four", 1, "absent"],
       ] as const) {
         upsertSession(persistDir, {
@@ -89,6 +92,7 @@ describe("session DB progress", () => {
         });
       }
 
+      prepare.mockClear();
       expect(listTerminalTaskSessionBindings(persistDir, "sample")).toEqual([
         {
           sessionId: "eligible",
@@ -98,7 +102,19 @@ describe("session DB progress", () => {
           attemptId: "terminal",
         },
       ]);
+      const sql = prepare.mock.calls[0]![0];
+      prepare.mockRestore();
+      const plan = (db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all("sample", 512) as { detail: string }[])
+        .map(({ detail }) => detail);
+      const sessionsLoop = plan.findIndex((detail) => /^(SEARCH|SCAN) s\b/.test(detail));
+      const attemptProbe = plan.indexOf(
+        "SEARCH a USING INDEX sqlite_autoindex_app_task_attempts_1 (app_id=? AND attempt_id=?)",
+      );
+      expect(sessionsLoop).toBeGreaterThanOrEqual(0);
+      expect(attemptProbe).toBeGreaterThan(sessionsLoop);
+      expect(plan.join("\n")).not.toContain("idx_app_task_attempts_return_covering");
     } finally {
+      prepare.mockRestore();
       closeDb(persistDir);
       rmSync(persistDir, { recursive: true, force: true });
     }
