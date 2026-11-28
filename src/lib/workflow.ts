@@ -1,4 +1,4 @@
-import type { AgentContext, ExecutionResult, TSchema } from "@may-agent/sdk/app";
+import type { AgentContext, ExecutionResult, TaskAppRequest, TSchema } from "@may-agent/sdk/app";
 import type { TaskResult } from "@may-agent/sdk/runtime";
 export type { WorkflowContext } from "@may-agent/sdk/app";
 
@@ -17,9 +17,10 @@ export type WorkflowEvent =
 // ── Workflow Result ────────────────────────────────────────────────────
 
 /** The outcome of a workflow execution. */
-export type WorkflowResult = ({ type: "done"; summary: string }
-  | { type: "blocked" | "error" | "interrupted"; reason: string; context?: unknown })
-  & { output?: unknown; facts?: unknown };
+export type WorkflowResult = (
+  | { type: "done"; summary: string; requests?: readonly TaskAppRequest[]; response?: string }
+  | { type: "blocked" | "error" | "interrupted"; reason: string; context?: unknown }
+) & { output?: unknown; facts?: unknown };
 
 // ── Workflow Module ────────────────────────────────────────────────────
 
@@ -43,24 +44,12 @@ export interface WorkflowModule {
   entryContentHash: string;
 }
 
-// ── Workflow Interrupted ───────────────────────────────────────────────
+// ── Workflow Steps ─────────────────────────────────────────────────────
 
 export interface CompletedStep {
   step: string;
   sessionId?: string;
   result: TaskResult;
-}
-
-/** Thrown when a steering signal interrupts a running workflow. */
-export class WorkflowInterrupted extends Error {
-  constructor(
-    public readonly steeringMessage: string,
-    public readonly completedSteps: CompletedStep[],
-    public readonly workflowRunId: string = "unknown",
-  ) {
-    super(`Workflow interrupted: ${steeringMessage}`);
-    this.name = "WorkflowInterrupted";
-  }
 }
 
 // ── Workflow Tool Result Types ─────────────────────────────────────────
@@ -72,6 +61,8 @@ export type WorkflowToolResult = (
       workflowRunId: string;
       summary: string;
       output?: unknown;
+      requests?: readonly TaskAppRequest[];
+      response?: string;
       steps: WorkflowStepSummary[];
     }
   | {

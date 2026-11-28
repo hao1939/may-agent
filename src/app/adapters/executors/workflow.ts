@@ -216,7 +216,7 @@ async function executeTaskWorkflow(
       )
       .get(descriptor.id, taskDetail.id, taskDetail.generation) as { n?: number } | null;
     const attemptNumber = Math.max(1, Number(attemptCountRow?.n ?? 1));
-    const { result, runId, verifier, answeredHumanConditions } = await runWorkflowDirect({
+    const { result, runId, verifier } = await runWorkflowDirect({
       workflowName: capability.workflow,
       task,
       manager,
@@ -244,18 +244,11 @@ async function executeTaskWorkflow(
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
-    const answeredActions = (answeredHumanConditions ?? []).map((item) => ({
-      kind: "retire-condition" as const,
-      conditionId: item.conditionId,
-      expectedConditionGeneration: item.expectedConditionGeneration,
-      reason: "Answered by human task input",
-    }));
-    const answeredFactItems = (answeredHumanConditions ?? []).map((item) => `human-answer:${item.conditionId}`);
     const storedWorkflowFacts = workflowFactsForTaskStorage(result.facts, runId);
     const missingProjectedFacts = !done
       && storedWorkflowFacts.projected
       && !workflowRunRetainsFacts(runtime.persistDir, runId);
-    const diagnosticFacts: string[] = [...answeredFactItems];
+    const diagnosticFacts: string[] = [];
     // A deliberate blocker is not a transport retry, but its diagnostic
     // context must remain visible to the same Task and its caller. The shared
     // settlement boundary admits this evidence with the contribution facts.
@@ -278,6 +271,8 @@ async function executeTaskWorkflow(
       typeof outputRec.summary === "string" &&
       Array.isArray(outputRec.facts) &&
       Object.keys(outputRec).every((key) => EXPLICIT_RECONCILE_KEYS.has(key));
+    const doneRequests = done ? result.requests : undefined;
+    const doneResponse = done ? result.response : undefined;
     const translatedDoneRun =
       done && !isExplicitReconcileResult
         ? translateHostedExecutionResult(
@@ -292,13 +287,20 @@ async function executeTaskWorkflow(
                   : [summary],
             },
             input,
-            answeredFactItems.length > 0 ? { diagnosticFacts: answeredFactItems } : {},
+            {
+              ...(doneRequests !== undefined ? { requests: doneRequests } : {}),
+              ...(doneResponse !== undefined ? { response: doneResponse } : {}),
+            },
           )
         : null;
-    let handlerResult = done
+    const handlerResult = done
       ? isExplicitReconcileResult
         ? normalizeTaskHandlerResult(
-            result.output,
+            {
+              ...outputRec!,
+              ...(doneRequests !== undefined && outputRec!.requests === undefined ? { requests: doneRequests } : {}),
+              ...(doneResponse !== undefined && outputRec!.response === undefined ? { response: doneResponse } : {}),
+            },
             { type: "done", summary, runId },
             {
               validateAction: input.descriptor.app.tasks?.validateAction,
@@ -323,57 +325,6 @@ async function executeTaskWorkflow(
               storageFacts: storedWorkflowFacts.facts,
             },
           ).handlerResult;
-    if (
-      answeredActions.length > 0 &&
-      !isExplicitReconcileResult &&
-      (handlerResult.state === "converged" || handlerResult.state === "waiting")
-    ) {
-      let expandedInputKeys: string[] | undefined;
-      if (handlerResult.state === "converged") {
-        const answeredSet = new Set(
-          answeredActions.map((action) => `${action.conditionId}:${action.expectedConditionGeneration}`),
-        );
-        const taskRow = runtimeCtx
-          .getDb()
-          .prepare("SELECT resource_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
-          .get(descriptor.id, taskDetail.id) as { resource_json?: string } | null;
-        const parsedResource = taskRow?.resource_json
-          ? (JSON.parse(taskRow.resource_json) as {
-              status?: {
-                inputWaits?: Record<
-                  string,
-                  { conditions?: Array<{ id: string; generation: number }>; reviewAt?: number }
-                >;
-              };
-            })
-          : null;
-        const unblockedWaitKeys = Object.entries(parsedResource?.status?.inputWaits ?? {}).flatMap(
-          ([key, wait]) =>
-            wait.reviewAt === undefined &&
-            Array.isArray(wait.conditions) &&
-            wait.conditions.length > 0 &&
-            wait.conditions.every((cond) => answeredSet.has(`${cond.id}:${cond.generation}`))
-              ? [key]
-              : [],
-        );
-        if (unblockedWaitKeys.length > 0) {
-          const currentAttemptKeys = [
-            ...reconciliationEvents.items,
-            ...(reconciliationEvents.continuedInputs ?? []),
-          ].flatMap((entry) =>
-            entry.event.type === "app.task.requested" && typeof entry.event.data.idempotencyKey === "string"
-              ? [entry.event.data.idempotencyKey]
-              : [],
-          );
-          expandedInputKeys = [...new Set([...unblockedWaitKeys, ...currentAttemptKeys])];
-        }
-      }
-      handlerResult = {
-        ...handlerResult,
-        actions: [...handlerResult.actions, ...answeredActions],
-        ...(expandedInputKeys ? { inputKeys: expandedInputKeys } : {}),
-      };
-    }
     bus.emit({
       [EVENT_RECORD_ONLY]: true,
       type: "handler.workflow_dispatched",

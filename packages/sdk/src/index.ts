@@ -17,8 +17,6 @@ export type {
   ExecutionResult,
   Logger,
   WorkflowAgentSession,
-  WorkflowAskAnswer,
-  WorkflowAskRequest,
   WorkflowExecOptions,
   WorkflowInput,
   WorkflowParkInput,

@@ -866,20 +866,12 @@ export type WorkflowParkInput = {
   continue?: boolean;
 };
 
-export type WorkflowAskRequest = {
-  id?: string;
-  subject?: string;
-  prompt: string;
-  options?: string[];
-};
-
-export type WorkflowAskAnswer<T = unknown> = {
-  status: "answered";
-  value: T;
-};
-
 export type DoneOptions = {
   facts?: unknown;
+  /** Optional cross-App or follow-up Task requests commissioned upon convergence. */
+  requests?: TaskAppRequest[];
+  /** Optional human-facing Conversation response attached upon convergence. */
+  response?: string;
 };
 
 export type AgentContext<TInput = unknown> = {
@@ -931,8 +923,6 @@ export type AppWorkflowContext<TInput = unknown, TReconciliationInput = unknown>
   observe<T = unknown>(subjectOrConditionId: string): ConditionObservation<T> | null;
   /** Park the workflow on Host Conditions / cross-App requests (or Standalone task.json for --resume). */
   park(wait: WorkflowParkInput): ExecutionResult<never>;
-  /** Request human input/approval; returns immediately when answered or parks cleanly. */
-  ask<T = unknown>(request: WorkflowAskRequest): Promise<WorkflowAskAnswer<T>>;
   /** Report human-readable step progress to Host timeline or Standalone CLI. */
   progress(status: string): void;
   /** Present when a durable App task owns this workflow attempt. */

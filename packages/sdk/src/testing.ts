@@ -140,6 +140,8 @@ export type TestAppWorkflowContextOptions<TInput, TReconciliationInput = unknown
   onEvent?: WorkflowContext["events"]["onEvent"];
   recordMetric?: WorkflowContext["metrics"]["record"];
   workspace?: WorkflowContext["workspace"];
+  exec?: import("./workflow.js").AppWorkflowContext["exec"];
+  observations?: Record<string, import("./workflow.js").ConditionObservation>;
   executionId?: string;
 };
 
@@ -176,25 +178,27 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
     outcome: rec?.outcome ?? "test outcome",
     acceptance: rec?.acceptance ?? [],
     taskInput: (rec?.input ?? options.input) as TReconciliationInput,
-    newInputs: rec?.events.items ?? [],
-    facts: rec?.task.facts ?? [],
-    ...(rec?.task.result ? { previousResult: rec.task.result } : {}),
+    newInputs: rec?.events?.items ?? [],
+    facts: rec?.task?.facts ?? [],
+    ...(rec?.task?.result ? { previousResult: rec.task.result } : {}),
   };
   return {
     input: options.input,
     signal: options.signal ?? new AbortController().signal,
     task: taskView,
     workspace,
-    exec: fn(async (argv: readonly [string, ...string[]]) => ({
-      argv: [...argv],
-      cwd: workspace.root,
-      startedAt: new Date(0).toISOString(),
-      endedAt: new Date(0).toISOString(),
-      exitCode: 0,
-      signal: null,
-      stdout: "",
-      stderr: "",
-    })),
+    exec:
+      options.exec ??
+      fn(async (argv: readonly [string, ...string[]]) => ({
+        argv: [...argv],
+        cwd: workspace.root,
+        startedAt: new Date(0).toISOString(),
+        endedAt: new Date(0).toISOString(),
+        exitCode: 0,
+        signal: null,
+        stdout: "",
+        stderr: "",
+      })),
     ...(options.reconciliation ? { reconciliation: options.reconciliation } : {}),
     ...(options.reviseTask ? { reviseTask: options.reviseTask } : {}),
     ...(options.closeTask ? { closeTask: options.closeTask } : {}),
@@ -206,7 +210,23 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
         call(target, typeof input === "string" ? { prompt: input } : input, opts)) as any,
       close: async () => undefined,
     }),
-    observe: () => null,
+    observe: <T = unknown>(subjectOrConditionId: string) => {
+      const key = subjectOrConditionId.trim();
+      if (!key) return null;
+      if (options.observations && Object.hasOwn(options.observations, key)) {
+        return options.observations[key] as import("./workflow.js").ConditionObservation<T>;
+      }
+      const cond = options.reconciliation?.task?.conditions?.find(
+        (item) => item.id === key || item.subject === key,
+      );
+      if (!cond?.observation) return null;
+      return {
+        state: cond.observation.state,
+        ...(cond.observation.observed !== undefined ? { observed: cond.observation.observed as T } : {}),
+        ...(cond.observation.facts ? { facts: cond.observation.facts } : {}),
+        ...(cond.observation.observedAt ? { observedAt: cond.observation.observedAt } : {}),
+      };
+    },
     park: (wait) => ({
       status: "blocked",
       summary: wait.summary,
@@ -218,10 +238,6 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
         ...(wait.continue ? { continue: true } : {}),
         ...(wait.facts ? { domainFacts: wait.facts } : {}),
       },
-    }),
-    ask: async (req) => ({
-      status: "answered" as const,
-      value: req.prompt as never,
     }),
     progress: fn(() => undefined),
     events: {
@@ -253,6 +269,9 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
     }),
   };
 }
+
+/** Canonical unified name for creating a test `WorkflowContext`. */
+export const createTestWorkflowContext = createTestAppWorkflowContext;
 
 export type ScriptedStepResponse = {
   id?: string;

@@ -414,253 +414,9 @@ export async function execute(ctx) {
   expect(observedPrompt).toContain('"continuedInputs"');
 });
 
-it("parks on ctx.ask and retires the answered human.review Condition with expanded inputKeys on wake", async () => {
-  const root = mkdtempSync(join(tmpdir(), "task-workflow-ctx-ask-"));
-  roots.push(root);
-  const workflowDir = join(root, "owner", "workflows");
-  mkdirSync(workflowDir, { recursive: true });
-  writeFileSync(
-    join(workflowDir, "ask-env.ts"),
-    `
-export const name = "ask-env";
-export const description = "Parks on ctx.ask then converges with human reply";
-export async function execute(ctx) {
-  const answer = await ctx.ask({ id: "clarify-env", prompt: "Which env?" });
-  return ctx.done(
-    "Shipped",
-    { attemptNumber: ctx.task.attemptNumber, env: answer.value },
-    { facts: [\`attempt:\${ctx.task.attemptNumber}\`, \`env:\${answer.value}\`] },
-  );
-}`,
-  );
-  const store = AppTaskResourceStore.fromDb(getDb(root), "fixture");
-  store.bootstrapSnapshot(
-    {
-      project: "fixture",
-      resources: {
-        ship: {
-          metadata: { id: "ship", generation: 1, resourceVersion: 2 },
-          spec: { parentId: "root", outcome: "Ship", acceptance: ["Verified"] },
-          status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt-1" },
-        },
-      },
-      attempts: {
-        "attempt-1": {
-          metadata: { id: "attempt-1", resourceVersion: 1 },
-          taskId: "ship",
-          taskGeneration: 1,
-          specHash: "hash",
-          owner: "owner",
-          handler: "workflow:ask-env",
-          runtimeId: "rt",
-          state: "running",
-          reason: "event",
-          startedAt: new Date().toISOString(),
-        },
-      },
-    },
-    "fixture",
-  );
-  const bus = new EventBus();
-  const runner = createTaskWorkflowRunner({ manager: {} as never, bus });
-  const baseInput = {
-    source: { projectsRoot: root, projectRoot: root, persistDir: root, agentsRoot: root, sharedRoot: join(root, "shared") },
-    descriptor: { id: "fixture", appDir: join(root, "sample.app"), projectDir: root, app: {} },
-    capability: { workflow: "ask-env", task: "Ship v1" },
-    handler: "workflow:ask-env",
-    executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
-    childContext: { live: [], completed: [] },
-    taskSnapshot: { live: [], truncated: false },
-    taskEvents: {},
-    executionTimeoutMs: 5000,
-  };
-
-  // Attempt 1: parks on clarify-env
-  const run1 = await runner.execute({
-    ...baseInput,
-    attempt: {
-      read: { tasks: {} },
-      task: {
-        id: "ship",
-        generation: 1,
-        status: "running",
-        outcome: "Ship",
-        acceptance: ["Verified"],
-        input: {},
-        pendingEvents: { items: [], truncated: false },
-      },
-      attemptId: "attempt-1",
-      role: { agent: "owner" },
-      resourceVersion: 2,
-      events: { items: [], truncated: false },
-      waits: { open: [], note: "none" },
-      children: { live: [], completed: [] },
-      declaredOutputPaths: [],
-      signal: new AbortController().signal,
-      onEvent: () => () => {},
-    },
-  } as unknown as TaskWorkflowInput);
-  expect(run1.handlerResult.state).toBe("waiting");
-  if (run1.handlerResult.state === "waiting") {
-    expect(run1.handlerResult.conditions).toMatchObject([
-      { id: "clarify-env", type: "human.review", owner: "human", requestedAction: "Which env?" },
-    ]);
-  }
-
-  // Persist Attempt 2 + parked inputWaits on a fresh state root as Host reconciler does
-  const root2 = mkdtempSync(join(tmpdir(), "task-workflow-ctx-ask-2-"));
-  roots.push(root2);
-  const workflowDir2 = join(root2, "owner", "workflows");
-  mkdirSync(workflowDir2, { recursive: true });
-  writeFileSync(
-    join(workflowDir2, "ask-env.ts"),
-    `
-export const name = "ask-env";
-export const description = "Parks on ctx.ask then converges with human reply";
-export async function execute(ctx) {
-  const answer = await ctx.ask({ id: "clarify-env", prompt: "Which env?" });
-  return ctx.done(
-    "Shipped",
-    { attemptNumber: ctx.task.attemptNumber, env: answer.value },
-    { facts: [\`attempt:\${ctx.task.attemptNumber}\`, \`env:\${answer.value}\`] },
-  );
-}`,
-  );
-  AppTaskResourceStore.fromDb(getDb(root2), "fixture").bootstrapSnapshot(
-    {
-      project: "fixture",
-      resources: {
-        ship: {
-          metadata: { id: "ship", generation: 1, resourceVersion: 4 },
-          spec: { parentId: "root", outcome: "Ship", acceptance: ["Verified"] },
-          status: {
-            phase: "running",
-            observedGeneration: 1,
-            currentAttemptId: "attempt-2",
-            conditionIds: ["clarify-env"],
-            inputWaits: {
-              "task:orig-1": { taskGeneration: 1, conditions: [{ id: "clarify-env", generation: 1 }] },
-            },
-          },
-        },
-      },
-      attempts: {
-        "attempt-1": {
-          metadata: { id: "attempt-1", resourceVersion: 2 },
-          taskId: "ship",
-          taskGeneration: 1,
-          specHash: "hash",
-          owner: "owner",
-          handler: "workflow:ask-env",
-          runtimeId: "rt",
-          state: "completed",
-          reason: "event",
-          startedAt: new Date().toISOString(),
-        },
-        "attempt-2": {
-          metadata: { id: "attempt-2", resourceVersion: 1 },
-          taskId: "ship",
-          taskGeneration: 1,
-          specHash: "hash",
-          owner: "owner",
-          handler: "workflow:ask-env",
-          runtimeId: "rt",
-          state: "running",
-          reason: "event",
-          startedAt: new Date().toISOString(),
-        },
-      },
-    },
-    "fixture",
-  );
-
-  const run2 = await runner.execute({
-    ...baseInput,
-    source: { projectsRoot: root2, projectRoot: root2, persistDir: root2, agentsRoot: root2, sharedRoot: join(root2, "shared") },
-    descriptor: { id: "fixture", appDir: join(root2, "sample.app"), projectDir: root2, app: {} },
-    executionPaths: { appDir: root2, projectDir: root2, workspaceDir: root2 },
-    attempt: {
-      read: { tasks: {} },
-      task: {
-        id: "ship",
-        generation: 1,
-        status: "running",
-        outcome: "Ship",
-        acceptance: ["Verified"],
-        input: {},
-        conditions: [{ id: "clarify-env", type: "human.review", subject: "workflow-ask:ship:clarify-env", owner: "human" }],
-        pendingEvents: { items: [], truncated: false },
-      },
-      attemptId: "attempt-2",
-      role: { agent: "owner" },
-      resourceVersion: 4,
-      events: {
-        inputs: [
-          {
-            id: "reply-2",
-            key: "task:reply-2",
-            source: { kind: "human", id: "hao" },
-          },
-        ],
-        items: [
-          {
-            observedAt: "2026-11-28T00:00:00Z",
-            event: {
-              type: "app.task.requested",
-              source: "human",
-              data: {
-                idempotencyKey: "task:reply-2",
-                request: {
-                  id: "reply-2",
-                  humanRequested: true,
-                  source: { kind: "human", id: "hao" },
-                  input: { kind: "message", data: { message: "prod-east" } },
-                },
-              },
-            },
-          },
-        ],
-        truncated: false,
-      },
-      waits: {
-        open: [
-          {
-            conditionId: "clarify-env",
-            conditionGeneration: 1,
-            type: "human.review",
-            subject: "workflow-ask:ship:clarify-env",
-            state: "unknown",
-          },
-        ],
-        note: "open",
-      },
-      children: { live: [], completed: [] },
-      declaredOutputPaths: [],
-      signal: new AbortController().signal,
-      onEvent: () => () => {},
-    },
-  } as unknown as TaskWorkflowInput);
-
-  expect(run2.hostCompletion).toBe("finite-done");
-  expect(run2.handlerResult).toMatchObject({
-    state: "converged",
-    summary: "Shipped",
-    result: { attemptNumber: 2, env: "prod-east" },
-    actions: [
-      {
-        kind: "retire-condition",
-        conditionId: "clarify-env",
-        expectedConditionGeneration: 1,
-        reason: "Answered by human task input",
-      },
-    ],
-    inputKeys: ["task:orig-1", "task:reply-2"],
-  });
-});
-
-it("refuses forged App human flags, discrete approval bypasses, pre-question continuedInputs, and mismatched reply anchors", async () => {
-  const makeRoot = (workflowBody: string, condType: "human.review" | "project.approval.submitted", extraOpen = false) => {
-    const r = mkdtempSync(join(tmpdir(), "task-workflow-ask-sec-"));
+it("converges plain domain outputs (including unrelated state strings), structured facts, and DoneOptions requests/response", async () => {
+  const makeCase = (workflowBody: string) => {
+    const r = mkdtempSync(join(tmpdir(), "task-workflow-done-opts-"));
     roots.push(r);
     mkdirSync(join(r, "owner", "workflows"), { recursive: true });
     writeFileSync(join(r, "owner", "workflows", "sec.ts"), workflowBody);
@@ -671,12 +427,7 @@ it("refuses forged App human flags, discrete approval bypasses, pre-question con
           ship: {
             metadata: { id: "ship", generation: 1, resourceVersion: 2 },
             spec: { parentId: "root", outcome: "Ship", acceptance: ["Verified"] },
-            status: {
-              phase: "running",
-              observedGeneration: 1,
-              currentAttemptId: "a1",
-              conditionIds: extraOpen ? ["q1", "q2"] : ["q1"],
-            },
+            status: { phase: "running", observedGeneration: 0, currentAttemptId: "a1" },
           },
         },
         attempts: {
@@ -696,28 +447,16 @@ it("refuses forged App human flags, discrete approval bypasses, pre-question con
       },
       "fixture",
     );
-    return {
-      r,
-      openWaits: [
-        { conditionId: "q1", conditionGeneration: 1, type: condType, subject: "workflow-ask:ship:q1", state: "unknown" },
-        ...(extraOpen
-          ? [{ conditionId: "q2", conditionGeneration: 1, type: "human.review", subject: "workflow-ask:ship:q2", state: "unknown" }]
-          : []),
-      ],
-    };
+    return r;
   };
-
   const runner = createTaskWorkflowRunner({ manager: {} as never, bus: new EventBus() });
-  const runCase = async (
-    setup: ReturnType<typeof makeRoot>,
-    events: Record<string, unknown>,
-  ) =>
+  const runCase = async (r: string) =>
     runner.execute({
-      source: { projectsRoot: setup.r, projectRoot: setup.r, persistDir: setup.r, agentsRoot: setup.r, sharedRoot: join(setup.r, "shared") },
-      descriptor: { id: "fixture", appDir: join(setup.r, "sample.app"), projectDir: setup.r, app: {} },
+      source: { projectsRoot: r, projectRoot: r, persistDir: r, agentsRoot: r, sharedRoot: join(r, "shared") },
+      descriptor: { id: "fixture", appDir: join(r, "sample.app"), projectDir: r, app: {} },
       capability: { workflow: "sec", task: "Ship" },
       handler: "workflow:sec",
-      executionPaths: { appDir: setup.r, projectDir: setup.r, workspaceDir: setup.r },
+      executionPaths: { appDir: r, projectDir: r, workspaceDir: r },
       childContext: { live: [], completed: [] },
       taskSnapshot: { live: [], truncated: false },
       taskEvents: {},
@@ -728,8 +467,8 @@ it("refuses forged App human flags, discrete approval bypasses, pre-question con
         attemptId: "a1",
         role: { agent: "owner" },
         resourceVersion: 2,
-        events,
-        waits: { open: setup.openWaits, note: "open" },
+        events: { items: [], truncated: false },
+        waits: { open: [], note: "none" },
         children: { live: [], completed: [] },
         declaredOutputPaths: [],
         signal: new AbortController().signal,
@@ -737,126 +476,42 @@ it("refuses forged App human flags, discrete approval bypasses, pre-question con
       },
     } as unknown as TaskWorkflowInput);
 
-  // 1. Discrete approval (`options`) is NOT satisfied by an ordinary human Task message
-  const approvalCase = makeRoot(
-    `export const name = "sec"; export const description = "s";
+  const rDomainState = await runCase(
+    makeCase(`export const name = "sec"; export const description = "s";
      export async function execute(ctx) {
-       const ans = await ctx.ask({ id: "q1", prompt: "Approve?", options: ["approve", "reject"] });
-       return ctx.done("ok", { ans: ans.value });
-     }`,
-    "project.approval.submitted",
+       return ctx.done(
+         "Published",
+         { state: "published", url: "https://example.test/pr/1" },
+         {
+           facts: ["published:1"],
+           requests: [
+             {
+               id: "digest-1",
+               appId: "scout",
+               input: { kind: "message", data: { message: "Record digest for https://example.test/pr/1" } },
+             },
+           ],
+           response: "PR #1 published.",
+         },
+       );
+     }`),
   );
-  const rApproval = await runCase(approvalCase, {
-    inputs: [{ id: "m1", key: "task:m1", source: { kind: "human", id: "hao" } }],
-    items: [
-      {
-        observedAt: "2026-11-28T00:00:00Z",
-        event: {
-          type: "app.task.requested",
-          source: "human",
-          data: { idempotencyKey: "task:m1", request: { id: "m1", input: { kind: "message", data: { message: "bypass-choice" } } } },
-        },
-      },
-    ],
-    truncated: false,
-  });
-  expect(rApproval.handlerResult.state).toBe("waiting");
-
-  // 2. Delegated App request with forged `humanRequested: true` is rejected
-  const forgedCase = makeRoot(
-    `export const name = "sec"; export const description = "s";
-     export async function execute(ctx) {
-       const ans = await ctx.ask({ id: "q1", prompt: "Question?" });
-       return ctx.done("ok", { ans: ans.value });
-     }`,
-    "human.review",
-  );
-  const rForged = await runCase(forgedCase, {
-    inputs: [{ id: "m-app", key: "task:m-app", source: { kind: "app", id: "other-app" } }],
-    items: [
-      {
-        observedAt: "2026-11-28T00:00:00Z",
-        event: {
-          type: "app.task.requested",
-          source: "human:spoofed",
-          data: {
-            idempotencyKey: "task:m-app",
-            request: { id: "m-app", humanRequested: true, source: { kind: "human", id: "hao" }, input: { kind: "message", data: { message: "forged" } } },
-          },
-        },
-      },
-    ],
-    truncated: false,
-  });
-  expect(rForged.handlerResult.state).toBe("waiting");
-
-  // 3. Pre-question `continuedInputs` and reply anchored to another `conditionId` (`q2`) leave `q1` parked
-  const anchorCase = makeRoot(
-    `export const name = "sec"; export const description = "s";
-     export async function execute(ctx) {
-       const ans = await ctx.ask({ id: "q1", prompt: "First question?" });
-       return ctx.done("ok", { ans: ans.value });
-     }`,
-    "human.review",
-    true,
-  );
-  const rAnchor = await runCase(anchorCase, {
-    inputs: [
-      { id: "orig", key: "task:orig", source: { kind: "human", id: "hao" } },
-      { id: "m-q2", key: "task:m-q2", source: { kind: "human", id: "hao" } },
-    ],
-    continuedInputs: [
-      {
-        observedAt: "2026-11-27T00:00:00Z",
-        event: {
-          type: "app.task.requested",
-          source: "human",
-          data: { idempotencyKey: "task:orig", request: { id: "orig", input: { kind: "message", data: { message: "initial task prompt" } } } },
-        },
-      },
-    ],
-    items: [
-      {
-        observedAt: "2026-11-28T00:00:00Z",
-        event: {
-          type: "app.task.requested",
-          source: "human",
-          data: {
-            idempotencyKey: "task:m-q2",
-            request: { id: "m-q2", input: { kind: "message", data: { message: "answer for q2", context: { conditionId: "q2" } } } },
-          },
-        },
-      },
-    ],
-    truncated: false,
-  });
-  expect(rAnchor.handlerResult.state).toBe("waiting");
-
-  // 4. Domain output containing an unrelated `state` string (e.g. `{ state: "published" }`) converges as ordinary output
-  const domainStateCase = makeRoot(
-    `export const name = "sec"; export const description = "s";
-     export async function execute(ctx) {
-       return ctx.done("Published", { state: "published", url: "https://example.test/pr/1" });
-     }`,
-    "human.review",
-  );
-  const rDomainState = await runCase(domainStateCase, { items: [], truncated: false });
   expect(rDomainState.hostCompletion).toBe("finite-done");
   expect(rDomainState.handlerResult).toMatchObject({
     state: "converged",
     summary: "Published",
     result: { state: "published", url: "https://example.test/pr/1" },
+    facts: ["published:1"],
+    requests: [{ id: "digest-1", appId: "scout" }],
+    response: "PR #1 published.",
   });
 
-  // 5. Structured non-array `facts` on `ctx.done` is serialized instead of dropped
-  const structuredFactsCase = makeRoot(
-    `export const name = "sec"; export const description = "s";
+  const rStructFacts = await runCase(
+    makeCase(`export const name = "sec"; export const description = "s";
      export async function execute(ctx) {
        return ctx.done("Measured", { ok: true }, { facts: { testsPassed: 12 } });
-     }`,
-    "human.review",
+     }`),
   );
-  const rStructFacts = await runCase(structuredFactsCase, { items: [], truncated: false });
   expect(rStructFacts.handlerResult).toMatchObject({
     state: "converged",
     summary: "Measured",

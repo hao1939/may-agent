@@ -68,7 +68,6 @@ import type {
   WorkflowStepSummary,
   WorkflowToolResult,
 } from "./workflow.js";
-import { WorkflowInterrupted } from "./workflow.js";
 
 export { inspectWorkflowDefinition };
 // ── In-memory workflow types (used during execution) ────────────────────
@@ -157,9 +156,6 @@ function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
 
 export interface WorkflowRunner {
   run(name: string, task: string, catalog?: WorkflowCatalog): Promise<WorkflowToolResult>;
-  steer(message: string): boolean;
-  readonly isRunning: boolean;
-  readonly activeWorkflow: string | null;
 }
 
 /** A named workflow could not be resolved from the owning agent's catalog. */
@@ -304,12 +300,10 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
   result: WorkflowResult;
   runId: string;
   verifier?: { name: string; sourcePath: string; verify: NonNullable<WorkflowModule["verify"]> };
-  answeredHumanConditions?: Array<{ conditionId: string; expectedConditionGeneration: number }>;
 }> {
   // Execution and its verifier must come from the same dispatch snapshot.
   const { catalog, allowance } = await prepareRootWorkflow({ ...opts, workflowDir: opts.workflowDir ?? "" }, opts.workflowName);
   const { workflow } = findWorkflow(catalog, opts.workflowName);
-  let answeredHumanConditions: Array<{ conditionId: string; expectedConditionGeneration: number }> | undefined;
   const runner = createPreparedWorkflowRunner({
     manager: opts.manager,
     agentDefinitions: opts.agentDefinitions,
@@ -333,9 +327,6 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     ...(opts.workflowInput !== undefined ? { workflowInput: opts.workflowInput } : {}),
     ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
     ...(opts.attemptNumber !== undefined ? { attemptNumber: opts.attemptNumber } : {}),
-    onAnsweredHumanConditions: (items) => {
-      answeredHumanConditions = items;
-    },
     executionTimeoutMs: opts.executionTimeoutMs,
     executionTimeoutLimitMs: opts.executionTimeoutLimitMs,
     signal: opts.signal,
@@ -348,10 +339,16 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
 
   if (parsed.type === "done") {
     return {
-      result: { type: "done", summary: parsed.summary, output: parsed.output, facts: parsed.facts },
+      result: {
+        type: "done",
+        summary: parsed.summary,
+        output: parsed.output,
+        facts: parsed.facts,
+        ...(parsed.requests !== undefined ? { requests: parsed.requests } : {}),
+        ...(parsed.response !== undefined ? { response: parsed.response } : {}),
+      },
       runId: parsed.workflowRunId,
       ...(verifier ? { verifier } : {}),
-      ...(answeredHumanConditions ? { answeredHumanConditions } : {}),
     };
   }
   if (parsed.type === "error") {
@@ -367,7 +364,6 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
       result: { type: "blocked", reason: parsed.reason, context: parsed.context, output: parsed.output, facts: parsed.facts },
       runId: parsed.workflowRunId,
       ...(verifier ? { verifier } : {}),
-      ...(answeredHumanConditions ? { answeredHumanConditions } : {}),
     };
   }
   if (parsed.type === "interrupted") {
@@ -436,8 +432,6 @@ export interface WorkflowToolOptions {
   callerTrace?: () => EventTrace | undefined;
   /** 1-based attempt number for the owning Task generation. */
   attemptNumber?: number;
-  /** Internal callback receiving verified `human.review` Conditions answered during the root run. */
-  onAnsweredHumanConditions?: (items: Array<{ conditionId: string; expectedConditionGeneration: number }>) => void;
 }
 
 /** Typed workflow execution for SDK, handlers, and other system callers. */
@@ -580,9 +574,6 @@ function createPreparedWorkflowRunner(
     return { prompts, proceduresByOwner, diagnostics, pendingImports: 0 };
   }
 
-  let activeSteeringQueue: string[] | null = null;
-  let activeWorkflowName: string | null = null;
-
   async function executeWorkflow(
     catalog: HostedCatalogState | WorkflowCatalog,
     workflow: WorkflowExecutableModule,
@@ -591,7 +582,6 @@ function createPreparedWorkflowRunner(
     parentSessionId: string | undefined,
     parentWorkflowRunId: string | undefined,
     completedSteps: CompletedStep[],
-    steeringQueue: string[],
     authoredInput?: { value: unknown },
     runId = generateRunId(),
     parentSignal = opts.signal,
@@ -836,9 +826,6 @@ function createPreparedWorkflowRunner(
         stepControl: WorkflowKernelStepControl,
         sessionKey?: string,
       ): Promise<WorkflowStepInvocationResult> => {
-        const steering = steeringQueue.shift();
-        if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
-
         const definition = targetCatalog.prompts.get(agentName)?.definition;
         if (hasStructuredAgentCatalog && !definition) {
           throw new Error(`Prompt target "${agentName}" not found in the captured catalog`);
@@ -926,9 +913,6 @@ function createPreparedWorkflowRunner(
           },
         });
 
-        const steeringAfter = steeringQueue.shift();
-        if (steeringAfter) throw new WorkflowInterrupted(steeringAfter, completedSteps, runId);
-
         const mapped = agentExecutionResult(taskResult);
         return {
           ...mapped,
@@ -942,8 +926,6 @@ function createPreparedWorkflowRunner(
         stepOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
         stepControl: WorkflowKernelStepControl,
       ): Promise<WorkflowStepInvocationResult> => {
-        const steering = steeringQueue.shift();
-        if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
         if (depth + 1 > maxDepth) {
           throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
         }
@@ -961,7 +943,6 @@ function createPreparedWorkflowRunner(
             parentSessionId,
             runId,
             completedSteps,
-            steeringQueue,
             { value: workflowInput },
             undefined,
             stepControl.signal,
@@ -971,7 +952,6 @@ function createPreparedWorkflowRunner(
           );
         } catch (error) {
           if (
-            error instanceof WorkflowInterrupted ||
             error instanceof ExecutionDeferredError ||
             error instanceof WorkflowAllowanceExhaustedError ||
             error instanceof WorkflowUnconfirmedCleanupError ||
@@ -1040,8 +1020,6 @@ function createPreparedWorkflowRunner(
           });
         },
         invokeAgentSession: async (sessionKey, target, envelope, callOptions, stepControl) => {
-          const steering = steeringQueue.shift();
-          if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
           const routedTarget = targetCatalog.canonicalRoutes?.get(target);
           const resolved = routedTarget
             ? routedTarget.kind === "prompt"
@@ -1089,20 +1067,13 @@ function createPreparedWorkflowRunner(
           if (resolved.kind === "code") {
             return {
               kind: "workflow" as const,
-              invoke: async (callOptions, stepControl) => {
-                const steering = steeringQueue.shift();
-                if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
-                return executeCodeStep(resolved, envelope, callOptions, stepControl);
-              },
+              invoke: async (callOptions, stepControl) => executeCodeStep(resolved, envelope, callOptions, stepControl),
             };
           }
           return {
             kind: "agent" as const,
-            invoke: async (callOptions, stepControl) => {
-              const steering = steeringQueue.shift();
-              if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
-              return executePromptStep(resolved.name, formatExecutionInput(envelope), callOptions, stepControl);
-            },
+            invoke: async (callOptions, stepControl) =>
+              executePromptStep(resolved.name, formatExecutionInput(envelope), callOptions, stepControl),
           };
         },
       };
@@ -1129,9 +1100,6 @@ function createPreparedWorkflowRunner(
         throw outcome.error;
       }
       const result = outcome.result;
-      if (depth === 1 && outcome.report.answeredHumanConditions?.length) {
-        opts.onAnsweredHumanConditions?.(outcome.report.answeredHumanConditions);
-      }
 
       // Finalize the workflow run
       run.endedAt = Date.now();
@@ -1175,10 +1143,7 @@ function createPreparedWorkflowRunner(
       return { result, runId, steps: localSteps };
     } catch (err) {
       run.endedAt = Date.now();
-      if (err instanceof WorkflowInterrupted) {
-        run.status = "interrupted";
-        run.result = { reason: err.steeringMessage };
-      } else if (err instanceof ExecutionDeferredError) {
+      if (err instanceof ExecutionDeferredError) {
         run.status = "blocked";
         run.result = { reason: err.message };
         err.callerExecution = { kind: "workflow", id: runId };
@@ -1196,12 +1161,7 @@ function createPreparedWorkflowRunner(
         });
       try {
         emitRuntimeEvent({
-          type:
-            err instanceof WorkflowInterrupted
-              ? "workflow.interrupted"
-              : err instanceof ExecutionDeferredError
-                ? "workflow.blocked"
-                : "workflow.failed",
+          type: err instanceof ExecutionDeferredError ? "workflow.blocked" : "workflow.failed",
           source: `workflow:${workflow.name}`,
           owner: normalizeEventOwner(opts.agentName),
           data: {
@@ -1209,8 +1169,7 @@ function createPreparedWorkflowRunner(
             workflow: workflow.name,
             projectId: effectiveProjectId,
             durationMs: run.endedAt - run.startedAt,
-            reason:
-              err instanceof WorkflowInterrupted ? err.steeringMessage : err instanceof Error ? err.message : String(err),
+            reason: err instanceof Error ? err.message : String(err),
           },
         });
       } catch {
@@ -1220,8 +1179,7 @@ function createPreparedWorkflowRunner(
     }
   }
 
-  /** Sets up steering,
-   *  executes the workflow, and maps the result to a tool response. */
+  /** Executes the workflow and maps the result to a tool response. */
   async function runWorkflow(
     catalog: WorkflowCatalog,
     workflow: WorkflowModule,
@@ -1233,13 +1191,10 @@ function createPreparedWorkflowRunner(
     allowance?: WorkflowExecutionAllowance,
   ): Promise<WorkflowToolResult> {
     const completedSteps: CompletedStep[] = [];
-    const steeringQueue: string[] = [];
     const runId = generateRunId();
 
     try {
       assertWorkflowExecution();
-      activeSteeringQueue = steeringQueue;
-      activeWorkflowName = workflow.name;
       onEvent?.({ type: "workflow.started", workflow: workflow.name, task });
       const { result } = await executeWorkflow(
         catalog,
@@ -1249,15 +1204,11 @@ function createPreparedWorkflowRunner(
         parentSessionId,
         parentWorkflowRunId,
         completedSteps,
-        steeringQueue,
         authoredInput ?? (opts.workflowInput !== undefined ? { value: opts.workflowInput } : undefined),
         runId,
         opts.signal,
         allowance,
       );
-
-      activeSteeringQueue = null;
-      activeWorkflowName = null;
 
       const stepSummaries = buildStepSummaries(completedSteps);
 
@@ -1270,6 +1221,8 @@ function createPreparedWorkflowRunner(
           summary: result.summary,
           output: result.output,
           facts: result.facts,
+          ...(result.requests !== undefined ? { requests: result.requests } : {}),
+          ...(result.response !== undefined ? { response: result.response } : {}),
           steps: stepSummaries,
         };
         return toolResult;
@@ -1298,20 +1251,7 @@ function createPreparedWorkflowRunner(
       };
       return toolResult;
     } catch (err) {
-      activeSteeringQueue = null;
-      activeWorkflowName = null;
       if (err instanceof ExecutionDeferredError) throw err;
-
-      if (err instanceof WorkflowInterrupted) {
-        const toolResult: WorkflowToolResult = {
-          type: "interrupted",
-          workflow: workflow.name,
-          workflowRunId: err.workflowRunId,
-          completedSteps: err.completedSteps,
-          steeringMessage: err.steeringMessage,
-        };
-        return toolResult;
-      }
 
       const msg = err instanceof Error ? err.message : String(err);
       let factsRunId: string | undefined;
@@ -1369,23 +1309,7 @@ function createPreparedWorkflowRunner(
     return runWorkflow(catalog, workflow, task, 1, callerSessionId, callerMeta.workflowRunId, authoredInput, allowance);
   }
 
-  const runner: WorkflowRunner = {
+  return {
     run: runTyped,
-
-    steer(message: string): boolean {
-      if (!activeSteeringQueue) return false;
-      activeSteeringQueue.push(message);
-      return true;
-    },
-
-    get isRunning(): boolean {
-      return activeSteeringQueue !== null;
-    },
-
-    get activeWorkflow(): string | null {
-      return activeWorkflowName;
-    },
   };
-
-  return runner;
 }
