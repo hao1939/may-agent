@@ -1,4 +1,4 @@
-import type { AppTaskBlockedSettlement } from "@may-agent/sdk/app";
+import type { AppTaskBlockedSettlement, TaskAppRequest } from "@may-agent/sdk/app";
 import type { DirectWorkflowRunResult, RunResult as CallableResult } from "@may-agent/sdk/standalone";
 import type { TaskAgentInput, TaskWorkflowInput } from "../../core/tasks/execution.js";
 import { normalizeTaskHandlerResult, type NormalizedTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
@@ -10,6 +10,8 @@ type TranslationOptions = {
   now?: () => number;
   diagnosticFacts?: readonly string[];
   storageFacts?: unknown;
+  requests?: readonly TaskAppRequest[];
+  response?: string;
 };
 
 function serializedFact(facts: unknown): string {
@@ -250,6 +252,9 @@ export function translateHostedExecutionResult(
   let output: unknown;
   let facts: unknown;
 
+  let doneRequests = options.requests;
+  let doneResponse = options.response;
+
   if (isDirectWorkflowResult(result)) {
     if (
       !result.ok ||
@@ -263,6 +268,8 @@ export function translateHostedExecutionResult(
     if (result.result.type === "done") {
       status = "done";
       summary = result.result.summary;
+      doneRequests ??= result.result.requests;
+      doneResponse ??= result.result.response;
     } else if (result.result.type === "blocked") {
       status = "blocked";
       summary = result.result.reason;
@@ -277,6 +284,10 @@ export function translateHostedExecutionResult(
     summary = result.summary;
     output = result.output;
     facts = result.facts;
+    if (result.status === "done") {
+      doneRequests ??= result.requests;
+      doneResponse ??= result.response;
+    }
   }
 
   if (status === "blocked") {
@@ -294,6 +305,8 @@ export function translateHostedExecutionResult(
       summary,
       facts: factStrings(facts, options.diagnosticFacts),
       actions: [],
+      ...(doneRequests !== undefined ? { requests: doneRequests } : {}),
+      ...(doneResponse !== undefined ? { response: doneResponse } : {}),
       ...outputResult(output),
     },
     { type: "done", summary, runId },

@@ -16,6 +16,7 @@ import type {
   AppRead,
   CallOptions,
   ConditionObservation,
+  ExecutionResult,
   TaskCondition,
   WorkflowContext,
   WorkflowTaskView,
@@ -60,7 +61,6 @@ import {
   validateCallableInput,
   type CallableDefinition,
   type CallableDescriptor,
-  type CallableResult,
 } from "../../callable.js";
 import { createCodingTools } from "../lib/tools/edit.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
@@ -1735,6 +1735,8 @@ export async function runDirectWorkflow<TInput = unknown>(
       summary: sub.result!.type === "done" ? sub.result!.summary : sub.result!.reason,
       ...(sub.result!.output !== undefined ? { output: sub.result!.output } : {}),
       ...(sub.result!.facts !== undefined ? { facts: sub.result!.facts } : {}),
+      ...(sub.result!.type === "done" && sub.result!.requests !== undefined ? { requests: [...sub.result!.requests] } : {}),
+      ...(sub.result!.type === "done" && sub.result!.response !== undefined ? { response: sub.result!.response } : {}),
       cleanupConfirmed: sub.report.cleanup.confirmed,
     };
   };
@@ -2016,7 +2018,7 @@ export type RunOptions<TInput = unknown> = Omit<
   models?: Record<string, ModelWithApiKey>;
 };
 
-export type RunResult<T = unknown> = CallableResult<T>;
+export type RunResult<T = unknown> = ExecutionResult<T>;
 
 export type TargetSummary = CallableDescriptor;
 
@@ -2406,6 +2408,11 @@ export async function run<TInput = unknown>(
         : contribution.reason
       : res.report.error?.message ?? (res.error instanceof Error ? res.error.message : String(res.error ?? res.status));
     const finalStatus = contribution?.type ?? res.status;
+    if (contribution?.type === "done" && contribution.requests?.length) {
+      for (const req of contribution.requests) {
+        options.onNotice?.(`[request] ${req.appId} (${req.id})`);
+      }
+    }
     if (stateDir && stateFilePath) {
       mkdirSync(stateDir, { recursive: true });
       const factObj =
@@ -2447,6 +2454,8 @@ export async function run<TInput = unknown>(
       summary,
       ...(contribution?.output !== undefined ? { output: contribution.output } : {}),
       ...(contribution?.facts !== undefined ? { facts: contribution.facts } : {}),
+      ...(contribution?.type === "done" && contribution.requests !== undefined ? { requests: [...contribution.requests] } : {}),
+      ...(contribution?.type === "done" && contribution.response !== undefined ? { response: contribution.response } : {}),
     });
   } catch (err) {
     cleanupConfirmed =

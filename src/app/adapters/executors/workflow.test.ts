@@ -479,7 +479,23 @@ it("converges plain domain outputs (including unrelated state strings) and struc
   const rDomainState = await runCase(
     makeCase(`export const name = "sec"; export const description = "s";
      export async function execute(ctx) {
-       return ctx.done("Published", { state: "published", url: "https://example.test/pr/1" }, { facts: ["published:1"] });
+       return {
+         ...ctx.done(
+           "Published",
+           { state: "published", url: "https://example.test/pr/1" },
+           {
+             facts: ["published:1"],
+             requests: [
+               {
+                 id: "digest-1",
+                 appId: "scout",
+                 input: { kind: "message", data: { message: "Record digest for https://example.test/pr/1" } },
+               },
+             ],
+             response: "PR #1 published.",
+           },
+         ),
+       };
      }`),
   );
   expect(rDomainState.hostCompletion).toBe("finite-done");
@@ -488,6 +504,30 @@ it("converges plain domain outputs (including unrelated state strings) and struc
     summary: "Published",
     result: { state: "published", url: "https://example.test/pr/1" },
     facts: ["published:1"],
+    requests: [{ id: "digest-1", appId: "scout" }],
+    response: "PR #1 published.",
+  });
+
+  // Malformed requests or non-string response on a raw JS done result are rejected instead of silently dropped
+  const badResp = await runCase(
+    makeCase(`export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       return { status: "done", summary: "Bad", response: { wrong: true } };
+     }`),
+  );
+  expect(badResp).toMatchObject({
+    executionFailed: true,
+    handlerResult: { state: "error", summary: expect.stringContaining("Workflow done result response must be a non-empty string") },
+  });
+  const badReqs = await runCase(
+    makeCase(`export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       return { status: "done", summary: "Bad", requests: "not-array" };
+     }`),
+  );
+  expect(badReqs).toMatchObject({
+    executionFailed: true,
+    handlerResult: { state: "error", summary: expect.stringContaining("Workflow done result requests must be an array") },
   });
 
   const rStructFacts = await runCase(

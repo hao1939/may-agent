@@ -339,7 +339,14 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
 
   if (parsed.type === "done") {
     return {
-      result: { type: "done", summary: parsed.summary, output: parsed.output, facts: parsed.facts },
+      result: {
+        type: "done",
+        summary: parsed.summary,
+        output: parsed.output,
+        facts: parsed.facts,
+        ...(parsed.requests !== undefined ? { requests: parsed.requests } : {}),
+        ...(parsed.response !== undefined ? { response: parsed.response } : {}),
+      },
       runId: parsed.workflowRunId,
       ...(verifier ? { verifier } : {}),
     };
@@ -976,6 +983,8 @@ function createPreparedWorkflowRunner(
           summary: sub.result.type === "done" ? sub.result.summary : sub.result.reason,
           ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
           ...(sub.result.facts !== undefined ? { facts: sub.result.facts } : {}),
+          ...(sub.result.type === "done" && sub.result.requests !== undefined ? { requests: [...sub.result.requests] } : {}),
+          ...(sub.result.type === "done" && sub.result.response !== undefined ? { response: sub.result.response } : {}),
         };
       };
 
@@ -1214,6 +1223,8 @@ function createPreparedWorkflowRunner(
           summary: result.summary,
           output: result.output,
           facts: result.facts,
+          ...(result.requests !== undefined ? { requests: result.requests } : {}),
+          ...(result.response !== undefined ? { response: result.response } : {}),
           steps: stepSummaries,
         };
         return toolResult;

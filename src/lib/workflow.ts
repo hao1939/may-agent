@@ -1,4 +1,4 @@
-import type { AgentContext, ExecutionResult, TSchema } from "@may-agent/sdk/app";
+import type { AgentContext, ExecutionResult, TaskAppRequest, TSchema } from "@may-agent/sdk/app";
 import type { TaskResult } from "@may-agent/sdk/runtime";
 export type { WorkflowContext } from "@may-agent/sdk/app";
 
@@ -18,7 +18,7 @@ export type WorkflowEvent =
 
 /** The outcome of a workflow execution. */
 export type WorkflowResult = (
-  | { type: "done"; summary: string }
+  | { type: "done"; summary: string; requests?: readonly TaskAppRequest[]; response?: string }
   | { type: "blocked" | "error" | "interrupted"; reason: string; context?: unknown }
 ) & { output?: unknown; facts?: unknown };
 
@@ -61,6 +61,8 @@ export type WorkflowToolResult = (
       workflowRunId: string;
       summary: string;
       output?: unknown;
+      requests?: readonly TaskAppRequest[];
+      response?: string;
       steps: WorkflowStepSummary[];
     }
   | {
