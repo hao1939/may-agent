@@ -249,11 +249,11 @@ export function listTerminalTaskSessionBindings(
       `SELECT s.sessionId, s.app_id AS appId, s.task_id AS taskId,
               s.task_generation AS generation, s.attempt_id AS attemptId
        FROM sessions s
-       JOIN app_task_attempts a
+       CROSS JOIN app_task_attempts a
          ON a.app_id = s.app_id
-        AND a.task_id = s.task_id
-        AND a.task_generation = s.task_generation
         AND a.attempt_id = s.attempt_id
+        AND +a.task_id = s.task_id
+        AND +a.task_generation = s.task_generation
         AND json_extract(a.attempt_json, '$.sessionId') = s.sessionId
        WHERE s.app_id = ?
          AND s.status IN ('running', 'idle')
