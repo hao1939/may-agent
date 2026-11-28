@@ -1115,7 +1115,7 @@ describe("usage-calibrated compaction & offloadContent & mockModel", () => {
     // Appended trailing message has ~900 chars (~300 heuristic tokens, ~750 calibrated tokens -> crosses 1200 threshold!).
     const hugeToolText = "中".repeat(2600);
     const messages: AgentMessage[] = [
-      userMsg("请检查所有卡片 " + "甲".repeat(300)),
+      userMsg("请检查所有卡片 " + "甲".repeat(300), billedAssistant.timestamp - 1),
       billedAssistant,
       toolCallMsg("query_db", { sql: "SELECT *" }),
       toolResultMsg("query_db", hugeToolText),
