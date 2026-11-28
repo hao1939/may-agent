@@ -42,6 +42,7 @@ import {
   renderTelegramTaskUpdate,
   renderTelegramTasks,
   renderTelegramTodos,
+  replyInstruction,
   representedTaskIdentities,
   singleTaskReference,
   taskButtons,
@@ -132,7 +133,6 @@ interface SurfaceSession {
   readonly key: string;
   readonly chatId: string;
   readonly topicId?: number;
-  selectedApp?: string;
   watchedTask?: WatchedTaskTarget;
   shownWatchRevision?: string;
   shownTodoActions: Map<string, string>;
@@ -504,8 +504,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   async function refreshTodos(surface: string): Promise<void> {
     const session = sessions.get(surface);
     if (!session) return;
-    const appId = session.selectedApp ?? conversationAppId;
-    const page = opts.humanTasks.listTasks({ appId, humanActionOnly: true, limit: TODO_PAGE_SIZE });
+    const appId = undefined; // Bounded global human-action discovery.
+    const page = opts.humanTasks.listTasks({ humanActionOnly: true, limit: TODO_PAGE_SIZE });
     const actions = page.items.map((task) => {
       const owner = task.humanAction?.task ?? { appId: task.appId, taskId: task.taskId };
       const detail = opts.humanTasks.getTask?.(owner) ?? task;
@@ -573,7 +573,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       ),
     });
     if (!messageId || !running) return;
-    if ((session.selectedApp ?? conversationAppId) === appId) {
+    {
       for (const { task, signature } of changed) {
         next.set(todoTaskKey(task), presentedTodoActionRevision(signature));
       }
@@ -640,8 +640,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           watchRefresh.queue(session.key);
         }
         if (isTaskDerivedViewWake(event)) {
-          const selected = session.selectedApp ?? conversationAppId;
-          if (selected === wake.appId) todoRefresh.queue(session.key);
+          todoRefresh.queue(session.key);
         }
       }
     },
@@ -901,7 +900,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const focusedTask = replyToMsgId ? replyTask : session.watchedTask;
     const focusedApp = replyToMsgId
       ? (replyTask?.appId ?? conversationAppId)
-      : (session.selectedApp ?? conversationAppId);
+      : conversationAppId;
     inputContext = {
       ...(inputContext ?? {}),
       focusedApp,
@@ -993,6 +992,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     ): void => {
       const conversationTopicId = followTask ? taskTopicId(followTask) : linked?.topicId;
       const displayedApproval = approvalProposalForTask(approvalTask ?? null);
+      const displayedQuestion = displayedApproval ? null : humanConditionAnchor(approvalTask ?? null);
       queueCommandDelivery(surface, async () => {
         const deliveredMessageId = await sendMessage(chatIdStr, rendered, parseMode, {
           eventType: displayedApproval ? "task.human-action" : "telegram.reply",
@@ -1005,8 +1005,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             followTask,
             topicId: conversationTopicId,
             ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
+            ...(displayedQuestion ? { humanCondition: displayedQuestion } : {}),
           }),
-          bindToCompleteDelivery: Boolean(displayedApproval),
+          bindToCompleteDelivery: Boolean(displayedApproval || displayedQuestion),
           replyToMessageId: msg.message_id,
           messageThreadId: topicId,
           replyMarkup: taskButtons(followTask ? [followTask] : taskRefs),
@@ -1033,43 +1034,30 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (rest.length > 1) deliverCommandView("Use: /apps [app]");
       else {
         const apps = opts.humanTasks.listApps(rest[0]);
-        let selectedChanged = false;
-        if (rest[0] && apps.length === 1) {
-          const nextApp = apps[0]!.id;
-          session.selectedApp = nextApp;
-          session.shownTodoActions.clear();
-          delete session.nextTodoPage;
-          if (session.watchedTask && session.watchedTask.appId !== nextApp) stopWatching(session);
-          selectedChanged = true;
-        }
-        const selected = session.selectedApp ?? conversationAppId;
         deliverCommandView(
           apps.length === 0
             ? `App ${rest[0]} was not found.`
-            : `${rest[0] ? `Selected App: ${selected}\n` : ""}${renderTelegramApps(apps, selected)}`,
+            : `${rest[0] ? "Read-only App view; subsequent chat still talks to May.\n" : ""}${renderTelegramApps(apps, "")}`,
         );
-        if (selectedChanged) todoRefresh.queue(surface);
       }
       return true;
     }
 
     if (command === "/todo") {
-      const tokens = rest.map((part) => part.toLowerCase());
-      const more = tokens.length === 1 && tokens[0] === "more";
+      const lowerTokens = rest.map((part) => part.toLowerCase());
+      const more = lowerTokens.length === 1 && lowerTokens[0] === "more";
       const prior = more ? session.nextTodoPage : undefined;
       if (more && !prior) {
         deliverCommandView("No next page. Use /todo first.");
         return true;
       }
-      if (tokens.length > 1 || (tokens.length === 1 && tokens[0] !== "all" && !more)) {
-        deliverCommandView("Use: /todo [all], or /todo more");
+      if (rest.length > 1) {
+        deliverCommandView("Use: /todo [all|app], or /todo more");
         return true;
       }
       const appId = more
         ? prior!.appId
-        : tokens.includes("all")
-          ? undefined
-          : (session.selectedApp ?? conversationAppId);
+        : !rest.length || lowerTokens[0] === "all" ? undefined : rest[0];
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         humanActionOnly: true,
@@ -1082,7 +1070,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         delete session.nextTodoPage;
       }
       deliverCommandView(
-        renderTelegramTodos(page.items, page.total ?? page.items.length, appId, Boolean(page.nextCursor)),
+        renderTelegramTodos(page.items, page.total, appId, Boolean(page.nextCursor)),
         page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
         undefined,
         undefined,
@@ -1099,17 +1087,16 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         deliverCommandView("No next page. Use /tasks first.");
         return true;
       }
-      const tokens = more ? [] : rest.map((part) => part.toLowerCase());
-      if (tokens.some((part) => part !== "all" && part !== "history") || new Set(tokens).size !== tokens.length) {
-        deliverCommandView("Use: /tasks [all] [history], or /tasks more");
+      const lowerTokens = more ? [] : rest.map((part) => part.toLowerCase());
+      const rawFilters = more ? [] : rest.filter((part) => part.toLowerCase() !== "history");
+      if (rawFilters.length > 1 || new Set(lowerTokens).size !== lowerTokens.length) {
+        deliverCommandView("Use: /tasks [all|app] [history], or /tasks more");
         return true;
       }
-      const includeDone = prior?.includeDone ?? tokens.includes("history");
+      const includeDone = prior?.includeDone ?? lowerTokens.includes("history");
       const appId = more
         ? prior!.appId
-        : tokens.includes("all")
-          ? undefined
-          : (session.selectedApp ?? conversationAppId);
+        : !rawFilters.length || rawFilters[0]!.toLowerCase() === "all" ? undefined : rawFilters[0];
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         includeDone,
@@ -1202,7 +1189,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           task,
         );
       } else {
-        session.selectedApp = task.appId;
         const watched: WatchedTaskTarget = {
           appId: task.appId,
           taskId: task.taskId,
@@ -1213,7 +1199,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         };
         session.watchedTask = watched;
         deliverCommandView(
-          `${renderTelegramTaskUpdate(task)}\n\nFollowing updates. Reply here to discuss this work. Other Tasks continue unchanged.`,
+          `${renderTelegramTaskUpdate(task)}\n\nFollowing updates. ${approvalProposalForTask(task) || humanConditionAnchor(task)
+            ? replyInstruction(task)
+            : "Reply here to discuss this work."} Other Tasks continue unchanged.`,
           [{ appId: task.appId, taskId: task.taskId }],
           () => {
             if (session.watchedTask !== watched) {
@@ -1252,23 +1240,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (command === "/cancel") {
       const cancellationKey = `telegram:${chatIdStr}:${msg.message_id}:cancel`;
       if (resumeRecordedInput("app.task.cancel.requested", cancellationKey)) return true;
-      if (rest.length > 1) {
-        deliverCommandView("Use: /cancel [ref]");
+      if (rest.length !== 1 || !rest[0]) {
+        deliverCommandView("Use: /cancel <ref>. Following never selects a cancellation target.");
         return true;
       }
-      const watched = session.watchedTask;
-      if (!rest[0] && !watched) {
-        deliverCommandView("Use: /cancel <ref>, or watch a Task first.");
-        return true;
-      }
-      const selected = opts.humanTasks.getTask(
-        rest[0]
-          ? { ref: rest[0] }
-          : {
-              appId: watched!.appId,
-              taskId: watched!.taskId,
-            },
-      );
+      const selected = opts.humanTasks.getTask({ ref: rest[0] });
       if (!selected) {
         deliverCommandView("Task was not found; nothing was cancelled.");
         return true;
@@ -1281,7 +1257,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       try {
         const task = opts.humanTasks.getTask({ appId: selected.appId, taskId: selected.taskId });
         if (!task) throw new Error("Task disappeared after cancellation");
-        stopWatching(session);
+        if (session.watchedTask?.appId === selected.appId && session.watchedTask.taskId === selected.taskId)
+          stopWatching(session);
         deliverCommandView(renderTelegramTask(task), representedTaskIdentities(task), undefined, {
           appId: task.appId,
           taskId: task.taskId,

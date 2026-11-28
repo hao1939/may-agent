@@ -10,10 +10,18 @@ export type {
   AgentContext,
   AgentExecutableModule,
   CallOptions,
+  CommandReceipt,
+  ConditionObservation,
+  DoneOptions,
   ExecutionDeferral,
   ExecutionResult,
   Logger,
+  WorkflowAgentSession,
+  WorkflowExecOptions,
   WorkflowInput,
+  WorkflowParkInput,
+  WorkflowTaskView,
+  WorkflowWorkspace,
   WorkflowContext,
 } from "./workflow.js";
 export type {

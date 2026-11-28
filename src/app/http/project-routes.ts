@@ -294,10 +294,21 @@ export function createProjectRouteHandlers(options: {
             try {
               const db = _db();
               return ids.map(({ id, target }) => {
-                const row = db.prepare("SELECT current, threshold, alert_op FROM metrics WHERE id = ?").get(id) as any;
-                const current = row?.current ?? null;
+                const row = db
+                  .prepare("SELECT current, updated_at, threshold, alert_op, config FROM metrics WHERE id = ?")
+                  .get(id) as any;
+                let current = row?.current ?? null;
+                try {
+                  const cfg = row?.config ? JSON.parse(row.config) : null;
+                  const noExp = cfg?.lastNoExposureAt;
+                  if (typeof noExp === "number" && noExp > 0 && (row?.updated_at == null || noExp > row.updated_at)) {
+                    current = null;
+                  }
+                } catch {
+                  /* ignore malformed config */
+                }
                 const threshold = row?.threshold;
-                const breached = threshold != null && current != null && metricThresholdBreached(row);
+                const breached = threshold != null && current != null && metricThresholdBreached({ ...row, current });
                 return { id, current, target, breached };
               });
             } catch {
@@ -369,17 +380,39 @@ export function createProjectRouteHandlers(options: {
     const db = _db();
     let ownedMetrics: Array<Record<string, unknown>> = [];
     let citedMetricsResolved: Array<Record<string, unknown>> = [];
+    const sanitizeProjectMetric = (m: Record<string, any>) => {
+      let current = m.current ?? null;
+      let alertsDisabled = false;
+      try {
+        const cfg = m.config ? JSON.parse(String(m.config)) : null;
+        const noExp = cfg?.lastNoExposureAt;
+        if (typeof noExp === "number" && noExp > 0 && (m.updated_at == null || noExp > m.updated_at)) {
+          current = null;
+        }
+        alertsDisabled = cfg?.alert?.disabled === true || cfg?.alert?.mode === "disabled";
+      } catch {
+        /* ignore */
+      }
+      const { config: _c, updated_at: _u, ...rest } = m;
+      return { ...rest, current, alertsDisabled };
+    };
     try {
-      ownedMetrics = db
-        .prepare(`SELECT id, name, current, threshold, alert_op, unit, priority, type FROM metrics WHERE project = ?`)
-        .all(projectName) as any[];
+      ownedMetrics = (
+        db
+          .prepare(
+            `SELECT id, name, current, updated_at, threshold, alert_op, unit, priority, type, config FROM metrics WHERE project = ? AND status = 'active'`,
+          )
+          .all(projectName) as any[]
+      ).map(sanitizeProjectMetric);
       if (cited.size > 0) {
         const placeholders = [...cited].map(() => "?").join(",");
-        citedMetricsResolved = db
-          .prepare(
-            `SELECT id, name, current, threshold, alert_op, unit, priority, type FROM metrics WHERE id IN (${placeholders})`,
-          )
-          .all(...[...cited]) as any[];
+        citedMetricsResolved = (
+          db
+            .prepare(
+              `SELECT id, name, current, updated_at, threshold, alert_op, unit, priority, type, config FROM metrics WHERE id IN (${placeholders})`,
+            )
+            .all(...[...cited]) as any[]
+        ).map(sanitizeProjectMetric);
       }
     } catch {
       /* tolerate missing column */

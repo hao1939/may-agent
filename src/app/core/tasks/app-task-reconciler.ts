@@ -3364,7 +3364,9 @@ function refreshAttemptLease(attempt: AppTaskAttempt, sessionId?: string, nowMs 
     version: (existing?.version ?? 0) + 1,
     ...times,
     runtimeId: attempt.runtimeId,
-    ownerProcess: currentProcessInstance(),
+    // Observers may refresh a session association from another process. The
+    // executing process recorded by the claim remains the recovery authority.
+    ownerProcess: existing?.ownerProcess ?? currentProcessInstance(),
     ...(sessionId ? { sessionId } : {}),
   };
 }
@@ -3420,8 +3422,9 @@ export function recordAppTaskAttemptSession(config: AppTaskContext, claim: AppTa
 }
 
 /**
- * Associate a session launched inside a task workflow with the exact current
- * reconciliation attempt. Legacy persisted bindings may omit attemptId for
+ * Associate an owning agent session with the exact current reconciliation
+ * attempt. The caller separates workflow/helper lineage before this mutation.
+ * Legacy persisted bindings may omit attemptId for
  * historical reads, but they cannot authorize a current session/lease mutation.
  */
 export function associateAppTaskSession(
@@ -4063,12 +4066,8 @@ function acceptedTaskClosure(
   let reason: string;
   let decidedBy: AppTaskCancellation["decidedBy"];
   let summary: string;
-  if (hostFiniteDone) {
-    reason = "Public execution returned done for the finite assignment";
-    summary = `Closed by Host settlement: ${reason}`;
-    decidedBy = { kind: "host-execution" };
-  } else {
-    const decision = config.closeOnResult!(structuredClone({
+  if (config.closeOnResult) {
+    const decision = config.closeOnResult(structuredClone({
       // Internal intents normalize assignment to owner; App policy receives the
       // public agent field, matching the Task read contract.
       task: { ...resourceIntent(resource), ...(resource.spec.owner ? { agent: resource.spec.owner } : {}) },
@@ -4081,6 +4080,10 @@ function acceptedTaskClosure(
     reason = decision.reason.trim();
     summary = `Closed by App policy: ${reason}`;
     decidedBy = { kind: "app-policy" };
+  } else {
+    reason = "Public execution returned done for the finite assignment";
+    summary = `Closed by Host settlement: ${reason}`;
+    decidedBy = { kind: "host-execution" };
   }
   return {
     kind: "closed", acceptedResultAttemptId: claim.attemptId,

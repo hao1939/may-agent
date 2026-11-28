@@ -110,7 +110,10 @@ function estimateTranscriptTokens(messages: AgentMessage[]): number {
   return messages.reduce((sum, message) => sum + estimateMessageTokens(message), 0);
 }
 
-function estimateTokens(messages: AgentMessage[]): number {
+function computeTokensWithScale(
+  messages: AgentMessage[],
+  stickyScale = 1,
+): { tokens: number; scale: number } {
   const isModelMessage = (message: AgentMessage): message is Message =>
     message.role === "system" ||
     message.role === "user" ||
@@ -118,15 +121,30 @@ function estimateTokens(messages: AgentMessage[]): number {
     message.role === "toolResult";
   const modelMessages = messages.filter(isModelMessage);
   const estimate = estimateContextTokens(modelMessages);
-  // The provider estimate excludes coding-agent custom messages. Add those
-  // after its last usage record so they cannot disappear behind a larger billed prefix.
   const usageMessage = estimate.lastUsageIndex === null ? undefined : modelMessages[estimate.lastUsageIndex];
   const usageIndex = usageMessage ? messages.indexOf(usageMessage) : -1;
   const customTrailingTokens = messages
     .slice(usageIndex + 1)
     .filter((message) => !isModelMessage(message))
     .reduce((sum, message) => sum + estimateMessageTokens(message), 0);
-  return Math.max(estimateTranscriptTokens(messages), estimate.tokens + customTrailingTokens);
+  const prefixHeuristic =
+    estimate.lastUsageIndex === null
+      ? 0
+      : estimateTranscriptTokens(modelMessages.slice(0, estimate.lastUsageIndex + 1));
+  const observedScale =
+    prefixHeuristic > 0 && estimate.usageTokens > prefixHeuristic
+      ? Math.min(2.5, estimate.usageTokens / prefixHeuristic)
+      : stickyScale;
+  const heuristicScaled = Math.ceil(estimateTranscriptTokens(messages) * observedScale);
+  const calibratedTotal =
+    estimate.lastUsageIndex === null
+      ? Math.max(heuristicScaled, estimate.tokens + customTrailingTokens)
+      : estimate.usageTokens + Math.ceil((estimate.trailingTokens + customTrailingTokens) * observedScale);
+  return { tokens: Math.max(heuristicScaled, calibratedTotal), scale: observedScale };
+}
+
+function estimateTokens(messages: AgentMessage[], stickyScale = 1): number {
+  return computeTokensWithScale(messages, stickyScale).tokens;
 }
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
@@ -352,15 +370,37 @@ function splitMessages(messages: AgentMessage[], keepRatio: number): number {
   return splitAt;
 }
 
+const KEPT_TOOL_RESULT_MAX_CHARS = 2_000;
+
+function trimKeptToolResults(messages: readonly AgentMessage[]): AgentMessage[] {
+  return messages.map((msg) => {
+    if (msg.role !== "toolResult" || !Array.isArray((msg as any).content)) return msg;
+    let changed = false;
+    const nextContent = (msg as any).content.map((block: any) => {
+      if (!block || block.type !== "text" || typeof block.text !== "string") return block;
+      if (block.text.length <= KEPT_TOOL_RESULT_MAX_CHARS) return block;
+      changed = true;
+      return {
+        ...block,
+        text: `${block.text.slice(0, KEPT_TOOL_RESULT_MAX_CHARS)}…\n[compacted tool output]`,
+      };
+    });
+    return changed ? ({ ...msg, content: nextContent } as AgentMessage) : msg;
+  });
+}
+
 export function createCompactionTransform(model: Model<any>, options: CompactionOptions = {}) {
   const threshold = options.threshold ?? DEFAULT_THRESHOLD;
   const keepRatio = options.keepRatio ?? DEFAULT_KEEP_RATIO;
   let compactionCount = 0;
+  let stickyUsageScale = 1;
 
   return async (messages: AgentMessage[]): Promise<AgentMessage[]> => {
     if (messages.length <= 1) return messages;
 
-    const tokensBefore = estimateTokens(messages);
+    const measured = computeTokensWithScale(messages, stickyUsageScale);
+    stickyUsageScale = measured.scale;
+    const tokensBefore = measured.tokens;
     if (tokensBefore < model.contextWindow * threshold) return messages;
 
     // Pi stores instructions and tool declarations in system messages. Replay
@@ -375,8 +415,12 @@ export function createCompactionTransform(model: Model<any>, options: Compaction
     const compacted = history.slice(0, splitAt);
     const kept = history.slice(splitAt);
     const summary = buildSummary(compacted, previousSummary);
-    const result = [...(baseline ? [baseline] : []), textMessage(summary), ...kept];
-    const tokensAfter = estimateTokens(result);
+    let result = [...(baseline ? [baseline] : []), textMessage(summary), ...kept];
+    let tokensAfter = estimateTokens(result, stickyUsageScale);
+    if (tokensAfter > model.contextWindow * 0.5) {
+      result = [...(baseline ? [baseline] : []), textMessage(summary), ...trimKeptToolResults(kept)];
+      tokensAfter = estimateTokens(result, stickyUsageScale);
+    }
 
     compactionCount += 1;
     options.onCompact?.({
@@ -392,6 +436,7 @@ export function createCompactionTransform(model: Model<any>, options: Compaction
 }
 import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import type { SubagentDefinition } from "./manager-utils.js";
+import { wrapToolsWithOffload } from "./offload-content.js";
 import { createWorkflowFinishTool } from "./tools/lifecycle.js";
 import { createReadTool } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
@@ -495,7 +540,8 @@ export async function recoverCapturedWorkflowFinish(options: {
   if (existing) return existing;
 
   const recovery = (async (): Promise<CapturedFinishRecovery> => {
-    const finish = options.tools.find((tool) => tool.name === call.name || tool.name === "finish");
+    const finish = options.tools.find((tool) => tool.name === call.name)
+      ?? options.tools.find((tool) => tool.name === "finish");
     if (!finish) return { disposition: "rejected", toolCallId: call.id, error: "finish tool unavailable" };
     let result: Awaited<ReturnType<AgentTool["execute"]>>;
     try {
@@ -509,7 +555,7 @@ export async function recoverCapturedWorkflowFinish(options: {
       options.messages.push({
         role: "toolResult",
         toolCallId: call.id,
-        toolName: "finish",
+        toolName: call.name,
         content: [{ type: "text", text: error }],
         isError: true,
         timestamp: Date.now(),
@@ -527,7 +573,7 @@ export async function recoverCapturedWorkflowFinish(options: {
     options.messages.push({
       role: "toolResult",
       toolCallId: call.id,
-      toolName: "finish",
+      toolName: call.name,
       content: result.content,
       isError: Boolean(semanticError),
       timestamp: Date.now(),
@@ -1058,7 +1104,8 @@ function normalizeProviderRootToolParameters(parameters: TSchema): TSchema {
 }
 
 function normalizeContextForModel(model: Model<Api>, context: Parameters<SimpleStreamFunction>[1]): Parameters<SimpleStreamFunction>[1] {
-  if (!model.id.startsWith("gemini-")) return context;
+  const modelName = model.id.slice(model.id.lastIndexOf("/") + 1);
+  if (!modelName.startsWith("gemini-")) return context;
   const normalizeList = (list: Array<{ name: string; description: string; parameters: TSchema }> | undefined) => {
     if (!list?.length) return list;
     let listChanged = false;
@@ -1145,6 +1192,8 @@ export type AgentPreparationOptions = {
   /** Pure caller admission check; rejection keeps this invocation open for correction. */
   validateOutput?: (result: unknown) => string | null;
   toolPolicy?: ToolPolicy;
+  /** Trusted bindings for this invocation; applied after rebasing, before policy and finish validation. */
+  toolBindings?: readonly AgentTool[];
   /** Override the registered agent's filesystem tools for this execution only. */
   executionRoot?: string;
   promptTimestamp?: string;
@@ -1275,7 +1324,9 @@ function runtimeEnvironment(
 
 function resolveTools(options: AgentPreparationOptions, requireFinish: boolean): AgentTool[] {
   const { definition } = options;
-  let tools = definition.tools;
+  const bindings = options.toolBindings ?? [];
+  const boundNames = new Set(bindings.map(tool => tool.name));
+  let tools = [...definition.tools.filter(tool => !boundNames.has(tool.name)), ...bindings];
   if (options.toolPolicy === "readonly") {
     tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
   }
@@ -1289,6 +1340,7 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
 
   const scopedFinish = options.executionRoot ? options.createFinish?.() : undefined;
   const baseFinish =
+    bindings.find(tool => tool.name === "finish") ??
     scopedFinish ??
     tools.find((tool) => tool.name === "finish") ??
     definition.tools.find((tool) => tool.name === "finish") ??
@@ -1298,32 +1350,7 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   }
   const finish = createWorkflowFinishTool(baseFinish, options.outputSchema, options.validateOutput);
   const index = tools.findIndex((tool) => tool.name === "finish");
-  let finalTools = index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool));
-  const reconcileIndex = finalTools.findIndex((tool) => tool.name === "reconcile");
-  if (reconcileIndex >= 0) {
-    finalTools = finalTools.map((tool, offset) =>
-      offset === reconcileIndex
-        ? {
-            ...finish,
-            name: "reconcile",
-            label: "Reconcile Turn",
-            description:
-              "Commit this Task attempt's reconciliation decision ({ state: 'waiting' | 'converged' | 'incomplete', summary, facts, and optional continue, inputKeys, requests, conditions, actions, communication }) and end the current turn.",
-            parameters: Type.Unsafe({
-              ...structuredClone(
-                ((finish.parameters as any)?.properties?.output?.anyOf?.[0] as Record<string, unknown> | undefined) ??
-                  finish.parameters,
-              ),
-              description:
-                "Flat Task attempt reconciliation result (state: 'waiting' | 'converged' | 'incomplete', summary, facts, optional continue, inputKeys, requests, conditions, actions, communication).",
-            }),
-            prepareArguments: undefined,
-            execute: async (toolCallId, params, signal, onUpdate) =>
-              finish.execute(toolCallId, params, signal, onUpdate),
-          }
-        : tool,
-    );
-  }
+  const finalTools = index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool));
   assertUniqueToolNames(
     finalTools.map((tool, offset) => ({
       tool,
@@ -1469,7 +1496,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
     options.requireFinish === true || outputSchema !== undefined || options.validateOutput !== undefined;
   const normalizedOptions = { ...options, outputSchema };
   const tools = bindToolsToSession(
-    resolveTools(normalizedOptions, requireFinish),
+    wrapToolsWithOffload(resolveTools(normalizedOptions, requireFinish), options.sessionId),
     options.definition.name,
     options.sessionId,
   );
@@ -1510,6 +1537,10 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
       : "") +
     (options.systemPromptSuffix ? `\n\n${options.systemPromptSuffix}` : "");
 
+  const customMockStream = (options.definition.model as unknown as Record<symbol, unknown> | undefined)?.[
+    Symbol.for("may-agent.mockModel.streamFn")
+  ] as StreamFunction | undefined;
+
   return {
     definition: options.definition,
     sessionId: options.sessionId,
@@ -1522,7 +1553,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
     systemPrompt,
     tools,
     runner: {
-      streamFn: boundedStreamSimple,
+      streamFn: customMockStream ?? boundedStreamSimple,
       sessionId: options.sessionId,
       initialState: {
         systemPrompt,
@@ -1561,6 +1592,9 @@ export async function executePreparedAgent(
   const usage = createExecutionUsage(prepared.preparation);
   const unsubscribeUsage = agent.subscribe(usage.observe);
   if (options.initialMessages) restoreAgentMessages(agent, options.initialMessages);
+  const restoredMessages = new Set<unknown>(agent.state.messages as unknown[]);
+  const currentSendMessages = (): AgentMessage[] =>
+    (agent.state.messages as AgentMessage[]).filter((message) => !restoredMessages.has(message));
   const unsubscribe = options.onObservation ? agent.subscribe(options.onObservation) : undefined;
   let timedOut = false;
   let interrupted = false;
@@ -1585,19 +1619,27 @@ export async function executePreparedAgent(
       scope.signal.throwIfAborted();
       const initialError = initialCause instanceof Error ? initialCause.message : String(initialCause);
       const messages = agent.state.messages as AgentMessage[];
+      const sendMessages = currentSendMessages();
+      const beforeRecoveryLen = messages.length;
       const captured = prepared.requireFinish
         ? await recoverCapturedWorkflowFinish({
             sessionId: prepared.sessionId,
-            messages,
+            messages: sendMessages,
             tools,
             reason: initialError,
           })
         : { disposition: "ineligible" as const };
+      if (sendMessages.length > 0 && captured.disposition === "recovered") {
+        const latestNew = sendMessages[sendMessages.length - 1];
+        if (latestNew && messages[messages.length - 1] !== latestNew && messages.length === beforeRecoveryLen) {
+          messages.push(latestNew);
+        }
+      }
       if (captured.disposition === "recovered" || captured.disposition === "already-committed") {
         recoveredThrownFailure = true;
       } else if (
         prepared.requireFinish &&
-        !extractFinishParams(messages as any[]) &&
+        !extractFinishParams(currentSendMessages() as any[]) &&
         shouldAttemptWorkflowFinishRecovery(initialError)
       ) {
         recoveredThrownFailure = true;
@@ -1618,10 +1660,12 @@ export async function executePreparedAgent(
     if (prepared.requireFinish && !recoveredThrownFailure) {
       scope.signal.throwIfAborted();
       const messages = agent.state.messages as AgentMessage[];
-      const terminalError = extractLastAssistantError(messages) ?? classifyTerminalAssistantFailure(messages);
-      if (!extractFinishParams(messages as any[])) {
+      const sendMessages = currentSendMessages();
+      const terminalError =
+        extractLastAssistantError(sendMessages) ?? classifyTerminalAssistantFailure(sendMessages);
+      if (!extractFinishParams(sendMessages as any[])) {
         if (shouldAttemptWorkflowFinishRecovery(terminalError)) {
-          if (isRetryableEmptyAssistantFailure(terminalError)) {
+          if (isRetryableEmptyAssistantFailure(terminalError) && sendMessages.length > 0) {
             messages.pop();
           }
           await agent.prompt(workflowFinishRecoveryPrompt(prepared.outputSchema, terminalError));
@@ -1648,13 +1692,14 @@ export async function executePreparedAgent(
   }
 
   const messages = agent.state.messages as AgentMessage[];
-  const finishResult = extractFinishParams(messages as any[]) ?? undefined;
+  const sendMessages = currentSendMessages();
+  const finishResult = extractFinishParams(sendMessages as any[]) ?? undefined;
   // A committed finish survives a timeout while the turn unwinds. Validate the
   // caller's required payload below before treating that receipt as a result.
   if (finishResult && interrupted) error = undefined;
   if (interrupted && !finishResult) error ??= scope.signal.reason?.message ?? "Execution interrupted";
-  const assistantError = !finishResult ? extractLastAssistantError(messages) : undefined;
-  const terminalFailure = !finishResult ? classifyTerminalAssistantFailure(messages) : undefined;
+  const assistantError = !finishResult ? extractLastAssistantError(sendMessages) : undefined;
+  const terminalFailure = !finishResult ? classifyTerminalAssistantFailure(sendMessages) : undefined;
   error ??= assistantError ?? terminalFailure;
   if (!error && prepared.requireFinish && !finishResult) {
     error = "Workflow agent step ended without calling finish() after one corrective prompt";
@@ -1662,7 +1707,7 @@ export async function executePreparedAgent(
   if (!error && prepared.outputSchema && finishResult?.status === "done" && finishResult.output === undefined) {
     error = "Workflow agent step completed without the required schema-backed finish().output payload";
   }
-  const assistantText = finishResult?.summary ?? extractLastAssistantText(messages);
+  const assistantText = finishResult?.summary ?? extractLastAssistantText(sendMessages);
   if (!error && !finishResult && !assistantText) {
     error = "Agent ended without producing a response";
   }

@@ -10,8 +10,24 @@
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
-import { validateCallableInput, validateCallableOptions, type CallableDescriptor } from "./callable.js";
-import type { AgentExecutableModule, AppWorkflowContext as WorkflowContext, Logger } from "./workflow.js";
+import {
+  validateCallableInput,
+  validateCallableOptions,
+  type CallableDescriptor,
+  type ExecutionInput,
+} from "./callable.js";
+import { runCommand } from "./command.js";
+import type {
+  AgentExecutableModule,
+  AppWorkflowContext as WorkflowContext,
+  ConditionObservation,
+  DoneOptions,
+  Logger,
+  WorkflowAgentSession,
+  WorkflowParkInput,
+  WorkflowTaskView,
+  WorkflowWorkspace,
+} from "./workflow.js";
 
 const DEFAULT_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 const MAX_TIMER_MS = 2_147_483_647;
@@ -133,7 +149,7 @@ export type PreparedTargetCatalog<TPromptDef = unknown> = PreparedCatalog<TPromp
 export const resolveCallableTarget = resolveCallable;
 
 export type NormalizedWorkflowContribution = (
-  | { type: "done"; summary: string }
+  | { type: "done"; summary: string; requests?: import("./task.js").TaskAppRequest[]; response?: string }
   | { type: "blocked" | "error" | "interrupted"; reason: string; context?: unknown }
 ) & { output?: unknown; facts?: unknown };
 
@@ -348,7 +364,19 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   read?: AppRead;
   events?: WorkflowContext["events"];
   metrics?: WorkflowMetricCapability;
-  workspace?: WorkflowContext["workspace"];
+  workspace?: Partial<WorkflowWorkspace>;
+  task?: WorkflowTaskView;
+  attemptNumber?: number;
+  observations?: Readonly<Record<string, ConditionObservation>>;
+  invokeAgentSession?: (
+    sessionKey: string,
+    target: string,
+    input: ExecutionInput,
+    options: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+    stepControl: WorkflowKernelStepControl,
+  ) => Promise<WorkflowStepInvocationResult>;
+  closeAgentSessions?: () => Promise<void>;
+  onProgress?: (status: string) => void;
   reconciliation?: WorkflowContext<TInput>["reconciliation"];
   reviseTask?: WorkflowContext["reviseTask"];
   closeTask?: WorkflowContext["closeTask"];
@@ -428,7 +456,19 @@ export function normalizeWorkflowContribution(
     ...(value.facts !== undefined ? { facts: value.facts } : {}),
   };
   if (value.status === "done") {
-    return { type: "done", summary: value.summary as string, ...payload };
+    if (value.requests !== undefined && !Array.isArray(value.requests)) {
+      throw new Error("Workflow done result requests must be an array");
+    }
+    if (value.response !== undefined && (typeof value.response !== "string" || !value.response.trim())) {
+      throw new Error("Workflow done result response must be a non-empty string");
+    }
+    return {
+      type: "done",
+      summary: value.summary as string,
+      ...payload,
+      ...(value.requests !== undefined ? { requests: [...(value.requests as import("./task.js").TaskAppRequest[])] } : {}),
+      ...(value.response !== undefined ? { response: value.response as string } : {}),
+    };
   }
   if (value.status === "blocked" || value.status === "error" || value.status === "interrupted") {
     return {
@@ -451,6 +491,60 @@ function defaultUnavailableRead(): AppRead {
     tasks: { list: unavailable, get: unavailable },
     execution: unavailable,
     metric: unavailable,
+  };
+}
+
+function buildWorkflowTaskView<TInput>(bindings: WorkflowKernelBindings<TInput>): WorkflowTaskView {
+  if (bindings.task) return bindings.task;
+  const rec = bindings.reconciliation;
+  if (rec) {
+    const prevAccepted = rec.previousAttempt?.acceptedResult;
+    return {
+      appId: rec.appId ?? "unknown",
+      id: rec.taskId ?? "unknown",
+      generation: rec.generation ?? 1,
+      attemptNumber: bindings.attemptNumber ?? 1,
+      outcome: rec.outcome ?? "",
+      acceptance: rec.acceptance ?? [],
+      taskInput: rec.input,
+      newInputs: rec.events?.items ?? [],
+      facts: prevAccepted?.facts ?? rec.task?.facts ?? [],
+      ...(prevAccepted?.result !== undefined
+        ? { previousResult: prevAccepted.result }
+        : rec.task?.result !== undefined
+          ? { previousResult: rec.task.result }
+          : {}),
+    };
+  }
+  const inputRecord = isRecord(bindings.input) ? bindings.input : undefined;
+  const promptOutcome =
+    typeof inputRecord?.prompt === "string" && inputRecord.prompt.trim()
+      ? inputRecord.prompt.trim()
+      : typeof bindings.input === "string" && bindings.input.trim()
+        ? bindings.input.trim()
+        : "Standalone workflow invocation";
+  return {
+    appId: "standalone",
+    id: "standalone",
+    generation: 1,
+    attemptNumber: bindings.attemptNumber ?? 1,
+    outcome: promptOutcome,
+    acceptance: [],
+    taskInput: inputRecord && "data" in inputRecord ? inputRecord.data : bindings.input,
+    newInputs: [],
+    facts: [],
+  };
+}
+
+function buildWorkflowWorkspace<TInput>(bindings: WorkflowKernelBindings<TInput>): WorkflowWorkspace {
+  const fallback = process.cwd();
+  const ws = bindings.workspace;
+  const root = ws?.root ?? ws?.projectRoot ?? ws?.appRoot ?? fallback;
+  return {
+    appRoot: ws?.appRoot ?? root,
+    projectRoot: ws?.projectRoot ?? root,
+    root,
+    output: ws?.output ?? root,
   };
 }
 
@@ -1035,9 +1129,63 @@ export async function runWorkflowInvocation<TInput = unknown>(
     })()) as Promise<ExecutionResult<Static<S>>>;
   }) as WorkflowContext["call"];
 
+  const effectiveWorkspace = buildWorkflowWorkspace(bindings);
+  const effectiveTaskView = buildWorkflowTaskView(bindings);
+  let agentSessionCounter = 0;
+
+  const parkResult = (wait: WorkflowParkInput): ExecutionResult<never> => {
+    assertActive();
+    const waitDescriptor: Record<string, unknown> = {
+      ...(wait.conditions !== undefined ? { conditions: wait.conditions } : {}),
+      ...(wait.requests !== undefined ? { requests: wait.requests } : {}),
+      ...(wait.retryAfterMs !== undefined ? { retryAfterMs: wait.retryAfterMs } : {}),
+      ...(wait.continue === true ? { continue: true } : {}),
+      ...(wait.facts !== undefined ? { domainFacts: wait.facts } : {}),
+    };
+    return {
+      status: "blocked",
+      summary: wait.summary,
+      ...(wait.result !== undefined ? { output: wait.result as never } : {}),
+      ...(Object.keys(waitDescriptor).length > 0 ? { facts: waitDescriptor } : {}),
+    };
+  };
+
+  const observeCondition = <T = unknown>(subjectOrConditionId: string): ConditionObservation<T> | null => {
+    assertActive();
+    const key = subjectOrConditionId.trim();
+    if (!key) return null;
+    if (bindings.observations && Object.hasOwn(bindings.observations, key)) {
+      return bindings.observations[key] as ConditionObservation<T>;
+    }
+    const cond = bindings.reconciliation?.task?.conditions?.find(
+      (item) => item.id === key || item.subject === key,
+    );
+    if (!cond?.observation) return null;
+    return {
+      state: cond.observation.state,
+      ...(cond.observation.observed !== undefined ? { observed: cond.observation.observed as T } : {}),
+      ...(cond.observation.facts ? { facts: cond.observation.facts } : {}),
+      ...(cond.observation.observedAt ? { observedAt: cond.observation.observedAt } : {}),
+    };
+  };
+
   const ctx: WorkflowContext<TInput> = {
     input: bindings.input as WorkflowContext<TInput>["input"],
     signal: controller.signal,
+    task: effectiveTaskView,
+    workspace: effectiveWorkspace,
+    exec: (argv, execOpts) => {
+      try {
+        assertActive();
+      } catch (err) {
+        return Promise.reject(err);
+      }
+      if (enclosingReadonly) {
+        return Promise.reject(new Error(`Workflow "${module.name}" is read-only and cannot execute shell commands`));
+      }
+      const cwd = execOpts?.cwd ?? effectiveWorkspace.root;
+      return trackOperation(runCommand(cwd, [...argv], controller.signal));
+    },
     list: () => {
       assertActive();
       return bindings.listTargets?.() ?? Object.freeze([]);
@@ -1045,6 +1193,59 @@ export async function runWorkflowInvocation<TInput = unknown>(
     ...(bindings.reconciliation ? { reconciliation: bindings.reconciliation } : {}),
     read: rawRead,
     log: logger,
+    progress: (status: string) => {
+      if (fenced || controller.signal.aborted) return;
+      logAt("info", `[progress] ${status}`);
+      invokeObserver(bindings.onProgress ? () => bindings.onProgress!(status) : undefined);
+    },
+    observe: observeCondition,
+    park: parkResult,
+    agent: (target: string): WorkflowAgentSession => {
+      assertActive();
+      if (!target || typeof target !== "string" || !target.trim()) {
+        throw new Error("ctx.agent() requires a non-empty target name");
+      }
+      const normalizedTarget = target.trim();
+      const sessionKey = `${executionId}:agent:${agentSessionCounter++}:${normalizedTarget}`;
+      let closed = false;
+      let chain: Promise<unknown> = Promise.resolve();
+      const sendImpl = <TOut = unknown>(
+        rawInput: ExecutionInput | string,
+        callOpts?: CallOptions<TSchema> & { schema?: TSchema },
+      ): Promise<ExecutionResult<TOut>> => {
+        try {
+          assertActive();
+          if (closed) throw new Error(`Agent session "${normalizedTarget}" is closed`);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+        const envelope: ExecutionInput = typeof rawInput === "string" ? { prompt: rawInput } : rawInput;
+        const next = chain.then(async () => {
+          assertActive();
+          if (closed) throw new Error(`Agent session "${normalizedTarget}" is closed`);
+          if (bindings.invokeAgentSession) {
+            return runBoundStep(
+              "agent",
+              normalizedTarget,
+              safePromptPreview(envelope),
+              callOpts,
+              (stepControl, effectiveOptions) =>
+                bindings.invokeAgentSession!(sessionKey, normalizedTarget, envelope, effectiveOptions, stepControl),
+            ) as Promise<ExecutionResult<TOut>>;
+          }
+          return callOverload(normalizedTarget, envelope, callOpts as any) as Promise<ExecutionResult<TOut>>;
+        });
+        chain = next.then(() => undefined, () => undefined);
+        return trackOperation(next);
+      };
+      return {
+        send: sendImpl as WorkflowAgentSession["send"],
+        close: async () => {
+          closed = true;
+          await chain;
+        },
+      };
+    },
     metrics: {
       define: (definition) => {
         assertActive();
@@ -1067,7 +1268,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
         return rawMetrics.evaluate(id);
       },
     },
-    ...(bindings.workspace ? { workspace: bindings.workspace } : {}),
     ...(!enclosingReadonly && bindings.reviseTask
       ? {
           reviseTask: (change) => {
@@ -1137,10 +1337,13 @@ export async function runWorkflowInvocation<TInput = unknown>(
         return tracked;
       },
     },
-    done: <T>(summary: string, output?: T): ExecutionResult<T> => ({
+    done: <T = undefined>(summary: string, output?: T, options?: DoneOptions): ExecutionResult<T> => ({
       status: "done",
       summary,
       ...(output !== undefined ? { output } : {}),
+      ...(options?.facts !== undefined ? { facts: options.facts } : {}),
+      ...(options?.requests !== undefined ? { requests: [...options.requests] } : {}),
+      ...(options?.response !== undefined ? { response: options.response } : {}),
     }),
     blocked: (reason: string, facts?: unknown): ExecutionResult<never> => ({
       status: "blocked",
@@ -1241,6 +1444,13 @@ export async function runWorkflowInvocation<TInput = unknown>(
         unsubscribe();
       } catch {
         // Ignore unsubscribe errors during finalization.
+      }
+    }
+    if (bindings.closeAgentSessions) {
+      try {
+        await bindings.closeAgentSessions();
+      } catch {
+        // Best-effort session cleanup.
       }
     }
     await Promise.allSettled([...activeOperations]);

@@ -181,6 +181,34 @@ export function parseStandaloneCliArgs(
       i = nextIndex;
       continue;
     }
+    if (arg === "--state-dir" || arg.startsWith("--state-dir=")) {
+      const { value, nextIndex } = consumeOptionValue(argv, i, "--state-dir");
+      const resolvedState = resolve(value);
+      options.stateDir = resolvedState;
+      options.traceDir ??= resolvedState;
+      i = nextIndex;
+      continue;
+    }
+    if (arg === "--resume" || arg.startsWith("--resume=")) {
+      options.resume = true;
+      const eqIdx = arg.indexOf("=");
+      if (eqIdx !== -1) {
+        const inline = arg.slice(eqIdx + 1).trim();
+        if (!inline) throw new Error("Option --resume requires a directory path when '=' is used");
+        const resolvedState = resolve(inline);
+        options.stateDir = resolvedState;
+        options.traceDir ??= resolvedState;
+      } else if (argv[i + 1] && !argv[i + 1]!.startsWith("-") && !options.stateDir && positionals.length === 0) {
+        // `may run --resume /tmp/trial` shorthand sets stateDir when no target positional preceded it.
+        const maybeDir = resolve(argv[i + 1]!);
+        if (maybeDir.includes("/") || argv[i + 1]!.startsWith(".")) {
+          options.stateDir = maybeDir;
+          options.traceDir ??= maybeDir;
+          i += 1;
+        }
+      }
+      continue;
+    }
     if (arg.startsWith("-")) {
       throw new Error(`Unknown flag: ${arg}`);
     }
@@ -201,12 +229,30 @@ export function parseStandaloneCliArgs(
     };
   }
 
-  const target = positionals[0]?.trim() ?? "";
+  let target = positionals[0]?.trim() ?? "";
+  let recoveredInputFromState = false;
+  let stateTargetInput: unknown;
+  if (options.resume && options.stateDir) {
+    try {
+      const saved = JSON.parse(readFileSync(resolve(options.stateDir, "task.json"), "utf8")) as {
+        target?: string;
+        input?: unknown;
+      };
+      if (!target && typeof saved.target === "string") target = saved.target.trim();
+      if (explicitInput === undefined && positionals.length <= 1 && saved.input !== undefined) {
+        stateTargetInput = saved.input;
+        recoveredInputFromState = true;
+      }
+    } catch {
+      /* Defer missing/invalid task.json handling to run(). */
+    }
+  }
   if (!target) {
-    throw new Error("Missing required <target> argument (e.g. `may run alex \"...\"` or `may run tech-lead/verified-coder '{...}'`)");
+    throw new Error("Missing required <target> argument (e.g. `may run alex \"...\"` or `may run --resume /tmp/state`)");
   }
 
-  const hasExplicitOrPositionalInput = explicitInput !== undefined || positionals.length > 1;
+  const hasExplicitOrPositionalInput =
+    recoveredInputFromState || explicitInput !== undefined || positionals.length > 1;
   const rawInput =
     explicitInput ??
     (positionals.length > 1 ? positionals.slice(1).join(" ") : undefined) ??
@@ -216,7 +262,7 @@ export function parseStandaloneCliArgs(
   return {
     command: "run",
     target,
-    input: parseStandaloneInput(rawInput),
+    input: recoveredInputFromState ? stateTargetInput : parseStandaloneInput(rawInput),
     json,
     needsStdin: !hasExplicitOrPositionalInput && stdinText === undefined,
     options,
@@ -240,6 +286,8 @@ Options:
   --input <text|json>   Explicit domain input string or JSON object
   --cwd <dir>           Working directory for execution (default: current directory)
   --out <dir>           Output directory for run.json and sessions/
+  --state-dir <dir>     Persist standalone workflow Task state in <dir>/task.json for manual --resume
+  --resume [dir]        Start a fresh attempt from <state-dir>/task.json after external state updates
   --timeout <duration>  Timeout (e.g. 45000, 45s, 2m)
   --skill <name>        Optional skill hint for prompt targets
   --app <name>          Optional App disambiguator if target exists in multiple Apps
@@ -333,6 +381,7 @@ export async function runStandaloneCli(
 
     const execute = deps.execute ?? run;
     const runResult = await execute(parsed.target, effectiveInput, {
+      onNotice: (msg) => writeErr(msg),
       ...parsed.options,
       signal: sigController.signal,
     });
@@ -340,7 +389,25 @@ export async function runStandaloneCli(
     if (parsed.json) {
       writeOut(JSON.stringify(runResult, null, 2));
     } else if (runResult.status === "done" || runResult.status === "blocked") {
-      writeOut(`[${runResult.status}] ${runResult.summary}`);
+      const parkedConds =
+        runResult.status === "blocked" &&
+        runResult.facts &&
+        typeof runResult.facts === "object" &&
+        !Array.isArray(runResult.facts) &&
+        Array.isArray((runResult.facts as Record<string, unknown>).conditions)
+          ? ((runResult.facts as Record<string, unknown>).conditions as Array<Record<string, unknown>>)
+          : [];
+      if (parkedConds.length > 0) {
+        writeOut(`[parked] ${runResult.summary}`);
+        for (const c of parkedConds) {
+          writeOut(`  waiting on ${String(c.type ?? "condition")} (${String(c.subject ?? c.id ?? "")})`);
+        }
+        if (parsed.options.stateDir) {
+          writeOut(`  resume with: may-agent run --resume ${parsed.options.stateDir}`);
+        }
+      } else {
+        writeOut(`[${runResult.status}] ${runResult.summary}`);
+      }
       if (runResult.output !== undefined) {
         writeOut(
           typeof runResult.output === "string"

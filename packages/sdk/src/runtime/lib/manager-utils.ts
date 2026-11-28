@@ -64,6 +64,9 @@ export interface SubagentDefinition {
   /** Enable automatic context compaction for long-running sessions. */
   compaction?: boolean;
 
+  /** Restrict direct LLM subagent tool visibility while keeping workflow calls open. */
+  callableFrom?: "all" | "workflow";
+
   /** Optional context adapter captured with this immutable definition generation. */
   contextPreparation?: AgentContextPreparer;
   /** Loader-captured entrypoint identity; not an App-supplied metric label. */

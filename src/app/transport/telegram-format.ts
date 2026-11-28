@@ -209,12 +209,12 @@ function humanActionLine(task: HumanTaskView): string {
 
 export function renderTelegramTodos(
   tasks: HumanTaskView[],
-  total = tasks.length,
+  total?: number,
   appId?: string,
   hasMore = false,
 ): string {
   const scope = appId ? ` for ${appId}` : " across all Apps";
-  if (tasks.length === 0) return `Nothing needs your action${scope}.`;
+  if (tasks.length === 0 && total === 0 && !hasMore) return `Nothing needs your action${scope}.`;
   return [
     `<b>Needs you${escapeTelegramHtml(scope)}</b>`,
     "",
@@ -232,9 +232,9 @@ export function renderTelegramTodos(
         ];
       })
       .slice(0, -1),
-    ...(total > tasks.length
-      ? ["", `${total - tasks.length} more action(s) are not shown.${hasMore ? " Use /todo more." : ""}`]
-      : []),
+    "",
+    `${tasks.length} action(s) shown on this page; ${Number.isSafeInteger(total) ? `${total} total in this query` : "total unknown"}.`,
+    ...(hasMore ? ["More actions are available. Use /todo more."] : []),
   ].join("\n");
 }
 
@@ -427,17 +427,17 @@ export function renderTelegramConversationMessage(message: AppConversationMessag
 
 export const TELEGRAM_HELP_MARKDOWN =
   "🤖 *May*\n\n" +
-  "Tell May what you need. Reply to an update to follow up.\n" +
+  "Tell May what you need. Reply to discussion for May context; reply to an exact question card to answer that work.\n" +
   "You can ask ‘What's still running?’ or ‘Where were we?’ without remembering IDs.\n" +
   "Background work continues when you close Telegram.\n\n" +
   "*Optional shortcuts:*\n" +
-  "/apps \[app\] — List or select an App\n" +
-  "/tasks \[all\] \[history\], /tasks more — Show Tasks\n" +
-  "/todo \[all\], /todo more — Show Tasks that need your action\n" +
+  "/apps \[app\] — Read Apps; chat stays with May\n" +
+  "/tasks \[all|app\] \[history\], /tasks more — Show Tasks\n" +
+  "/todo \[all|app\], /todo more — Show Tasks that need your action\n" +
   "/task <ref> — Show one Task\n" +
   "/watch \[ref\] — Watch or show one Task\n" +
   "/unwatch — Stop watching without changing the Task\n" +
-  "/cancel \[ref\] — Cancel a Task\n" +
+  "/cancel <ref> — Cancel a Task\n" +
   "/help — Show this message\n\n" +
   "Use Stop this turn to interrupt the current turn; background Tasks continue. New messages wait their turn.\n\n" +
   "*Host administration (all Apps):*\n" +

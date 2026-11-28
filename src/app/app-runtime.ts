@@ -474,6 +474,7 @@ export async function runAppRuntime(opts: {
   const getAppConversation = (appId: string, conversationId: string, options?: { limit?: number }) =>
     readAppConversationResource(getDb(opts.persistDir), appId, conversationId, options);
   const listApps = (appId?: string) => humanTasks.listApps(appId);
+  const listAppDirMap = () => humanTasks.listAppDirMap();
   const listTasks = (options?: Record<string, unknown>) =>
     humanTasks.listTasks(options as Parameters<HumanTaskService["listTasks"]>[0]);
   const getTask = (input: Record<string, unknown>) => humanTasks.getTask(input);
@@ -497,7 +498,7 @@ export async function runAppRuntime(opts: {
       interface: humanInterface,
       stateDir: opts.persistDir,
       port: parseWebPort(daemonHttpPort),
-      services: { events, getStatus, getAppConversation, listApps, listTasks, getTask },
+      services: { events, getStatus, getAppConversation, listApps, listAppDirMap, listTasks, getTask },
     });
     bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${daemonHttpServer.port}` });
   }
@@ -512,7 +513,11 @@ export async function runAppRuntime(opts: {
 
   if (backgroundEnabled) {
     await appInboxRuntime.start();
-    daemonMetricTimers = attachDaemonMetricTimers({ bus, persistDir: opts.persistDir });
+    daemonMetricTimers = attachDaemonMetricTimers({
+      bus,
+      persistDir: opts.persistDir,
+      listLoadedApps: () => humanTasks.listApps(),
+    });
     startBackgroundRuntime({
       manager,
       bus,

@@ -500,19 +500,24 @@ export async function execute(ctx) {
     expect(await running).toMatchObject({ type: "done", summary: "parent result" });
   });
 
-  it("cancels the active step and rejects late workflow effects", async () => {
+  it.each([0, 25])("cancels an entered step on caller abort and rejects late effects (setup delay: %sms)", async (setupDelay) => {
     const root = workflowRoot("workflow-timeout-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
+    const lateAttempt = join(root, "late-effect-attempted");
     writeFileSync(
       join(workflowDir, "timeout.ts"),
       `
+import { writeFileSync } from "node:fs";
 export const name = "timeout";
-export const description = "Timeout test workflow";
+export const description = "Caller cancellation test workflow";
+if (${setupDelay}) await new Promise(resolve => setTimeout(resolve, ${setupDelay}));
 export async function execute(ctx) {
   try {
     await ctx.call("global/worker", { prompt: "wait forever" });
   } catch {}
+  // Prove the authored continuation reaches the fenced Host API after abort.
+  writeFileSync(${JSON.stringify(lateAttempt)}, "attempted");
   await ctx.events.emit({ type: "test.late-effect", data: {} });
   return ctx.done("late completion");
 }
@@ -522,10 +527,13 @@ export async function execute(ctx) {
     let workflowRunId = "";
     let resolveStep!: (result: any) => void;
     let cancelled = 0;
+    const entered = Promise.withResolvers<void>();
+    const caller = new AbortController();
     const callAgent = (_agent: string, _task: string, opts: { workflowRunId?: string }) => {
       workflowRunId = opts.workflowRunId ?? "";
       return new Promise((resolve) => {
         resolveStep = resolve;
+        entered.resolve();
       });
     };
     const manager = {
@@ -552,16 +560,22 @@ export async function execute(ctx) {
       workflowDir,
       agentName: "owner",
       agentDefinitions: workerDefs,
-      executionTimeoutMs: 10,
+      signal: caller.signal,
       onEvent: (event) => events.push(event),
     });
 
-    const result = await runner.run("timeout", "test");
-    await Bun.sleep(20);
+    const running = runner.run("timeout", "test");
+    await Promise.race([
+      entered.promise,
+      running.then(() => { throw new Error("Workflow ended before its helper entered"); }),
+    ]);
+    caller.abort(new Error("fixture caller stopped"));
+    const result = await running;
 
     expect(result.type).toBe("error");
-    expect(result.type === "error" ? result.error : "").toContain('Workflow "timeout" timed out after 10ms');
+    expect(result.type === "error" ? result.error : "").toContain("fixture caller stopped");
     expect(cancelled).toBe(1);
+    expect(existsSync(lateAttempt)).toBe(true);
     expect(events.some((event) => event.type === "test.late-effect")).toBe(false);
   });
 
@@ -1888,5 +1902,101 @@ export async function execute(ctx) {
     expect(typeof completedByStep.get("slow")?.durationMs).toBe("number");
     expect(typeof completedByStep.get("fast")?.durationMs).toBe("number");
     expect(completedByStep.get("slow")?.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("retains full 3-turn ctx.agent() history in SubagentManager and rejects a later send that omits finish()", async () => {
+    const { SubagentManager } = await import("./manager.js");
+    const { createFinishTool } = await import("@may-agent/sdk/runtime");
+    const { mockModel } = await import("@may-agent/sdk/testing");
+
+    const root = workflowRoot("workflow-agent-3turn-");
+    writeFileSync(
+      join(root, "three-turn.ts"),
+      `
+export const name = "three-turn";
+export const description = "Three-turn recall + missing-finish isolation";
+export async function execute(ctx) {
+  const specialist = ctx.agent("specialist");
+  const t1 = await specialist.send("Secret is FALCON-9");
+  const t2 = await specialist.send("Acknowledge refinement");
+  const t3 = await specialist.send("Recall turn 1 secret");
+  const t4 = await specialist.send("Now omit finish");
+  return ctx.done("done", { t1: t1.output, t2: t2.output, t3: t3.output, t4Status: t4.status });
+}
+`,
+    );
+
+    const seenUserHistories: string[][] = [];
+    const model = mockModel(({ userMessages }) => {
+      seenUserHistories.push([...userMessages]);
+      const latest = userMessages[userMessages.length - 1] ?? "";
+      if (latest.includes("omit finish") || latest.includes("has not returned its structured output")) {
+        return { text: "Plain text without calling finish" };
+      }
+      return {
+        finish: {
+          summary: `seen:${userMessages.length}`,
+          output: { count: userMessages.length, hasFalcon: userMessages.some((m) => m.includes("FALCON-9")) },
+        },
+      };
+    });
+
+    const manager = new SubagentManager({ persistDir: root });
+    const specialistDef: SubagentDefinition = {
+      name: "specialist",
+      description: "Stateful specialist",
+      domain: "test",
+      systemPrompt: "Specialist",
+      model: model as any,
+      tools: [createFinishTool({ projectRoot: root }) as any],
+    };
+
+    const res = await createWorkflowRunner({
+      manager,
+      workflowDir: root,
+      persistDir: root,
+      agentName: "owner",
+      agentDefinitions: new Map([["specialist", specialistDef]]),
+    }).run("three-turn", "Test 3-turn recall");
+
+    expect(res).toMatchObject({
+      type: "done",
+      output: {
+        t1: { count: 1, hasFalcon: true },
+        t2: { count: 2, hasFalcon: true },
+        t3: { count: 3, hasFalcon: true },
+        t4Status: "error",
+      },
+    });
+  });
+
+  it("preserves legacy ctx.done(summary, { facts }) / { output } payloads while supporting 3-arg DoneOptions", async () => {
+    const root = workflowRoot("workflow-done-compat-");
+    writeFileSync(
+      join(root, "compat.ts"),
+      `
+export const name = "compat";
+export const description = "Legacy output compatibility";
+export async function execute(ctx) {
+  const a = ctx.done("legacy-facts-obj", { facts: ["x"] });
+  const b = ctx.done("legacy-output-obj", { output: 42 });
+  return ctx.done("explicit-3arg", { aOut: a.output, bOut: b.output }, { facts: ["explicit:1"] });
+}
+`,
+    );
+    const res = await createWorkflowRunner({
+      manager: {} as any,
+      workflowDir: root,
+      agentName: "owner",
+    }).run("compat", "Run");
+    expect(res).toMatchObject({
+      type: "done",
+      summary: "explicit-3arg",
+      output: {
+        aOut: { facts: ["x"] },
+        bOut: { output: 42 },
+      },
+      facts: ["explicit:1"],
+    });
   });
 });

@@ -1090,3 +1090,204 @@ describe("trimAccumulatedSummary", () => {
     expect(result).toContain("earlier compaction rounds trimmed");
   });
 });
+
+// ── Slice 1: usage-calibrated compaction, offloadContent, mockModel ────
+
+describe("usage-calibrated compaction & offloadContent & mockModel", () => {
+  it("calibrates trailing unmeasured CJK/JSON messages from prior assistant usage.input and trims kept tool results <= 50%", async () => {
+    const model = fakeModel(2000);
+    const onCompact = vi.fn();
+    const transform = createCompactionTransform(model, { threshold: 0.6, keepRatio: 0.4, onCompact });
+
+    // Prefix has 200 heuristic tokens, but provider actually billed 500 input tokens (2.5x CJK/JSON density).
+    const billedAssistant: AgentMessage = {
+      ...assistantMsg("分析完成"),
+      usage: {
+        input: 500,
+        output: 20,
+        cacheRead: 0,
+        cacheWrite: 0,
+        totalTokens: 520,
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+      },
+    } as AgentMessage;
+
+    // Appended trailing message has ~900 chars (~300 heuristic tokens, ~750 calibrated tokens -> crosses 1200 threshold!).
+    const hugeToolText = "中".repeat(2600);
+    const messages: AgentMessage[] = [
+      userMsg("请检查所有卡片 " + "甲".repeat(300)),
+      billedAssistant,
+      toolCallMsg("query_db", { sql: "SELECT *" }),
+      toolResultMsg("query_db", hugeToolText),
+    ];
+
+    const compacted = await transform(messages);
+    expect(onCompact).toHaveBeenCalledTimes(1);
+    const keptTool = compacted.find((m) => m.role === "toolResult") as any;
+    expect(keptTool.content[0].text).toContain("[compacted tool output]");
+    expect(keptTool.content[0].text.length).toBeLessThan(2100);
+  });
+
+  it("offloads >20KB structured tool results to tmpdir and runs mockModel without stream boilerplate", async () => {
+    const { mkdtempSync, rmSync, readFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { createFinishTool, createReadTool, executePreparedAgent, prepareAgentExecution } = await import(
+      "@may-agent/sdk/runtime"
+    );
+    const { mockModel } = await import("@may-agent/sdk/testing");
+
+    const root = mkdtempSync(join(tmpdir(), "slice1-harness-"));
+    try {
+      const bigRows = Array.from({ length: 600 }, (_, i) => ({ id: i, title: `Item ${i}`, state: "open" }));
+      const queryTool = {
+        name: "custom_list",
+        label: "Custom List",
+        description: "Returns many rows",
+        parameters: Type.Object({}),
+        execute: async () => ({
+          content: [{ type: "text" as const, text: JSON.stringify(bigRows) }],
+          details: { count: bigRows.length },
+        }),
+      };
+
+      let observedToolText = "";
+      const model = mockModel(({ callIndex, toolResults }) => {
+        if (callIndex === 0) {
+          return { toolCalls: [{ name: "custom_list", input: {} }] };
+        }
+        observedToolText = toolResults[0]?.text ?? "";
+        return {
+          finish: {
+            summary: "Inspected offloaded summary",
+            output: { ok: true },
+          },
+        };
+      });
+
+      const prepared = prepareAgentExecution({
+        definition: {
+          name: "tester",
+          description: "Test agent",
+          domain: "test",
+          systemPrompt: "Test",
+          model: model as any,
+          tools: [createReadTool(root) as any, queryTool as any, createFinishTool({ projectRoot: root })],
+        },
+        projectRoot: root,
+        sessionId: "slice1-session",
+        task: "List items",
+        requireFinish: true,
+        outputSchema: Type.Object({ ok: Type.Boolean() }),
+      });
+
+      const run = await executePreparedAgent(prepared);
+      expect(run.status).toBe("done");
+      expect(run.structuredResult).toEqual({ ok: true });
+      expect(observedToolText).toContain("was saved to ");
+      expect(observedToolText).toContain("JSON array of 600 objects with keys: id, title, state.");
+      const savedPath = observedToolText.match(/was saved to ([^\n]+)\./)?.[1];
+      expect(savedPath).toBeTruthy();
+      expect(JSON.parse(readFileSync(savedPath!, "utf8"))).toHaveLength(600);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("bounds offloaded files across multiple session IDs while preserving the active session's outputs", async () => {
+    const { mkdtempSync, rmSync, existsSync, readdirSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { wrapToolsWithOffload } = await import("./offload-content.js");
+
+    const baseDir = mkdtempSync(join(tmpdir(), "offload-cross-session-"));
+    try {
+      const dummyRead = {
+        name: "read",
+        label: "Read",
+        description: "Read",
+        parameters: Type.Object({}),
+        execute: async () => ({ content: [{ type: "text" as const, text: "ok" }] }),
+      };
+      const bigTool = {
+        name: "dump",
+        label: "Dump",
+        description: "Dump",
+        parameters: Type.Object({}),
+        execute: async () => ({ content: [{ type: "text" as const, text: "x".repeat(1500) }] }),
+      };
+
+      const s1Tools = wrapToolsWithOffload([dummyRead as any, bigTool as any], "session-old-1", {
+        baseDir,
+        maxBytes: 500,
+        maxDirectoryFiles: 3,
+      });
+      const s2Tools = wrapToolsWithOffload([dummyRead as any, bigTool as any], "session-old-2", {
+        baseDir,
+        maxBytes: 500,
+        maxDirectoryFiles: 3,
+      });
+      const s3Tools = wrapToolsWithOffload([dummyRead as any, bigTool as any], "session-active-3", {
+        baseDir,
+        maxBytes: 500,
+        maxDirectoryFiles: 3,
+      });
+
+      await s1Tools[1]!.execute("c1", {}, new AbortController().signal, () => {});
+      await new Promise((r) => setTimeout(r, 15));
+      await s2Tools[1]!.execute("c2", {}, new AbortController().signal, () => {});
+      await new Promise((r) => setTimeout(r, 15));
+      await s3Tools[1]!.execute("c3a", {}, new AbortController().signal, () => {});
+      await s3Tools[1]!.execute("c3b", {}, new AbortController().signal, () => {});
+
+      const rootResults = join(baseDir, "may-agent-tool-results");
+      // Global maxDirectoryFiles=3 evicted session-old-1 and removed its empty directory while preserving session-active-3's 2 files!
+      expect(existsSync(join(rootResults, "session-old-1"))).toBe(false);
+      const activeFiles = readdirSync(join(rootResults, "session-active-3")).sort();
+      expect(activeFiles).toEqual(["dump-c3a.txt", "dump-c3b.txt"]);
+
+      // Verify owner-only permissions (0700 dirs, 0600 files) and symlink refusal
+      const { statSync, symlinkSync } = await import("node:fs");
+      expect(statSync(rootResults).mode & 0o777).toBe(0o700);
+      expect(statSync(join(rootResults, "session-active-3")).mode & 0o777).toBe(0o700);
+      expect(statSync(join(rootResults, "session-active-3", "dump-c3a.txt")).mode & 0o777).toBe(0o600);
+
+      const victim = join(baseDir, "victim.txt");
+      const { writeFileSync, readFileSync } = await import("node:fs");
+      writeFileSync(victim, "preserve-me");
+      symlinkSync(victim, join(rootResults, "session-active-3", "dump-symlink_call.txt"));
+      const symRes = await s3Tools[1]!.execute("symlink_call", {}, new AbortController().signal, () => {});
+      // Refuses to overwrite symlink and falls back to inline result cleanly
+      expect((symRes.content[0] as { text: string }).text).toBe("x".repeat(1500));
+      expect(readFileSync(victim, "utf8")).toBe("preserve-me");
+
+      // >50KB minified JSON is pretty-printed so read-only agents can inspect lines <=50KB, while >50KB single-line text without bash stays inline
+      const bigMinifiedJson = JSON.stringify(Array.from({ length: 1200 }, (_, i) => ({ id: i, pad: "z".repeat(40) })));
+      expect(Buffer.byteLength(bigMinifiedJson, "utf8")).toBeGreaterThan(55_000);
+      const jsonTool = {
+        name: "big_json",
+        label: "Big JSON",
+        description: "Big JSON",
+        parameters: Type.Object({}),
+        execute: async () => ({ content: [{ type: "text" as const, text: bigMinifiedJson }] }),
+      };
+      const hugeLineTool = {
+        name: "huge_line",
+        label: "Huge Line",
+        description: "Huge single line",
+        parameters: Type.Object({}),
+        execute: async () => ({ content: [{ type: "text" as const, text: "L".repeat(60_000) }] }),
+      };
+      const roTools = wrapToolsWithOffload([dummyRead as any, jsonTool as any, hugeLineTool as any], "ro-session", {
+        baseDir,
+      });
+      const jsonRes = await roTools[1]!.execute("j1", {}, new AbortController().signal, () => {});
+      expect((jsonRes.content[0] as { text: string }).text).toContain("was saved to ");
+      const lineRes = await roTools[2]!.execute("l1", {}, new AbortController().signal, () => {});
+      expect((lineRes.content[0] as { text: string }).text).toBe("L".repeat(60_000));
+    } finally {
+      rmSync(baseDir, { recursive: true, force: true });
+    }
+  });
+});
+

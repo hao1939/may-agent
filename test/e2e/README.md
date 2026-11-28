@@ -34,6 +34,7 @@ It tests the metric lifecycle without waiting for repeated scheduler intervals.
 | `e5-agent-reload` | A newly written agent definition becomes visible after explicit reload. |
 | `e5-source-activation` | Source activation has a correlated result; an invalid candidate preserves the active source. |
 | `task-startup-no-schedules` | Real daemon restart recovers accepted work even when recurring schedules are disabled. |
+| `task-native-feedback` | App-mapped input reaches an already-active native turn through a separate Task worker; duplicate ingress causes one effect, accepted results consume exact inputs, and unrelated input remains pending. Uses a scripted native protocol peer, not the installed Codex CLI or a model. |
 | `control-routing-e2e` | Event admission/rejection, persistence, and retained control compatibility. |
 | `telegram-reply-e2e` | Telegram routing and control behavior with a mocked Telegram service. |
 

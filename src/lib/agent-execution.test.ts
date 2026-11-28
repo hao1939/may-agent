@@ -170,7 +170,13 @@ describe("environment-agnostic SDK execution preparation", () => {
     ...overrides,
   });
 
-  test("keeps Task policy in the Host readonly adapter", async () => {
+  test("the Host delegates the supplied readonly policy to shared SDK preparation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "bound-readonly-"));
+    roots.push(root);
+    const executionRoot = join(root, "work");
+    mkdirSync(executionRoot);
+    const secret = join(root, "outside.txt");
+    writeFileSync(secret, "Outside the caller-bound read scope");
     let mutations = 0;
     const tasks: AgentTool = {
       name: "tasks",
@@ -185,10 +191,17 @@ describe("environment-agnostic SDK execution preparation", () => {
     const tools = [tool("finish"), tool("query_db"), tool("read"), tasks, tool("write")];
     const options = {
       definition: definition({ tools }),
-      projectRoot: "/tmp",
+      projectRoot: root,
+      executionRoot,
       sessionId: "readonly-boundary",
       task: "Inspect without mutation",
       toolPolicy: "readonly" as const,
+      toolBindings: [{
+        ...tool("read"),
+        description: "Caller-bound scoped read",
+        parameters: Type.Object({ path: Type.String() }),
+        execute: async () => ({ isError: true, content: [{ type: "text" as const, text: "Outside read denied" }] }),
+      }, tool("write")],
     };
 
     const sdkPrepared = prepareSdkAgentExecution(options);
@@ -210,13 +223,23 @@ describe("environment-agnostic SDK execution preparation", () => {
       "query_db",
       "read",
     ]);
+    expect(hostPrepared.tools.find(candidate => candidate.name === "read")?.description)
+      .toBe("Caller-bound scoped read");
+    for (const prepared of [sdkPrepared, hostPrepared]) {
+      const read = prepared.tools.find(candidate => candidate.name === "read")!;
+      expect(await read.execute("denied-read", { path: secret })).toMatchObject({
+        isError: true, content: [{ type: "text", text: "Outside read denied" }],
+      });
+    }
+    expect(options.definition.tools.find(candidate => candidate.name === "read")?.description)
+      .not.toBe("Caller-bound scoped read");
     expect(mutations).toBe(0);
   });
 
-  test("normalizes root anyOf tool parameter schemas to type: object for Gemini provider compatibility", async () => {
+  test.each(["gemini-4-argon", "github_copilot/gemini-4-argon"])("normalizes root tool schemas for Gemini route %s", async (modelId) => {
     const geminiModel = {
       ...streamTestModel,
-      id: "gemini-4-argon",
+      id: modelId,
       baseUrl: "http://127.0.0.1:9",
       input: ["text"],
     };
@@ -260,6 +283,8 @@ describe("environment-agnostic SDK execution preparation", () => {
       required: ["status", "summary"],
     });
     expect(capturedTools?.[0]?.parameters).not.toHaveProperty("anyOf");
+    expect((finishTool.parameters as { anyOf?: unknown[] }).anyOf).toHaveLength(2);
+    expect(() => finishTool.prepareArguments!({ status: "done", summary: "Missing output" })).toThrow("requires the schema-validated output");
   });
 
   test("maps sourceRoot explicitly and rejects stale implicit execution mappings", () => {
@@ -766,6 +791,30 @@ describe("shared agent execution preparation", () => {
         expect(result.properties.response.description).toContain("explicit communication messages");
       }
     }
+  });
+
+  test("a rebased invocation finish binding retains structured result admission", async () => {
+    let accepted = 0;
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "sample", description: "sample", domain: "tests", systemPrompt: "identity",
+        model: streamTestModel, tools: [tool("finish")],
+      },
+      projectRoot: "/tmp", executionRoot: "/tmp", sessionId: "bound-finish", task: "Return a verdict",
+      outputSchema: Type.Object({ verdict: Type.String() }),
+      toolBindings: [{ ...tool("finish"), execute: async () => {
+        accepted++;
+        return { content: [{ type: "text", text: "Scoped finish accepted" }] };
+      } }],
+    });
+    const finish = prepared.tools.find(candidate => candidate.name === "finish")!;
+    const args = { status: "done", summary: "Reviewed", output: { verdict: 42 } };
+    await expect(finish.execute("invalid", args)).rejects.toThrow("/output/verdict: must be string");
+    expect(accepted).toBe(0);
+    expect(await finish.execute("valid", { ...args, output: { verdict: "accept" } })).toMatchObject({
+      content: [{ type: "text", text: "Scoped finish accepted" }],
+    });
+    expect(accepted).toBe(1);
   });
 
   test("rejects duplicate finish capabilities after structured-result adaptation", () => {

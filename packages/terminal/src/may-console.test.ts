@@ -241,7 +241,7 @@ describe("May Console", () => {
     expect((await once(child, "exit"))[0]).toBe(0);
   });
 
-  test("shares Conversation context and manages stable Tasks instead of sessions", async () => {
+  test.each(["duplicate", "distinct"])("shares Conversation context and preserves %s watched outcomes", async (resultKind) => {
     const root = mkdtempSync(join(tmpdir(), "may-console-"));
     const instance = "test";
     const socketDir = join(root, "instances", instance);
@@ -565,7 +565,7 @@ describe("May Console", () => {
     expect(frames.find((frame) => frame.type === "subscribe")).toMatchObject({
       sessions: [],
       conversations: ["may:primary"],
-      taskApps: ["may"],
+      taskApps: ["*"],
     });
     expect(output).not.toContain("focused work");
 
@@ -577,8 +577,8 @@ describe("May Console", () => {
     // A human may paste the context switch and the next command together.
     // The Console must preserve that input order even though both reads are
     // asynchronous on the control socket.
-    child.stdin.write("/apps evaluation\n/tasks\n");
-    await waitFor(() => output.includes("Selected App: evaluation") && output.includes("Reviews project behavior"));
+    child.stdin.write("/apps evaluation\n/tasks evaluation\n");
+    await waitFor(() => output.includes("App evaluation (read-only; chat is unchanged):") && output.includes("Reviews project behavior"));
     await waitFor(
       () =>
         output.includes("Open Tasks for evaluation:") &&
@@ -615,7 +615,7 @@ describe("May Console", () => {
     ).length;
     const taskViewsBeforeReconnect = output.split("Open Tasks for evaluation:").length - 1;
     dropNextTaskCommandRead = true;
-    child.stdin.write("/tasks\n");
+    child.stdin.write("/tasks evaluation\n");
     await waitFor(
       () =>
         frames.filter((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly)
@@ -630,10 +630,10 @@ describe("May Console", () => {
     );
     await waitFor(
       () =>
-        output.includes("[todo] 2 Tasks need you in evaluation. Run /todo.") &&
-        output.includes("you[evaluation · 2 todo]>"),
+        output.includes("[todo] 2 Tasks need you globally. Run /todo.") &&
+        output.includes("you>"),
     );
-    const todoNoticeCount = output.split("[todo] 2 Tasks need you in evaluation. Run /todo.").length - 1;
+    const todoNoticeCount = output.split("[todo] 2 Tasks need you globally. Run /todo.").length - 1;
     await waitFor(() =>
       frames.some(
         (frame) =>
@@ -653,9 +653,9 @@ describe("May Console", () => {
       `${JSON.stringify({ type: "app.task.updated", data: { appId: "evaluation", taskId: "review/docs" } })}\n`,
     );
     await Bun.sleep(30);
-    expect(output.split("[todo] 2 Tasks need you in evaluation. Run /todo.").length - 1).toBe(todoNoticeCount);
+    expect(output.split("[todo] 2 Tasks need you globally. Run /todo.").length - 1).toBe(todoNoticeCount);
 
-    child.stdin.write("/todo\n");
+    child.stdin.write("/todo evaluation\n");
     await waitFor(
       () =>
         output.includes("Actions needed for evaluation:") &&
@@ -673,6 +673,11 @@ describe("May Console", () => {
     ).toBe(true);
     child.stdin.write("/todo more\n");
     await waitFor(() => output.includes("6d22bc11") && output.includes("Approve or reject the second change."));
+    await waitFor(() => frames.some(frame => frame.event?.data?.metadata?.command === "/todo more"));
+    const finalTodo = frames.filter(frame => frame.event?.data?.metadata?.command === "/todo more").at(-1);
+    expect(finalTodo?.event.data.text).toContain("1 action(s) shown on this page; 2 total in this query.");
+    expect(finalTodo?.event.data.text).not.toContain("more action(s) are not shown");
+    expect(finalTodo?.event.data.text).not.toContain("Run /todo more.");
     expect(
       frames.some(
         (frame) =>
@@ -685,7 +690,7 @@ describe("May Console", () => {
     const explicitTodoView = frames.find(
       (frame) =>
         frame.type === "publish" &&
-        frame.event?.data?.metadata?.command === "/todo" &&
+        frame.event?.data?.metadata?.command === "/todo evaluation" &&
         frame.event?.data?.metadata?.taskRefs?.[0]?.taskId === "review/docs",
     );
     expect(explicitTodoView).toBeDefined();
@@ -715,7 +720,9 @@ describe("May Console", () => {
     await waitFor(() =>
       output.includes("[task]\n  Accepted durable work: Review the docs\n  Task 8f12ac90 (evaluation)"),
     );
-    await waitFor(() => frames.some((frame) => frame.type === "subscribe" && frame.task?.taskId === "review/docs"));
+    expect(frames.filter((frame) => frame.type === "subscribe").at(-1)?.task).toBeNull();
+    child.stdin.write("/watch 8f12ac90\n");
+    await waitFor(() => frames.filter((frame) => frame.type === "subscribe").at(-1)?.task?.taskId === "review/docs");
     await waitFor(() => output.includes("  Task 8f12ac90 · evaluation · working ·"));
     expect(output).toContain("Reviewing current behavior\n\n  Task 8f12ac90 · evaluation · working ·");
     expect(output).toContain("  You: Approve deployment or ask for another verification pass.\n\n");
@@ -762,13 +769,15 @@ describe("May Console", () => {
         data: { appId: "may", conversationId: "may:primary" },
       })}\n`,
     );
-    await waitFor(() => frames.some((frame) => frame.type === "subscribe" && frame.task?.taskId === "review/docs"));
-    await waitFor(() => output.includes("[watch] Following 8f12ac90 · evaluation (from 1a2b3c4d · may).\n\n"));
+    await waitFor(() => output.includes("Assigned to evaluation."));
+    expect(frames.filter((frame) => frame.type === "subscribe").at(-1)?.task).toBeNull();
+    child.stdin.write("/watch 8f12ac90\n");
+    await waitFor(() => frames.filter((frame) => frame.type === "subscribe").at(-1)?.task?.taskId === "review/docs");
     expect(output.split("Assigned to evaluation.").length - 1).toBe(1);
 
     child.stdin.write("please keep the compatibility alias\n");
     await waitFor(() => humanFrames().length === 1);
-    await waitFor(() => output.includes("[may] Working on your request…"));
+    await waitFor(() => output.includes("[may] Input admitted. This is not completion."));
     const input = humanFrames()[0];
     expect(input.event.data.replyTo).toBeUndefined();
     expect(input).toMatchObject({
@@ -778,7 +787,7 @@ describe("May Console", () => {
           text: "please keep the compatibility alias",
           conversationId: "may:primary",
           context: {
-            focusedApp: "evaluation",
+            focusedApp: "may",
             focusedTask: { appId: "evaluation", taskId: "review/docs" },
           },
           metadata: { channel: "may-console", channelThreadId: "local-terminal" },
@@ -794,7 +803,7 @@ describe("May Console", () => {
           frame.event?.data?.metadata?.taskRefs?.[0]?.taskId === "review/docs",
       ),
     ).toBe(true);
-    await waitFor(() => output.includes("\nmay> May response 1\n\nyou[evaluation:8f12ac90]> "));
+    await waitFor(() => output.includes("\nmay> May response 1\n\nyou> "));
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
     expect(frames.some((frame) => frame.type === "channel.delivery.completed")).toBe(false);
@@ -823,9 +832,10 @@ describe("May Console", () => {
     child.stdin.write("/apps may\n");
     await waitFor(
       () =>
-        output.includes("Selected App: may") &&
-        output.includes("Stopped following 8f12ac90; the Task continues unchanged."),
+        output.includes("App may (read-only; chat is unchanged):"),
     );
+    expect(frames.filter((frame) => frame.type === "subscribe").at(-1)?.task?.taskId).toBe("review/docs");
+    child.stdin.write("/unwatch\n");
     await waitFor(() => frames.filter((frame) => frame.type === "subscribe").at(-1)?.task === null);
 
     taskProgress = {
@@ -858,11 +868,13 @@ describe("May Console", () => {
     expect(output.split("Checking the final facts").length - 1).toBe(1);
 
     taskTerminal = true;
+    const conversationResult = resultKind === "duplicate"
+      ? "The design and implementation now align." : "Verification is queued; the final outcome is still pending.";
     remoteConversationMessages.push({
       id: "result:review-docs",
       sequence: 5,
       author: { kind: "agent", id: "may" },
-      text: "The design and implementation now align.",
+      text: conversationResult,
       metadata: {
         taskRefs: [{ appId: "evaluation", taskId: "review/docs", ref: "8f12ac90" }],
       },
@@ -876,7 +888,7 @@ describe("May Console", () => {
         data: { appId: "may", conversationId: "may:primary" },
       })}\n`,
     );
-    await waitFor(() => output.includes("\nmay> The design and implementation now align."));
+    await waitFor(() => output.includes(`\nmay> ${conversationResult}`));
     client?.write(
       `${JSON.stringify({
         type: "app.task.updated",
@@ -1143,13 +1155,13 @@ describe("May Console", () => {
     child.stdin.write("/apps gym\n/tasks\nhello\n/reload\n");
     // Establish the offline state before connecting, regardless of child startup speed.
     await waitFor(
-      () => output.includes("[offline] Message saved") && output.includes("[waiting for daemon; command queued]"),
+      () => output.includes("[offline] Message saved") && output.includes("Control not sent or queued"),
     );
     server.available = true;
 
     await waitFor(() => frames.some((frame) => frame.type === "apps.list" && frame.appId === "gym"));
     await waitFor(() =>
-      frames.some((frame) => frame.type === "tasks.list" && frame.appId === "gym" && !frame.humanActionOnly),
+      frames.some((frame) => frame.type === "tasks.list" && frame.allApps && !frame.humanActionOnly),
     );
     expect(frames.findIndex((frame) => frame.type === "apps.list")).toBeLessThan(
       frames.findIndex((frame) => frame.type === "tasks.list" && !frame.humanActionOnly),
@@ -1180,16 +1192,16 @@ describe("May Console", () => {
           frame.event?.type === "conversation.message.created" &&
           frame.event?.data?.text === "hello",
       )?.event?.data?.context?.focusedApp,
-    ).toBe("gym");
-    await waitFor(() =>
-      frames.some((frame) => frame.type === "publish" && frame.event?.type === "runtime.reload.requested"),
-    );
+    ).toBe("may");
+    expect(frames.some((frame) => frame.type === "publish" && frame.event?.type === "runtime.reload.requested")).toBe(false);
+    child.stdin.write("/reload\n");
+    await waitFor(() => frames.some((frame) => frame.event?.type === "runtime.reload.requested"));
 
     child.stdin.write("/exit\n");
     await once(child, "exit");
   });
 
-  test("uses App context immediately while selection validation remains asynchronous", async () => {
+  test("keeps chat fixed while read-only App inspection and per-query filters finish asynchronously", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-app-selection-"));
     const instance = "test";
     const socketDir = join(root, "instances", instance);
@@ -1258,8 +1270,8 @@ describe("May Console", () => {
     cleanups.push(() => client?.destroy());
     cleanups.push(() => child.kill("SIGKILL"));
 
-    await waitFor(() => output.includes("you[may]>"));
-    child.stdin.write("/apps gym\n/tasks\nhello\n/apps evaluation\n/tasks\n");
+    await waitFor(() => output.includes("you>"));
+    child.stdin.write("/apps gym\n/tasks gym\nhello\n/apps evaluation\n/tasks evaluation\n");
 
     await waitFor(
       () =>
@@ -1271,12 +1283,12 @@ describe("May Console", () => {
             frame.type === "publish" &&
             frame.event?.type === "conversation.message.created" &&
             frame.event?.data?.text === "hello" &&
-            frame.event?.data?.context?.focusedApp === "gym",
+            frame.event?.data?.context?.focusedApp === "may",
         ),
     );
-    expect(output).toContain("[apps] Selecting gym…");
-    expect(output).toContain("you[gym]>");
-    expect(output).toContain("you[evaluation]>");
+    expect(output).not.toContain("[apps] Selecting");
+    expect(output).toContain("you>");
+    expect(output).toContain("you>");
     expect(output).not.toContain("[waiting for daemon; command queued]");
 
     // The older validation is stale and must not move the Console away from
@@ -1295,8 +1307,8 @@ describe("May Console", () => {
         apps: [{ id: "evaluation", description: "Reviews behavior", activeTasks: 0 }],
       })}\n`,
     );
-    await waitFor(() => output.includes("Selected App: evaluation"));
-    expect(output).not.toContain("Selected App: gym");
+    await waitFor(() => output.includes("App evaluation (read-only; chat is unchanged):") && output.includes("Open Tasks for evaluation:"));
+    expect(output).not.toContain("Selected App:");
 
     // The validation response may arrive after the first Task page. It must not
     // erase that page's cursor before the human asks for more.
@@ -1312,10 +1324,10 @@ describe("May Console", () => {
     expect(output).not.toContain("[tasks] No next page. Run /tasks first.");
 
     child.stdin.write("/apps missing\n");
-    await waitFor(() => appReads.length === 3 && output.includes("you[missing]>"));
+    await waitFor(() => appReads.length === 3 && output.includes("you>"));
     appReads[2].socket.write(`${JSON.stringify({ type: "ok", command: "apps.list", apps: [] })}\n`);
-    await waitFor(() => output.includes("App missing was not found; restored evaluation."));
-    expect(output).toContain("you[evaluation]>");
+    await waitFor(() => output.includes("App missing was not found."));
+    expect(output).toContain("you>");
 
     child.stdin.write("/exit\n");
     await once(child, "exit");
@@ -1370,7 +1382,9 @@ describe("May Console", () => {
       appId, taskId, ref, status: terminal ? "done" : "running", outcome: `Work ${ref}`, summary,
       updatedAt: Date.now(), terminal, cancellable: !terminal,
     });
-    await waitFor(() => output.includes("you[may]>"));
+    await waitFor(
+      () => output.includes("you>") && pending.some(({ frame }) => frame.type === "tasks.list" && frame.allApps),
+    );
 
     child.stdin.write("/watch aaaaaaaa\n");
     await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "aaaaaaaa"));
@@ -1380,13 +1394,12 @@ describe("May Console", () => {
     const startB = take((frame) => frame.type === "task.get" && frame.ref === "bbbbbbbb");
     startB.socket.respond(startB.requestId, { type: "ok", command: "task.get", task: task("beta", "work/b", "bbbbbbbb", "B current") });
     await waitFor(() => output.includes("[watch] Following bbbbbbbb · beta."));
-    await waitFor(() => pending.some(({ frame }) => frame.type === "tasks.list" && frame.appId === "beta"));
-    const betaTodo = take((frame) => frame.type === "tasks.list" && frame.appId === "beta");
+    const globalTodo = take((frame) => frame.type === "tasks.list" && frame.allApps);
     startA.socket.respond(startA.requestId, { type: "ok", command: "task.get", task: task("alpha", "work/a", "aaaaaaaa", "STALE A START") });
     await Bun.sleep(30);
     expect(output).not.toContain("STALE A START");
     expect(output).not.toContain("[watch] Following aaaaaaaa · alpha.");
-    expect(output).toContain("you[beta:bbbbbbbb]>");
+    expect(output).toContain("you>");
 
     client?.write(`${JSON.stringify({ type: "app.task.updated", data: { appId: "beta", taskId: "work/b" } })}\n`);
     await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.appId === "beta"));
@@ -1396,20 +1409,15 @@ describe("May Console", () => {
     const startC = take((frame) => frame.type === "task.get" && frame.ref === "cccccccc");
     startC.socket.respond(startC.requestId, { type: "ok", command: "task.get", task: task("gamma", "work/c", "cccccccc", "C current") });
     await waitFor(() => output.includes("[watch] Following cccccccc · gamma."));
-    await waitFor(() => pending.some(({ frame }) => frame.type === "tasks.list" && frame.appId === "gamma"));
-    const gammaTodo = take((frame) => frame.type === "tasks.list" && frame.appId === "gamma");
     lateB.socket.respond(lateB.requestId, { type: "ok", command: "task.get", task: task("beta", "work/b", "bbbbbbbb", "STALE B TERMINAL", true) });
     await Bun.sleep(30);
     expect(output).not.toContain("STALE B TERMINAL");
     expect(output).not.toContain("bbbbbbbb finished; watch ended");
-    expect(output).toContain("you[gamma:cccccccc]>");
+    expect(output).toContain("you>");
 
-    gammaTodo.socket.respond(gammaTodo.requestId, { type: "ok", command: "tasks.list", tasks: { items: [{ ...task("gamma", "approval/c", "c0c0c0c0", "Gamma approval"), humanAction: { requestedAction: "Approve gamma" }, resourceVersion: 2 }], total: 2 } });
-    await waitFor(() => output.includes("[todo] 2 Tasks need you in gamma. Run /todo."));
-    betaTodo.socket.respond(betaTodo.requestId, { type: "ok", command: "tasks.list", tasks: { items: [{ ...task("beta", "approval/b", "b0b0b0b0", "Beta approval"), humanAction: { requestedAction: "Approve beta" }, resourceVersion: 9 }], total: 9 } });
-    await Bun.sleep(30);
-    expect(output).not.toContain("9 Tasks need you");
-    expect(output).toContain("you[gamma:cccccccc]>");
+    globalTodo.socket.respond(globalTodo.requestId, { type: "ok", command: "tasks.list", tasks: { items: [{ ...task("gamma", "approval/c", "c0c0c0c0", "Gamma approval"), humanAction: { requestedAction: "Approve gamma" }, resourceVersion: 2 }], total: 2 } });
+    await waitFor(() => output.includes("[todo] 2 Tasks need you globally. Run /todo."));
+    expect(output).toContain("you>");
 
     child.stdin.write("/watch dddddddd\n");
     await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "dddddddd"));
@@ -1420,7 +1428,7 @@ describe("May Console", () => {
     await Bun.sleep(30);
     expect(output).not.toContain("STALE D START");
     expect(output).not.toContain("[watch] Following dddddddd · delta.");
-    expect(output).toContain("you[gamma · 2 todo]>");
+    expect(output).toContain("you>");
 
     child.stdin.write("/exit\n");
     await once(child, "exit");
@@ -1459,8 +1467,12 @@ describe("May Console", () => {
                 conversation: { id: "may:primary", owner: "may", version: 0, messages: [], work: [] },
               })}\n`,
             );
+          } else if (frame.type === "tasks.list") {
+            socket.write(`${JSON.stringify({ type: "ok", command: "tasks.list", tasks: { items: [] } })}\n`);
           } else {
-            socket.write(`${JSON.stringify({ type: "ok", command: frame.type })}\n`);
+            socket.write(
+              `${JSON.stringify({ type: "ok", command: frame.type, eventId: Math.max(1, humanIds.length), delivery: "accepted" })}\n`,
+            );
           }
         }
       });
@@ -1544,6 +1556,7 @@ describe("May Console", () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-overflow-order-"));
     let client: Socket | null = null;
     let conversationReads = 0;
+    let todoReads = 0;
     let releaseFirstRead = () => {};
     const firstReadReleased = new Promise<void>((resolve) => {
       releaseFirstRead = resolve;
@@ -1575,6 +1588,7 @@ describe("May Console", () => {
               },
             })}\n`);
           } else if (frame.type === "tasks.list") {
+            todoReads++;
             socket.write(`${JSON.stringify({ type: "ok", command: frame.type, tasks: { items: [] } })}\n`);
           }
         }
@@ -1605,8 +1619,15 @@ describe("May Console", () => {
     cleanups.push(() => client?.destroy());
     cleanups.push(() => child.kill("SIGKILL"));
 
-    await waitFor(() => conversationReads === 1 && client !== null);
+    await waitFor(() => conversationReads === 1 && todoReads >= 1 && client !== null);
     client!.write(`${JSON.stringify({ type: "overflow", action: "reread" })}\n`);
+    // The following frame shares WebSocket FIFO with overflow. Observe its
+    // rendering before releasing HTTP; the reread itself waits for that HTTP.
+    client!.write(`${JSON.stringify({ type: "conversation.message.created", data: {
+      transient: true, metadata: { channel: "may-console" },
+      author: { kind: "system", id: "fixture" }, text: "overflow barrier observed",
+    } })}\n`);
+    await waitFor(() => output.includes("overflow barrier observed"));
     releaseFirstRead();
     await waitFor(() => conversationReads >= 2 && output.includes("fresh snapshot rendered"));
     expect(output).not.toContain("stale snapshot must not render");
@@ -1815,7 +1836,7 @@ test("TTY Esc preserves editing, dismisses completion and stops only the observe
 });
 
 
-test("Console replies bind a displayed proposal explicitly and keep it through later updates", async () => {
+test.each(["proposal", "question"] as const)("Console replies bind a displayed %s explicitly and keep it through later updates", async (kind) => {
   const root = mkdtempSync(join(tmpdir(), "console-proposal-"));
   const socketDir = join(root, "instances", "test");
   mkdirSync(socketDir, { recursive: true });
@@ -1823,6 +1844,8 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
   let client: Socket | undefined;
   let output = "";
   let action = "Apply candidate A. Full scope and verification are shown here.";
+  let questionGeneration = 1;
+  const question = () => ({ taskGeneration: 1, conditionId: "question", conditionGeneration: questionGeneration });
   const proposal = () => ({
     taskGeneration: 1,
     conditionId: "review",
@@ -1858,7 +1881,7 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
             terminal: false,
             updatedAt: 1,
             humanAction: { requestedAction: `${action}\n\nChoose the rollback observation window.` },
-            approvalProposal: proposal(),
+            ...(kind === "proposal" ? { approvalProposal: proposal() } : { humanConditionAnchor: question() }),
           };
         if (frame.type === "publish")
           Object.assign(result, {
@@ -1895,21 +1918,26 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
     () => output.includes(action) && frames.some((f) => f.event?.data?.metadata?.command === "/task abcdef12"),
   );
   expect(output).toContain("Choose the rollback observation window.");
-  const shown = proposal();
+  const shown = kind === "proposal" ? proposal() : question();
   const command = frames.find((f) => f.event?.data?.metadata?.command === "/task abcdef12")!;
   action = "Replacement candidate B";
+  questionGeneration = 2;
   child.stdin.write("approve\n/watch abcdef12\n");
   await waitFor(() => frames.filter((f) => f.type === "task.get").length === 2);
   child.stdin.write("/reply abcdef12 approve\n");
-  await waitFor(() => output.includes("approve recorded for the exact proposal."));
+  await waitFor(() => frames.filter((f) => f.event?.data?.author?.kind === "human").length === 2);
   const human = frames.filter((f) => f.event?.data?.author?.kind === "human");
   expect(human).toHaveLength(2);
   expect(human[0].event.data.replyTo).toBeUndefined();
   expect(human[0].event.data.approvalReply).toBeUndefined();
+  expect(human[0].event.data.taskReply).toBeUndefined();
   expect(human[1].event.data).toMatchObject({
     text: "approve",
     replyTo: command.event.data.messageId,
-    approvalReply: { target: { appId: "sample", taskId: "release" }, proposal: shown },
+    taskReply: { target: { appId: "sample", taskId: "release" }, taskGeneration: 1,
+      ...(kind === "question" ? { condition: shown } : {}),
+    },
+    ...(kind === "proposal" ? { approvalReply: { target: { appId: "sample", taskId: "release" }, proposal: shown } } : {}),
   });
   expect(human[1].event.operatorId).toBeTruthy();
   expect(human[1].event.authorizationEvidence).toMatchObject({
@@ -1919,3 +1947,142 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
   child.stdin.write("/exit\n");
   await once(child, "exit");
 });
+
+test("Console keeps a chosen watch and uncertain input identity; bare cancellation never queues", async () => {
+  const frames: Array<Record<string, any>> = [];
+  let client: Socket | undefined;
+  let messages: any[] = [];
+  let failOnce = true;
+  const server = createServer(socket => {
+    client = socket;
+    socket.write(JSON.stringify({ type: "connected", agent: "host", instance: "fixture" }) + "\n");
+    socket.on("data", chunk => {
+      for (const line of String(chunk).trim().split("\n")) {
+        const frame = JSON.parse(line); frames.push(frame);
+        const response: Record<string, any> = { type: "ok", command: frame.type };
+        if (frame.type === "app.conversation.get") response.conversation = { messages };
+        if (frame.type === "apps.list") response.apps = [{ id: "other", activeTasks: 1 }];
+        if (frame.type === "tasks.list") response.tasks = { items: [], total: 0 };
+        if (frame.type === "task.get") response.task = { appId: "chosen", taskId: "work", ref: "abcdef12",
+          generation: 1, resourceVersion: 1, outcome: "Chosen work", status: "running", updatedAt: 1 };
+        if (frame.event?.data.author?.kind === "human" && failOnce) {
+          failOnce = false;
+          socket.write(JSON.stringify({ type: "error", command: "publish", message: "fixture lost acknowledgment" }) + "\n");
+          continue;
+        }
+        if (frame.type === "publish") Object.assign(response, { delivery: "accepted", eventId: frames.length });
+        socket.write(JSON.stringify(response) + "\n");
+      }
+    });
+  });
+  server.listen("");
+  const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+    env: { ...process.env, CONVERSATION_APP: "support", CONVERSATION_ID: "primary", MAY_ENDPOINT: consoleEndpoint(server) },
+    stdio: "pipe",
+  });
+  let output = "";
+  child.stdout.on("data", chunk => { output += chunk; }); child.stderr.on("data", chunk => { output += chunk; });
+  cleanups.push(() => child.kill("SIGKILL"), () => client?.destroy(), () => server.close());
+  await waitFor(() => frames.some(frame => frame.type === "app.conversation.get"));
+  child.stdin.write("/watch abcdef12\n");
+  await waitFor(() => frames.filter(frame => frame.type === "subscribe").at(-1)?.task?.appId === "chosen");
+  const before = frames.filter(frame => frame.type === "task.get").length;
+  messages = [{ id: "assignment", sequence: 1, author: { kind: "tool", id: "runtime" }, text: "Other work admitted",
+    metadata: { command: "task-admitted", followTask: { appId: "other", taskId: "new" }, taskRefs: [{ appId: "other", taskId: "new", ref: "eeeeeeee" }] } }];
+  client!.write(JSON.stringify({ type: "conversation.updated", data: { appId: "support", conversationId: "primary" } }) + "\n");
+  await waitFor(() => output.includes("Other work admitted"));
+  child.stdin.write("/apps other\n/cancel\nwhy is this blocked?\n");
+  await waitFor(() => output.includes("[unconfirmed]"));
+  expect(frames.filter(frame => frame.type === "subscribe").at(-1)?.task).toEqual({ appId: "chosen", taskId: "work" });
+  expect(frames.filter(frame => frame.type === "task.get")).toHaveLength(before);
+  expect(frames.some(frame => frame.event?.type === "app.task.cancel.requested")).toBe(false);
+  client!.destroy();
+  const human = () => frames.filter(frame => frame.event?.data.author?.kind === "human");
+  await waitFor(() => human().length === 2);
+  expect(human()[1].event).toEqual(human()[0].event);
+  expect(human()[0].event).toMatchObject({ target: { appId: "support" }, data: {
+    context: { focusedTask: { appId: "chosen", taskId: "work" } }, text: "why is this blocked?",
+  } });
+  expect(output).toContain("Usage: /cancel <ref>");
+  expect(output).toContain("you> ");
+  expect(output).not.toContain("you[chosen");
+  child.stdin.write("/unwatch\n/exit\n");
+  await once(child, "exit");
+  expect(frames.some(frame => frame.event?.type === "app.task.cancel.requested")).toBe(false);
+});
+
+test.each(["truncated", "recorded", "missing-id", "503"])(
+  "Console retains %s HTTP input receipts and replays byte-identically only on reconnect",
+  async (kind) => {
+    const writes: string[] = [];
+    const sockets = new Set<{ send(data: string): void; close(): void }>();
+    let subscriptions = 0;
+    let activeTurn: { id: string; revision: number } | null = null;
+    const server = Bun.serve({
+      hostname: "127.0.0.1", port: 0,
+      async fetch(req, server) {
+        const path = new URL(req.url).pathname;
+        if (path === "/ws" && server.upgrade(req)) return;
+        if (path === "/api/conversation") return Response.json({ messages: [], activeTurn });
+        if (path === "/api/tasks") return Response.json({ items: [], total: 0 });
+        if (path === "/api/events") {
+          const body = await req.text();
+          const event = JSON.parse(body);
+          if (event.data?.author?.kind === "human") {
+            writes.push(body);
+            if (writes.length <= 2) {
+              if (kind === "truncated") return new Response('{"ok":true,', { status: 201 });
+              if (kind === "503") return Response.json({ error: "uncertain acknowledgment" }, { status: 503 });
+              if (kind === "missing-id") return Response.json({ delivery: "accepted" }, { status: 201 });
+              return Response.json({ ok: true, triggered: true, eventType: event.type,
+                eventId: 41, delivery: "recorded", links: [], reason: null, projectId: null }, { status: 202 });
+            }
+          }
+          return Response.json({ ok: true, triggered: true, eventId: 41, delivery: "accepted" }, { status: 201 });
+        }
+        return new Response("not found", { status: 404 });
+      },
+      websocket: {
+        open(ws) { sockets.add(ws); },
+        close(ws) { sockets.delete(ws); },
+        message(ws, data) {
+          if (JSON.parse(String(data)).type === "subscribe") {
+            subscriptions += 1;
+            ws.send(JSON.stringify({ type: "subscribed" }));
+          }
+        },
+      },
+    });
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: { ...process.env, CONVERSATION_APP: "support", CONVERSATION_ID: "primary",
+        MAY_ENDPOINT: `http://127.0.0.1:${server.port}` }, stdio: "pipe",
+    });
+    let output = "";
+    child.stdout.on("data", chunk => { output += chunk; });
+    child.stderr.on("data", chunk => { output += chunk; });
+    cleanups.push(() => child.kill("SIGKILL"), () => server.stop(true));
+    await waitFor(() => subscriptions === 1 && output.includes("you>"));
+    child.stdin.write("please discuss this\n");
+    const notice = kind === "recorded" ? "[recorded] Input recorded, but not yet admitted." : "[unconfirmed]";
+    await waitFor(() => output.includes(notice));
+    expect(output).not.toContain("Working on your request");
+    expect(output).not.toContain("Input admitted");
+    expect(output).not.toContain("Esc stops this turn");
+    for (const ws of sockets) ws.close();
+    await waitFor(() => subscriptions === 2 && output.split(notice).length === 3);
+    expect(writes).toHaveLength(2);
+    expect(writes[1]).toBe(writes[0]);
+    // Another recorded/unknown receipt must wait for another reconnect, not spin.
+    expect(output).not.toContain("Input admitted");
+    for (const ws of sockets) ws.close();
+    await waitFor(() => writes.length === 3 && output.includes("Input admitted"));
+    expect(writes[2]).toBe(writes[0]);
+    expect(output).not.toContain("Esc: stop this turn");
+    activeTurn = { id: "observed-turn", revision: 1 };
+    for (const ws of sockets) ws.send(JSON.stringify({ type: "conversation.updated",
+      data: { appId: "support", conversationId: "primary" } }));
+    await waitFor(() => output.includes("Esc: stop this turn"));
+    child.stdin.write("/exit\n");
+    await once(child, "exit");
+  },
+);

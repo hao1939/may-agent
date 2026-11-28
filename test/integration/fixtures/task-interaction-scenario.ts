@@ -247,13 +247,13 @@ async function conversation() {
   }
 }
 
-function eventAfter(bus: EventBus, matches: (event: AgentEvent) => boolean) {
+function eventAfter(bus: EventBus, matches: (event: AgentEvent) => boolean, timeoutMs = 10_000) {
   return new Promise<AgentEvent>((resolve, reject) => {
     const recent: string[] = [];
     const timeout = setTimeout(() => {
       stop();
       reject(new Error(`Expected event missing; recent: ${recent.join(", ")}`));
-    }, 10_000);
+    }, timeoutMs);
     const stop = bus.listen((event) => {
       recent.push(event.type === "handler.failed" ? JSON.stringify(event.data) : event.type);
       if (recent.length > 10) recent.shift();
@@ -265,8 +265,13 @@ function eventAfter(bus: EventBus, matches: (event: AgentEvent) => boolean) {
   });
 }
 
-async function delegation(nested = false, contendAdmission = false, onePlace = false) {
+async function delegation(nested = false, contendAdmission = false, unblock = false) {
   const f = fixture("owner", false, false, true);
+  const observationDeadline = Date.now() + 40_000;
+  const observeEvent = (matches: Parameters<typeof eventAfter>[1]) =>
+    eventAfter(f.bus, matches, unblock ? Math.max(1, observationDeadline - Date.now()) : 10_000);
+  const finalMessage = unblock ? "The cached measurement is 17." : "The measurement is 17.";
+  const interimMessage = unblock ? "I will include the cached source in the result." : "We can keep discussing while it runs.";
   const measurement = Promise.withResolvers<void>();
   const source = createServer(async (_request, response) => {
     await measurement.promise;
@@ -323,12 +328,25 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
     export const name = "probe";
     export const description = "Measure the supplied sample";
     export async function execute(ctx) {
+      const decisions = ctx.reconciliation.events.items.filter(({event}) =>
+        event.type === "app.task.requested" && event.data.request.input.data.useOffline === true);
+      if (${unblock} && !decisions.length) return ctx.done("Live source unavailable", {
+        state: "waiting", report: true, summary: "Live source unavailable; an approved cached sample is available",
+        facts: ["source:unavailable", "cached-sample:approved"],
+        conditions: [{id:"source-choice",type:"fixture.source.chosen",subject:"id:measurement",
+          expected:{field:"useOffline",equals:true},owner:"app:sample"}]
+      });
       const response = fetch(${JSON.stringify(sourceUrl)});
       await ctx.events.emit({ localKey: "started", type: "measurement.started", data: {} });
       const result = await (await response).json();
       return ctx.done("Measured the sample", {
         state: "converged", summary: "The measurement is 17", facts: ["sample:17"],
-        response: "Raw sample: 17", result
+        response: "Raw sample: 17", result: ${unblock} ? {...result, source: "cache"} : result,
+        ...(${unblock} ? {inputKeys:[...new Set([
+          ...(ctx.reconciliation.previousAttempt?.acceptedResult?.inputKeys ?? []),
+          ...(ctx.reconciliation.events.inputs ?? []).map(input=>input.key)
+        ])],actions:[{kind:"retire-condition",conditionId:"source-choice",expectedConditionGeneration:1,
+          reason:"The caller selected the approved cached source"}]} : {})
       });
     }
   `,
@@ -373,11 +391,8 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
           // human/worker turns execute; it is not the worker-timeout regression.
           const result = await run({ ...f, request }, false, 15_000);
           assert(Array.isArray(result));
-          // Exercise ordinary recovery at this exact process boundary instead
-          // of waiting for the production 60-second scan. A relayed input can
-          // encounter the worker's final SQLite writes and remain pending.
-          // Result projection can encounter the same contention. Timers are
-          // disabled here, so advance both bounded production recovery paths.
+          // The passive input-recovery scan has a 60-second floor. Advance the
+          // same recovery methods at this process boundary within the fixture.
           await runtime!.host.recoverAdmissions();
           await runtime!.host.recoverTaskResults();
           return result;
@@ -392,6 +407,8 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
       bus: f.bus,
       persistDir: f.persistDir,
       schedulesEnabled: false,
+      // Retry durable routing plans promptly; passive inbox recovery stays bounded separately.
+      scanIntervalMs: 100,
       attachTask: tasks.attach,
       readDependency: tasks.readDependency,
       admitConversation: tasks.admitConversation,
@@ -411,8 +428,7 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
       data: { appId: "sample", conversationId: "primary", author: { kind: "human", id }, text, idempotencyKey: id },
     });
   const replyAfter = (text: string) =>
-    eventAfter(
-      f.bus,
+    observeEvent(
       (event) =>
         event.type === "conversation.message.created" &&
         readAppConversationResource(f.db, "sample", "primary").messages.some((message) => message.text === text),
@@ -422,20 +438,44 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
     await withProvider(
       f,
       ({ events }) => {
-        const returned = events.items.find(({ event }) => event.type === "app.dependency.updated" && event.data.status === "done");
+        const returned = events.items.find(
+          ({ event }) => event.type === "app.dependency.updated" && event.data.status === "done",
+        );
         const conversation = events.communication![0]!;
+        const blocked = events.items.find(
+          ({ event }) => event.type === "app.dependency.updated" && event.data.facts?.includes("source:unavailable"),
+        );
+        if (unblock && blocked && !returned) {
+          assert.equal(blocked.event.data.taskId, "measurement");
+          assert.equal(readConversationRequest(f.db, "sample", "primary", "measurement")?.status, "open");
+          return {
+            state: "waiting",
+            summary: "Use the approved cached source",
+            facts: [],
+            requests: [
+              {
+                id: "use-approved-cache",
+                appId: "sample",
+                taskId: "measurement",
+                input: { kind: "measure", data: { useOffline: true } },
+              },
+            ],
+            conditions: [{ requestId: "use-approved-cache" }],
+          };
+        }
         if (returned) {
           const data = returned.event.data;
           assert.equal(data.taskId, "measurement");
           assert.equal((data.result as { value: number }).value, 17);
           if (nested) assert.equal((data.result as { assessed: boolean }).assessed, true);
+          if (unblock) assert.equal((data.result as {source:string}).source, "cache");
           assert(events.continuedInputs?.length, "The exact original input must continue on the returned result");
           const request = conversation.requests!.find(({ id }) => id === "measurement")!;
           assert.equal(request.status, "open");
           return {
             state: "converged", summary: "Measurement returned", facts: ["sample:17"],
             communication: [{ id: "measurement-result", inputId: events.inputs![0]!.id,
-              message: "The measurement is 17.", topic: { kind: "existing", id: conversation.topics![0]!.id },
+              message: finalMessage, topic: { kind: "existing", id: conversation.topics![0]!.id },
               requestUpdates: [{ id: request.id, expectedRevision: request.revision,
                 disposition: "fulfilled", reason: "Returned the measured value" }],
             }],
@@ -452,18 +492,21 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
               disposition: "open", reason: "Delegating the measurement and waiting for its result" }],
           }],
           requests: [{ id: "measurement", appId: "sample", input: { kind: "measure", data: {} } }],
-          conditions: [{ requestId: "measurement" }],
+          conditions: [{ requestId: "measurement", ...(unblock ? {progress:"immediate" as const} : {}) }],
         };
-        if (!onePlace && humanTurns === 2) {
+        if (humanTurns === 2) {
           assert.equal(f.store.readTask(nested ? "sample" : "measurement")?.status.phase, "running");
           if (nested) assert.equal(f.store.readTask("measurement")?.status.conditionIds?.length, 1);
         }
-        if (humanTurns === (onePlace ? 2 : 3))
-          assert(conversation.messages.some(({ text }) => text === "The measurement is 17."));
+        if (humanTurns === 3) assert(conversation.messages.some(({ text }) => text === "The measurement is 17."));
         return {
-          state: "converged", summary: "Answered the human", facts: [],
+          state: unblock && humanTurns === 2 ? "waiting" : "converged", summary: "Answered the human", facts: [],
           communication: [{ id: `answer-${input.id}`, inputId: input.id,
-            message: !onePlace && humanTurns === 2 ? "We can keep discussing while it runs." : "The earlier result is still 17.",
+            message: humanTurns === 2 ? interimMessage : "The earlier result is still 17.",
+            ...(unblock && humanTurns === 2 ? {requestUpdates:[{id:"measurement",
+              expectedRevision:conversation.requests!.find(({id})=>id==="measurement")!.revision,
+              scope:"Get the sample measurement and identify the cached source in the final answer",
+              disposition:"open" as const,reason:"The human refined the existing request"}]} : {}),
             topic: { kind: "existing", id: conversation.topics![0]!.id },
           }],
         };
@@ -477,21 +520,49 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
               competingWriter.exec("ROLLBACK");
               writerLocked = false;
             });
-          const started = eventAfter(f.bus, (event) => event.type === "measurement.started");
-          publish("measure", "Measure the sample and bring back the result.");
+          const started = observeEvent((event) => event.type === "measurement.started");
+          const decisionAccepted = unblock ? observeEvent(event =>
+            event.type === "project.task.reconciled" && event.data.summary === "Use the approved cached source") : Promise.resolve();
+          void decisionAccepted.catch(()=>{});
+          publish("measure", unblock ? "Measure the sample and bring back the result; using the cached source is approved if live access is unavailable." : "Measure the sample and bring back the result.");
           await started;
+          await decisionAccepted;
           if (competingWriter) {
             assert(contended, "The recovery case must encounter a real competing writer");
             assert(admissionFailed, "The input must recover after a confirmed SQLite admission failure");
           }
           assert.equal(readConversationRequest(f.db, "sample", "primary", "measurement")?.status, "open");
-          const discussion = replyAfter("We can keep discussing while it runs.");
-          publish("discuss", "Can we discuss the method while it runs?");
+          const refinementAccepted = unblock ? observeEvent(event =>
+            event.type === "project.task.reconciled" && event.data.summary === "Answered the human") : Promise.resolve();
+          void refinementAccepted.catch(()=>{});
+          const discussion = replyAfter(interimMessage);
+          publish(
+            "discuss",
+            unblock
+              ? "When the measurement returns, also identify that it came from the approved cached source."
+              : "Can we discuss the method while it runs?",
+          );
           await discussion;
+          await refinementAccepted;
           if (nested) {
-            assert.equal(contexts.length, onePlace ? 1 : 2, "Saving B's wait must not execute A");
+            assert.equal(contexts.length, 2, "Saving B's wait must not execute A");
           }
-          const returned = replyAfter("The measurement is 17.");
+          if (unblock) {
+            assert.equal(
+              Object.keys(f.store.readSnapshot().resources!).length,
+              2,
+              "Decision must reuse the existing worker Task",
+            );
+            const worker = f.store.readTask("measurement")!;
+            assert.equal(worker.metadata.generation, 1);
+            const attempts = Object.values(f.store.readTaskContext({ taskIds: ["measurement"] }).attempts ?? {});
+            assert(
+              attempts.some((attempt) => attempt.acceptedResult?.state === "waiting"),
+              "The blocker must be a saved worker result",
+            );
+            assert(readConversationRequest(f.db, "sample", "primary", "measurement")!.scope.includes("cached source"));
+          }
+          const returned = replyAfter(finalMessage);
           measurement.resolve();
           await returned;
           assert.equal(
@@ -510,6 +581,10 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
             ),
             false,
           );
+          if (unblock) {
+            assert.equal(contexts.length, 4, "Initial ask, blocker decision, human refinement and final answer");
+            return;
+          }
           runtime!.close();
           await closeInstalledAppTaskRuntimes(f.bus);
           closeDb(f.persistDir);
@@ -521,7 +596,7 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
           const resumed = replyAfter("The earlier result is still 17.");
           publish("resume", "Remind me of the result.");
           await resumed;
-          assert.equal(contexts.length, onePlace ? 3 : 4);
+          assert.equal(contexts.length, 4);
           assert.deepEqual(Object.keys(f.store.readSnapshot().resources!).sort(), ids);
         } finally {
           // Release the fixture's HTTP barrier before draining its workers,
@@ -545,8 +620,12 @@ try {
   const scenario = process.argv[2];
   if (scenario === "conversation") await conversation();
   else {
-    assert(["delegation", "nested", "nestedRecovery"].includes(scenario!));
-    await delegation(scenario !== "delegation", scenario === "nestedRecovery", false);
+    assert(["delegation", "nested", "nestedRecovery", "unblock"].includes(scenario!));
+    await delegation(
+      scenario === "nested" || scenario === "nestedRecovery",
+      scenario === "nestedRecovery",
+      scenario === "unblock",
+    );
   }
 } finally {
   await cleanup();

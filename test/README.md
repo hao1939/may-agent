@@ -41,7 +41,8 @@ Separate files let Bun schedule these contracts independently.
 Worker `create-task` is retired. `packages/sdk/src/task-contract.test.ts` rejects
 it; action fencing and rollback tests now mutate existing fixture assignments.
 `src/app/task-worker-interaction.test.ts` owns real worker coverage for typed
-App delegation, nested A → B → C → B → A, continued human input, and reopen.
+App delegation, nested A → B → C → B → A, blocker/decision return to the same
+worker, refined human Request fulfillment, continued human input, and reopen.
 `task-worker-workload.test.ts` owns cross-process coordination timeout enforcement
 and bounded parent/App workload observations. `task-worker-integration.test.ts`
 keeps worker loss, recovery, source pinning, event delivery and compiled-command
@@ -64,6 +65,7 @@ session/result is evidence, not a second Task or closure authority.
 | Public agent-tool discovery, argument errors and denied calls/forks | `src/lib/create-tool.test.ts`: invoke the tool, check meaningful results and reject helper identities/state changes on denial; exact `listAgents()` objects also reject private fields |
 | Exact helper identity, App access, follow-up, cancellation and truthful contributions | `src/lib/agents-tool.test.ts`; `manager-lifecycle.test.ts` additionally observes real model requests using captured definitions after registry replacement/removal |
 | Live caller, inherited allowance, cancellation and joined cleanup | `execution-scope.test.ts`, `cascading-cancel.test.ts`, and `manager-task-budget.test.ts`; these retain real lifecycle and resource ownership checks |
+| Public input → active native turn → scoped accepted result | `test/e2e/task-native-feedback.test.ts` uses real daemon ingress, admission, worker and production JSON-RPC transport with a scripted native peer; the installed CLI protocol check owns client/CLI compatibility separately |
 | Native protocol progress vs reasoning/token noise | `cli-agent.test.ts` invokes the production collector with each provider's own envelopes and a throwing observer |
 | Native process → tool update → model loop → stored activity | `cli-progress.test.ts` retains Codex, Claude and timeout processes, throttling, one terminal return and process-group cleanup |
 | Managed container CLI & runtime config | `test/integration/container-runtime-user.test.ts` checks native CLI symlinks, legacy state/SSH migration, and endpoint configuration; `scripts/ci-container-smoke.sh` boots the real container image and runs the CLIs |

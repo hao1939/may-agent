@@ -333,3 +333,12 @@ admission with both the selected App and Conversation. An explicit
 `interface` option can supply the same binding to clients outside the daemon's
 environment. Ordinary agents need only the desired message and recipient; the
 adapter owns transport and saved Conversation references.
+
+## May-first Conversation and explicit Task controls
+
+Console, Telegram, and WebUI chat always address the configured Conversation (`you>` / `may>`);
+there is no persistent App recipient selector, and passive views (`/apps`, `/tasks`, `/todo`,
+`/watch`, or `focusedTask`) never redirect `conversation.message.created` into a background
+`targetTaskId`. Explicit controls act on exact targets: formal proposal decisions publish
+`project.approval.submitted`, `/cancel <ref>` requires an explicit Task reference, `Esc` / `Stop`
+interrupts only the observed Conversation turn, and direct operator Task input uses `app.input.requested`.

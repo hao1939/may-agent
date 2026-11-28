@@ -60,7 +60,6 @@ import { conversationTaskId } from "../core/state/conversation-identity.js";
 import { listConversationTaskLinks } from "../core/state/conversation-task-links.js";
 import { readPendingConversationTaskChangePage, type ConversationTaskChangeCursor, type ConversationTaskChangeRef } from "../core/state/retained-conversation-task-returns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
-import { hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
 import { observationDemandReader, readTaskObservationInterests } from "../core/state/observation-demand.js";
 
 export type AppRegistryReloadPreparation = (input: {
@@ -878,26 +877,20 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
               ? metadata.channelMessageId
               : undefined;
-          // Preserve the surface's Topic as input context, not a committed turn decision.
+          // Preserve the surface's Topic and any replied card as Conversation
+          // context for May; Conversation messages never bypass into targetTaskId.
           const context: Record<string, unknown> = {
             ...record(data.context),
+            ...(data.taskReply && typeof data.taskReply === "object" && !Array.isArray(data.taskReply)
+              ? { taskReply: data.taskReply }
+              : {}),
             ...(approval ? { approval } : {}),
             ...(typeof metadata.topicId === "string" && metadata.topicId.trim()
               ? { conversationTopicId: metadata.topicId.trim() }
               : {}),
           };
-          const focusedTask = record(context.focusedTask);
-          const focusedAppId =
-            typeof focusedTask.appId === "string" ? focusedTask.appId.trim().replace(/\.app$/, "") : "";
-          const focusedTaskId = typeof focusedTask.taskId === "string" ? focusedTask.taskId.trim() : "";
-          const focusedConversationTask = Boolean(
-          focusedAppId === appId && focusedTaskId && hasConversationExecutionTask(options.db, appId, focusedTaskId),
-          );
           const admitted = receiveInput({
             appId,
-            ...(focusedAppId === appId && focusedTaskId && !focusedConversationTask
-              ? { targetTaskId: focusedTaskId }
-              : {}),
             source: { kind: "human", id: authorId },
             input: {
               kind: "message",

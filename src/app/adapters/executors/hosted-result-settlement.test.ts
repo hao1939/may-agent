@@ -628,3 +628,17 @@ test("unconfirmed cleanup is unsuccessful even when execution returned done", ()
     handlerResult: { state: "error", facts: ["execution-run:run-1", "execution-cleanup-unconfirmed:agent:child"] },
   });
 });
+
+test("rejects default wait descriptor continuation when domainFacts is absent or empty", () => {
+  for (const facts of [{ continue: true }, { continue: true, domainFacts: [] }]) {
+    const translated = translateHostedExecutionResult(
+      runResult({ type: "blocked", reason: "Again", facts }),
+      input(),
+    );
+    expect(translated.handlerResult).toMatchObject({
+      state: "error",
+      resultRejected: true,
+      summary: expect.stringContaining("require non-empty contribution facts"),
+    });
+  }
+});

@@ -163,3 +163,100 @@ test("public targeted input retains its receipt, attaches once and reaches only 
     rmSync(root, { recursive: true, force: true });
   }
 }, 10_000);
+
+test("conversation.message.created stays in Conversation and preserves focusedTask/taskReply context without hijacking target_task_id", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-conversation-only-"));
+  const persistDir = join(root, "state");
+  mkdirSync(join(root, "may.app/tasks"), { recursive: true });
+  writeFileSync(
+    join(root, "may.app/tasks/seed.json"),
+    JSON.stringify({ root_task_id: "root", groups: { root: { id: "root", parent_id: null } } }),
+  );
+  writeFileSync(
+    join(root, "may.app/app.js"),
+    `export default {
+      id: "may", version: 1, agent: "may", tasks: {},
+      inputSchema: { type: "object", required: ["kind", "data"], properties: {
+        kind: { const: "message" }, data: { type: "object" }
+      } },
+      conversation: { mode: "task", inputKinds: ["message"], conversationId: "may:primary" },
+      task() { throw new Error("Conversation messages must not bypass into App task()"); }
+    };`,
+  );
+  const bus = new EventBus();
+  const db = getDb(persistDir);
+  const writer = new DbWriter(persistDir);
+  bus.setPersistenceSubscriber(writer.handler);
+  bus.setDeliveryRecorder(writer.recordDelivery);
+  const registry = new AppRegistry(discoverAppDefinitions(root));
+  await registry.reload();
+  const gate = Promise.withResolvers<void>();
+  await installAppTaskRuntimes(
+    { projectRoot: root, projectsRoot: root, persistDir, bus, appRegistrySnapshot: registry.snapshot(), startAfter: gate.promise },
+    { deferRecovery: true },
+  );
+  const config = appTaskContext({
+    appDir: join(root, "may.app"),
+    projectDir: join(root, "may.app"),
+    agent: "may",
+    maxConcurrent: 1,
+    resourceStore: AppTaskResourceStore.activeFromDb(db, "may")!,
+  });
+  observeAppTaskIntent(config, {
+    appAgent: "may",
+    intent: { id: "bg-work", parentId: "root", outcome: "Background task", acceptance: ["Done"] },
+  });
+  const capability = createAppTaskCapability({ bus, db });
+  const runtime = await startAppInboxRuntime({
+    registry,
+    db,
+    bus,
+    scanIntervalMs: 60_000,
+    attachTask: capability.attach,
+    admitConversation: capability.admitConversation,
+    admitTaskEvent: capability.admitEvent,
+    hasTaskTarget: capability.has,
+    previewTaskEvent: capability.previewEvent,
+    previewTaskEventRoutes: capability.previewEventRoutes,
+  });
+  const events = createEventInterface({
+    bus,
+    db,
+    hasApp: (id) => runtime.host.hasApp(id),
+    validateAppInput: (id, input) => runtime.host.assertAcceptsInput(id, input),
+  });
+  try {
+    events.publish(
+      {
+        type: "conversation.message.created",
+        target: { appId: "may" },
+        idempotencyKey: "conv-with-focus",
+        data: {
+          conversationId: "may:primary",
+          author: { kind: "human", id: "user-1" },
+          text: "How is bg-work going?",
+          taskReply: { target: { appId: "may", taskId: "bg-work" }, taskGeneration: 1 },
+          context: { focusedTask: { appId: "may", taskId: "bg-work" } },
+        },
+      },
+      { source: "control-socket" },
+    );
+    const row = db
+      .prepare("SELECT app_id, target_task_id, execution_task_id, input_data FROM app_inbox_items WHERE source_id = 'user-1'")
+      .get() as { app_id: string; target_task_id: string | null; execution_task_id: string | null; input_data: string };
+    expect(row.app_id).toBe("may");
+    expect(row.target_task_id).toBeNull();
+    expect(typeof row.execution_task_id).toBe("string");
+    expect(JSON.parse(row.input_data).context).toMatchObject({
+      focusedTask: { appId: "may", taskId: "bg-work" },
+      taskReply: { target: { appId: "may", taskId: "bg-work" }, taskGeneration: 1 },
+    });
+  } finally {
+    runtime.close();
+    const drained = closeInstalledAppTaskRuntimes(bus);
+    gate.resolve();
+    await drained;
+    closeDb(persistDir);
+    rmSync(root, { recursive: true, force: true });
+  }
+}, 10_000);

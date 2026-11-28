@@ -15,6 +15,7 @@ export type { EventTrace } from "../event.js";
 export * from "./lib/agent-execution.js";
 export * from "./lib/cli-agent.js";
 export * from "./lib/manager-utils.js";
+export * from "./lib/offload-content.js";
 export * from "./lib/runtime-import.js";
 export * from "./lib/skills.js";
 

@@ -23,7 +23,11 @@ import { AppRegistry } from "../../core/apps/registry.js";
 import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../../core/tasks/app-task-runtime.js";
 import { closeDb } from "../../../lib/db/connection.js";
 
-test.each(["done", "blocked"])("a valid %s report retains useful work and the Task's continuation decision", async (status) => {
+test.each([
+  { terminal: "finish", status: "done" },
+  { terminal: "finish", status: "blocked" },
+  { terminal: "reconcile", status: "done" },
+])("a valid $terminal/$status report retains useful work and the Task's continuation decision", async ({ terminal, status }: { terminal: string; status: string }) => {
   const root = mkdtempSync(join(tmpdir(), "may-task-report-"));
   try {
     const report = {
@@ -42,10 +46,11 @@ test.each(["done", "blocked"])("a valid %s report retains useful work and the Ta
         });
         prepared.runner.streamFn = () => {
           calls++;
+          if (calls > 1) throw new Error("Valid Task contribution unexpectedly rejected");
           const stream = createAssistantMessageEventStream();
           stream.push({ type: "done", reason: "toolUse", message: usageReply({
-            stopReason: "toolUse", content: [{ type: "toolCall", id: "report", name: "finish",
-              arguments: {
+            stopReason: "toolUse", content: [{ type: "toolCall", id: "report", name: terminal,
+              arguments: terminal === "reconcile" ? report : {
                 status,
                 summary: report.summary,
                 output: report,
@@ -450,18 +455,25 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
           expect(parameters.properties.output.description).toContain("blocked");
           const missingDoneOutput = await finish.execute("missing-done", { status: "done", summary: "Missing output" }, undefined, undefined);
           expect(missingDoneOutput.content).toEqual([{ type: "text", text: expect.stringContaining("expected an object") }]);
-          const invalid = await finish.execute("invalid", { status: "done", summary: "Pending", output: {
+          const invalidReport = {
             state: "waiting", summary: "Pending", facts: [], conditions: [{
               id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: {},
             }],
-          } });
-          expect(invalid.content).toEqual([{ type: "text", text: expect.stringContaining("expected.state must be ready") }]);
-          const valid = await finish.execute("valid", { status: "done", summary: "Pending", output: {
+          };
+          const validReport = {
             state: "waiting", summary: "Pending", facts: [], conditions: [{
               id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: { state: "ready" },
             }],
-          } });
-          expect(valid.terminate).toBe(true);
+          };
+          for (const name of ["finish", "reconcile"]) {
+            const terminal = prepared.tools.find(tool => tool.name === name)!;
+            expect(terminal).toBeDefined();
+            const report = (output: unknown) => name === "reconcile" ? output : { status: "done", summary: "Pending", output };
+            const invalid = await terminal.execute(`invalid-${name}`, report(invalidReport));
+            expect(invalid.content).toEqual([{ type: "text", text: expect.stringContaining("expected.state must be ready") }]);
+            const valid = await terminal.execute(`valid-${name}`, report(validReport));
+            expect(valid.terminate).toBe(true);
+          }
           prompt = text;
           return {
             status: "done",

@@ -13,6 +13,7 @@ import {
   buildWorkflowCatalog,
   canonicalCallableName,
   deferredExecutionResult,
+  formatExecutionInput,
   workflowExecutionResult,
   type CallableDefinition,
   type CallableInvocationContext,
@@ -109,12 +110,6 @@ const CanonicalAgentsToolParams = Type.Union([
 
 type CanonicalAgentsToolParamsType = Static<typeof CanonicalAgentsToolParams>;
 
-function callablePrompt(input: ExecutionInput): string {
-  return input.data === undefined
-    ? input.prompt
-    : `${input.prompt}\n\nAssignment data (JSON):\n${JSON.stringify(input.data, null, 2)}`;
-}
-
 function callableReport(
   result: ReturnType<typeof agentExecutionResult> | NonNullable<ReturnType<typeof workflowExecutionResult>>,
 ) {
@@ -182,7 +177,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     }
     const parent = lineage(parentSessionId);
     const session = manager.activeSessions.get(parentSessionId);
-    const result = await manager.callAgentDefinition(definition, callablePrompt(input), {
+    const result = await manager.callAgentDefinition(definition, formatExecutionInput(input), {
       parentSessionId,
       workflowRunId: parent.workflowRunId,
       projectId: parent.projectId,
@@ -306,7 +301,10 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     const agentDefinitions = new Map(prepared.entries.flatMap((entry) => entry.kind === "agent"
       ? [[canonicalCallableName(entry.appId, entry.definition.name), entry.definition] as const]
       : []));
-    return new CallableCatalog(prepared.entries.map((entry): CallableDefinition => {
+    const visibleEntries = prepared.entries.filter(
+      (entry) => !(entry.kind === "agent" && entry.definition.callableFrom === "workflow"),
+    );
+    return new CallableCatalog(visibleEntries.map((entry): CallableDefinition => {
       if (entry.kind === "agent") {
         return {
           appId: entry.appId,

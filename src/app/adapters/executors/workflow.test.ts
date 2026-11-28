@@ -413,3 +413,134 @@ export async function execute(ctx) {
   expect(observedPrompt).toContain("## Assigned Attempt Input");
   expect(observedPrompt).toContain('"continuedInputs"');
 });
+
+it("converges plain domain outputs (including unrelated state strings) and structured facts", async () => {
+  const makeCase = (workflowBody: string) => {
+    const r = mkdtempSync(join(tmpdir(), "task-workflow-done-opts-"));
+    roots.push(r);
+    mkdirSync(join(r, "owner", "workflows"), { recursive: true });
+    writeFileSync(join(r, "owner", "workflows", "sec.ts"), workflowBody);
+    AppTaskResourceStore.fromDb(getDb(r), "fixture").bootstrapSnapshot(
+      {
+        project: "fixture",
+        resources: {
+          ship: {
+            metadata: { id: "ship", generation: 1, resourceVersion: 2 },
+            spec: { parentId: "root", outcome: "Ship", acceptance: ["Verified"] },
+            status: { phase: "running", observedGeneration: 0, currentAttemptId: "a1" },
+          },
+        },
+        attempts: {
+          a1: {
+            metadata: { id: "a1", resourceVersion: 1 },
+            taskId: "ship",
+            taskGeneration: 1,
+            specHash: "hash",
+            owner: "owner",
+            handler: "workflow:sec",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
+    return r;
+  };
+  const runner = createTaskWorkflowRunner({ manager: {} as never, bus: new EventBus() });
+  const runCase = async (r: string) =>
+    runner.execute({
+      source: { projectsRoot: r, projectRoot: r, persistDir: r, agentsRoot: r, sharedRoot: join(r, "shared") },
+      descriptor: { id: "fixture", appDir: join(r, "sample.app"), projectDir: r, app: {} },
+      capability: { workflow: "sec", task: "Ship" },
+      handler: "workflow:sec",
+      executionPaths: { appDir: r, projectDir: r, workspaceDir: r },
+      childContext: { live: [], completed: [] },
+      taskSnapshot: { live: [], truncated: false },
+      taskEvents: {},
+      executionTimeoutMs: 5000,
+      attempt: {
+        read: { tasks: {} },
+        task: { id: "ship", generation: 1, status: "running", outcome: "Ship", acceptance: ["Verified"], input: {}, pendingEvents: { items: [], truncated: false } },
+        attemptId: "a1",
+        role: { agent: "owner" },
+        resourceVersion: 2,
+        events: { items: [], truncated: false },
+        waits: { open: [], note: "none" },
+        children: { live: [], completed: [] },
+        declaredOutputPaths: [],
+        signal: new AbortController().signal,
+        onEvent: () => () => {},
+      },
+    } as unknown as TaskWorkflowInput);
+
+  const rDomainState = await runCase(
+    makeCase(`export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       return {
+         ...ctx.done(
+           "Published",
+           { state: "published", url: "https://example.test/pr/1" },
+           {
+             facts: ["published:1"],
+             requests: [
+               {
+                 id: "digest-1",
+                 appId: "scout",
+                 input: { kind: "message", data: { message: "Record digest for https://example.test/pr/1" } },
+               },
+             ],
+             response: "PR #1 published.",
+           },
+         ),
+       };
+     }`),
+  );
+  expect(rDomainState.hostCompletion).toBe("finite-done");
+  expect(rDomainState.handlerResult).toMatchObject({
+    state: "converged",
+    summary: "Published",
+    result: { state: "published", url: "https://example.test/pr/1" },
+    facts: ["published:1"],
+    requests: [{ id: "digest-1", appId: "scout" }],
+    response: "PR #1 published.",
+  });
+
+  // Malformed requests or non-string response on a raw JS done result are rejected instead of silently dropped
+  const badResp = await runCase(
+    makeCase(`export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       return { status: "done", summary: "Bad", response: { wrong: true } };
+     }`),
+  );
+  expect(badResp).toMatchObject({
+    executionFailed: true,
+    handlerResult: { state: "error", summary: expect.stringContaining("Workflow done result response must be a non-empty string") },
+  });
+  const badReqs = await runCase(
+    makeCase(`export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       return { status: "done", summary: "Bad", requests: "not-array" };
+     }`),
+  );
+  expect(badReqs).toMatchObject({
+    executionFailed: true,
+    handlerResult: { state: "error", summary: expect.stringContaining("Workflow done result requests must be an array") },
+  });
+
+  const rStructFacts = await runCase(
+    makeCase(`export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       return ctx.done("Measured", { ok: true }, { facts: { testsPassed: 12 } });
+     }`),
+  );
+  expect(rStructFacts.handlerResult).toMatchObject({
+    state: "converged",
+    summary: "Measured",
+    facts: ['execution-facts:{"testsPassed":12}'],
+  });
+});
+
+

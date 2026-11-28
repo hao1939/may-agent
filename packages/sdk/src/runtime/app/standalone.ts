@@ -8,10 +8,19 @@
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { Type, type TSchema } from "typebox";
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import type { AgentCallOptions, AppRead, CallOptions, WorkflowContext } from "@may-agent/sdk/app";
+import type {
+  AgentCallOptions,
+  AppRead,
+  CallOptions,
+  ConditionObservation,
+  ExecutionResult,
+  TaskCondition,
+  WorkflowContext,
+  WorkflowTaskView,
+} from "@may-agent/sdk/app";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -48,10 +57,10 @@ import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
 import {
   CallableCatalog,
   canonicalCallableName,
+  formatExecutionInput,
   validateCallableInput,
   type CallableDefinition,
   type CallableDescriptor,
-  type CallableResult,
 } from "../../callable.js";
 import { createCodingTools } from "../lib/tools/edit.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
@@ -67,6 +76,7 @@ import {
   type AgentConfig,
   type AgentDirectory,
 } from "./loader/agent-config.js";
+import { importRuntimeModule } from "../lib/runtime-import.js";
 import { createModelRegistry } from "./model-registry.js";
 
 export type ToolDenial = {
@@ -145,6 +155,8 @@ export type DirectAgentRunOptions = {
   toolDenials?: ToolDenial[];
   /** Bind services for explicitly declared capabilities that the portable SDK does not implement. */
   capabilityProviders?: Readonly<Record<string, DirectCapabilityProvider>>;
+  /** Optional prior turn messages for multi-turn in-attempt workflow agent sessions. */
+  initialMessages?: AgentMessage[];
   /** Reports the concrete prompt-session identity before model execution starts. */
   onSessionStarted?: (sessionId: string) => void;
   timeoutMs?: number;
@@ -469,6 +481,7 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
       signal: options.signal,
       deadlineAt: options.deadlineAt,
       operationAllowance: options.operationAllowance,
+      ...(options.initialMessages ? { initialMessages: options.initialMessages } : {}),
       onObservation: (event) => {
         if (event.type === "message_end" && "message" in event) {
           appendFileSync(transcriptPath, `${JSON.stringify((event as { message: AgentMessage }).message)}\n`);
@@ -683,6 +696,12 @@ export type DirectWorkflowRunOptions<TInput = unknown> = WorkflowExecutionEnviro
   maxDepth?: number;
   signal?: AbortSignal;
   executionId?: string;
+  stateDir?: string;
+  resume?: boolean;
+  task?: WorkflowTaskView;
+  attemptNumber?: number;
+  observations?: Readonly<Record<string, ConditionObservation>>;
+  onProgress?: (status: string) => void;
   onStep?: (step: WorkflowStepTrace) => void;
   onLog?: (entry: WorkflowLogEntry) => void;
   onNotice?: (message: string) => void;
@@ -1307,21 +1326,131 @@ export async function runDirectWorkflow<TInput = unknown>(
   }
 
   const readOverrides = env?.read ?? options.read;
+  const standaloneTaskDetail: import("@may-agent/sdk/app").TaskDetail | null = options.task
+    ? {
+        id: options.task.id,
+        generation: options.task.generation,
+        status: "running" as const,
+        outcome: options.task.outcome,
+        summary: options.task.outcome,
+        acceptance: [...options.task.acceptance],
+        input:
+          options.task.taskInput && typeof options.task.taskInput === "object" && !Array.isArray(options.task.taskInput)
+            ? (options.task.taskInput as Record<string, unknown>)
+            : {},
+        facts: [...options.task.facts],
+        ...(options.task.previousResult ? { result: options.task.previousResult } : {}),
+        parentId: "",
+        conditions: [],
+        acceptedEvidence: { available: false, maxPageSize: 8 },
+      }
+    : null;
   const unavailableRead = (name: string) => async () => {
     throw new Error(`${name} read is not configured in standalone mode`);
   };
-  const read: AppRead = {
-    contract: readOverrides?.contract ?? unavailableRead("read.contract"),
-    appResult: readOverrides?.appResult ?? unavailableRead("read.appResult"),
-    tasks: {
-      list: readOverrides?.tasks?.list ?? unavailableRead("read.tasks.list"),
-      get: readOverrides?.tasks?.get ?? unavailableRead("read.tasks.get"),
-      ...(readOverrides?.tasks?.created ? { created: readOverrides.tasks.created } : {}),
-      ...(readOverrides?.tasks?.workload ? { workload: readOverrides.tasks.workload } : {}),
-    },
-    execution: readOverrides?.execution ?? unavailableRead("read.execution"),
-    metric: readOverrides?.metric ?? unavailableRead("read.metric"),
+  const standaloneReadContract = async (requestedAppId: string): Promise<import("@may-agent/sdk/app").AppContract> => {
+    const appId = requestedAppId.trim().replace(/\.app$/, "");
+    const pRoot = options.projectsRoot ?? join(options.projectRoot, "projects");
+    const candidateDirs = [
+      join(pRoot, `${appId}.app`),
+      ...(existsSync(pRoot)
+        ? readdirSync(pRoot, { withFileTypes: true })
+            .filter((entry) => entry.isDirectory() && entry.name.endsWith(".app") && entry.name !== `${appId}.app`)
+            .map((entry) => join(pRoot, entry.name))
+        : []),
+    ];
+    let matchedDef:
+      | {
+          id?: string;
+          agent?: string;
+          inputSchema?: TSchema;
+          tasks?: { closeOnResult?: boolean; coordination?: unknown };
+          conversation?: unknown;
+          observers?: Array<{
+            id?: string;
+            type?: string;
+            description?: string;
+            intervalMs?: number;
+            timeoutMs?: number;
+            inspect?: unknown;
+          }>;
+        }
+      | undefined;
+    for (const dir of candidateDirs) {
+      const appFile = ["app.ts", "app.js"].map((f) => join(dir, f)).find((c) => existsSync(c));
+      if (!appFile) continue;
+      const mod = await importRuntimeModule<{ default?: unknown; app?: unknown }>(appFile);
+      const exported = mod.default ?? mod.app;
+      if (!exported || typeof exported !== "object") continue;
+      const def = exported as NonNullable<typeof matchedDef>;
+      const declaredId = typeof def.id === "string" ? def.id.trim() : "";
+      if (declaredId === appId || (!declaredId && dir === join(pRoot, `${appId}.app`))) {
+        matchedDef = def;
+        break;
+      }
+    }
+    if (!matchedDef) throw new Error(`App "${appId}" was not found under ${pRoot}`);
+    const resolvedId = typeof matchedDef.id === "string" && matchedDef.id.trim() ? matchedDef.id.trim() : appId;
+    return {
+      appId: resolvedId,
+      agent: String(matchedDef.agent ?? "owner").trim().replace(/^agent:/, ""),
+      inputSchema: structuredClone(matchedDef.inputSchema ?? Type.Object({})),
+      ...((matchedDef.tasks || matchedDef.conversation) && readOverrides?.tasks?.workload
+        ? { taskReads: { workload: 1 as const } }
+        : {}),
+      ...(matchedDef.tasks?.closeOnResult || matchedDef.tasks?.coordination
+        ? {
+            taskPolicy: {
+              ...(matchedDef.tasks.closeOnResult ? { closeOnResult: true as const } : {}),
+              ...(matchedDef.tasks.coordination
+                ? { coordination: structuredClone(matchedDef.tasks.coordination) as never }
+                : {}),
+            },
+          }
+        : {}),
+      observations: (matchedDef.observers ?? []).flatMap((obs) =>
+        obs && typeof obs === "object" && "inspect" in obs && obs.id && obs.type
+          ? [
+              {
+                appId: resolvedId,
+                id: String(obs.id),
+                type: String(obs.type),
+                description: String(obs.description ?? ""),
+                intervalMs: typeof obs.intervalMs === "number" ? obs.intervalMs : 60_000,
+                timeoutMs: typeof obs.timeoutMs === "number" ? obs.timeoutMs : 15_000,
+              },
+            ]
+          : [],
+      ),
+    };
   };
+  const read: AppRead = standaloneTaskDetail
+    ? {
+        contract: readOverrides?.contract ?? standaloneReadContract,
+        appResult: readOverrides?.appResult ?? (async () => null),
+        tasks: {
+          list: readOverrides?.tasks?.list ?? (async () => ({ items: [standaloneTaskDetail] })),
+          get:
+            readOverrides?.tasks?.get ??
+            (async (id) => (standaloneTaskDetail.id === id ? standaloneTaskDetail : null)),
+          ...(readOverrides?.tasks?.created ? { created: readOverrides.tasks.created } : {}),
+          ...(readOverrides?.tasks?.workload ? { workload: readOverrides.tasks.workload } : {}),
+        },
+        execution: readOverrides?.execution ?? (async () => null),
+        metric: readOverrides?.metric ?? (async () => null),
+      }
+    : {
+        contract: readOverrides?.contract ?? standaloneReadContract,
+        appResult: readOverrides?.appResult ?? unavailableRead("read.appResult"),
+        tasks: {
+          list: readOverrides?.tasks?.list ?? unavailableRead("read.tasks.list"),
+          get: readOverrides?.tasks?.get ?? unavailableRead("read.tasks.get"),
+          ...(readOverrides?.tasks?.created ? { created: readOverrides.tasks.created } : {}),
+          ...(readOverrides?.tasks?.workload ? { workload: readOverrides.tasks.workload } : {}),
+        },
+        execution: readOverrides?.execution ?? unavailableRead("read.execution"),
+        metric: readOverrides?.metric ?? unavailableRead("read.metric"),
+      };
 
   const maxConcurrentCalls = options.maxConcurrentCalls ?? DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS;
   const executeAgent = options.runAgent ?? runDirectAgent;
@@ -1414,17 +1543,10 @@ export async function runDirectWorkflow<TInput = unknown>(
     signal?: AbortSignal,
   ) => Promise<WorkflowKernelResolvedTarget>;
 
-  const promptTaskFromInput = (input: unknown, target: string): string => {
-    if (!input || typeof input !== "object" || typeof (input as { prompt?: unknown }).prompt !== "string") {
-      throw new Error(`Prompt target "${target}" requires a canonical { prompt, data? } input`);
-    }
-    const { prompt, data } = input as { prompt: string; data?: unknown };
-    return data === undefined ? prompt : `${prompt}\n\nInput data:\n${JSON.stringify(data, null, 2)}`;
-  };
-
-  const captureCallableDescriptors = (): readonly CallableDescriptor[] => {
+  const captureCallableDescriptors = (excludeWorkflowOnly = false): readonly CallableDescriptor[] => {
     const definitions: CallableDefinition[] = [];
     for (const [name, entry] of preparedCatalog.prompts) {
+      if (excludeWorkflowOnly && entry.definition.config.callableFrom === "workflow") continue;
       const slash = name.indexOf("/");
       if (slash === -1) continue;
       definitions.push({
@@ -1449,11 +1571,15 @@ export async function runDirectWorkflow<TInput = unknown>(
     return new CallableCatalog(definitions).list();
   };
 
+  const agentSessionHistories = new Map<string, AgentMessage[]>();
+
   const executePromptStep = async (
     agent: string,
     prompt: string,
     callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     stepControl: WorkflowKernelStepControl,
+    sessionKey?: string,
+    workRootOverride?: string,
   ): Promise<WorkflowStepInvocationResult> => {
     const promptDef = preparedCatalog.prompts?.get(agent)?.definition;
     if (!promptDef) {
@@ -1478,12 +1604,18 @@ export async function runDirectWorkflow<TInput = unknown>(
           agents: () => ({
             tools: [createCommonKernelAgentsTool(
               stepControl,
-              captureCallableDescriptors,
-              (target, input, signal) => resolveDirectTarget(agent, target, input, signal),
+              () => captureCallableDescriptors(true),
+              (target, input, signal) => {
+                if (preparedCatalog.prompts?.get(target)?.definition.config.callableFrom === "workflow") {
+                  throw new Error(`Callable target "${target}" is restricted to workflow invocations`);
+                }
+                return resolveDirectTarget(agent, target, input, signal);
+              },
             )],
           }),
         };
 
+    const priorMessages = sessionKey ? agentSessionHistories.get(sessionKey) : undefined;
     const directRun = await executeAgent({
       agentName: config.name,
       agentSource: promptDef.source,
@@ -1492,7 +1624,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       sharedPromptText: promptDef.sharedPromptText,
       task: prompt,
       projectRoot: options.projectRoot,
-      workRoot: options.workRoot,
+      workRoot: workRootOverride ?? effectiveWorkspace.root,
       agentsRoot: options.agentsRoot,
       sharedRoot: options.sharedRoot,
       projectsRoot: options.projectsRoot,
@@ -1504,6 +1636,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       toolPolicy: stepControl.tools,
       toolDenials: denials,
       capabilityProviders,
+      ...(priorMessages ? { initialMessages: priorMessages } : {}),
       onSessionStarted: options.onSessionStarted,
       drainProcessGroup: options.drainProcessGroup,
       timeoutMs: stepControl.timeoutMs,
@@ -1511,6 +1644,9 @@ export async function runDirectWorkflow<TInput = unknown>(
       signal: stepControl.signal,
       onNotice: options.onNotice,
     });
+    if (sessionKey && Array.isArray(directRun.messages)) {
+      agentSessionHistories.set(sessionKey, [...directRun.messages]);
+    }
 
     const transcriptPath = join(directRun.sessionPath, "session.jsonl");
     childSessions.push({
@@ -1544,6 +1680,8 @@ export async function runDirectWorkflow<TInput = unknown>(
     const sub = await runDirectWorkflow(
       {
         ...options,
+        workRoot: effectiveWorkspace.root,
+        workspace: effectiveWorkspace,
         reconciliation,
         executionId: undefined,
         module: targetMod,
@@ -1597,6 +1735,8 @@ export async function runDirectWorkflow<TInput = unknown>(
       summary: sub.result!.type === "done" ? sub.result!.summary : sub.result!.reason,
       ...(sub.result!.output !== undefined ? { output: sub.result!.output } : {}),
       ...(sub.result!.facts !== undefined ? { facts: sub.result!.facts } : {}),
+      ...(sub.result!.type === "done" && sub.result!.requests !== undefined ? { requests: [...sub.result!.requests] } : {}),
+      ...(sub.result!.type === "done" && sub.result!.response !== undefined ? { response: sub.result!.response } : {}),
       cleanupConfirmed: sub.report.cleanup.confirmed,
     };
   };
@@ -1628,7 +1768,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       return {
         kind: "agent" as const,
         invoke: async (callOpts, nestedControl) =>
-          executePromptStep(resolved.name, promptTaskFromInput(input, target), callOpts, nestedControl),
+          executePromptStep(resolved.name, formatExecutionInput(input), callOpts, nestedControl, undefined, effectiveWorkspace.root),
       };
     }
     return {
@@ -1638,12 +1778,29 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   };
 
+  const effectiveRoot = resolve(options.workRoot);
+  const inferredAppRoot =
+    callerOwner && callerOwner !== "global" && options.projectsRoot && existsSync(join(options.projectsRoot, `${callerOwner}.app`))
+      ? join(options.projectsRoot, `${callerOwner}.app`)
+      : resolve(options.projectRoot);
   const effectiveWorkspace = env?.workspace ?? options.workspace ?? {
-    appRoot: resolve(options.projectRoot),
+    appRoot: inferredAppRoot,
     projectRoot: resolve(options.workRoot),
-    root: resolve(options.workRoot),
-    output: resolve(options.workRoot),
+    root: effectiveRoot,
+    output: options.stateDir ? resolve(options.stateDir) : resolve(options.outputRoot),
   };
+  // Standalone performs no complex event routing or persistence: emit simply logs a
+  // notice for the external human/agent driving the run.
+  const standaloneLoggingEvents =
+    standaloneTaskDetail || reconciliation
+      ? {
+          emit: async (ev: import("@may-agent/sdk/app").AppEvent) => {
+            options.onNotice?.(`[event] ${String((ev as { type?: unknown }).type ?? "event")}`);
+          },
+          read: async () => null,
+          onEvent: () => () => undefined,
+        }
+      : undefined;
   const authoredModule = targetModule;
   const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(
     {
@@ -1695,46 +1852,79 @@ export async function runDirectWorkflow<TInput = unknown>(
         ? {
             emit:
               (env?.events ?? options.events)!.emit ??
+              standaloneLoggingEvents?.emit ??
               (async () => {
                 throw new Error("events.emit is not configured in runDirectWorkflow");
               }),
             read:
               (env?.events ?? options.events)!.read ??
+              standaloneLoggingEvents?.read ??
               (async () => {
                 throw new Error("events.read is not configured in runDirectWorkflow");
               }),
             onEvent:
               (env?.events ?? options.events)!.onEvent ??
+              standaloneLoggingEvents?.onEvent ??
               (() => {
                 throw new Error("events.onEvent is not configured in runDirectWorkflow");
               }),
           }
-        : undefined,
-      metrics: (env?.metrics ?? options.metrics)
+        : standaloneLoggingEvents,
+      metrics: standaloneTaskDetail
         ? {
+            define: (env?.metrics ?? options.metrics)?.define ?? (() => undefined),
+            defineMany: (env?.metrics ?? options.metrics)?.defineMany ?? (() => undefined),
+            record: (env?.metrics ?? options.metrics)?.record ?? (async () => undefined),
+            evaluate: (env?.metrics ?? options.metrics)?.evaluate ?? (() => []),
+          }
+        : {
             define:
-              (env?.metrics ?? options.metrics)!.define ??
+              (env?.metrics ?? options.metrics)?.define ??
               (() => {
                 throw new Error("metrics.define is not configured in standalone mode");
               }),
             defineMany:
-              (env?.metrics ?? options.metrics)!.defineMany ??
+              (env?.metrics ?? options.metrics)?.defineMany ??
               (() => {
                 throw new Error("metrics.defineMany is not configured in standalone mode");
               }),
             record:
-              (env?.metrics ?? options.metrics)!.record ??
+              (env?.metrics ?? options.metrics)?.record ??
               (async () => {
                 throw new Error("metrics.record is not configured in standalone mode");
               }),
             evaluate:
-              (env?.metrics ?? options.metrics)!.evaluate ??
+              (env?.metrics ?? options.metrics)?.evaluate ??
               (() => {
                 throw new Error("metrics.evaluate is not configured in standalone mode");
               }),
-          }
-        : undefined,
+          },
       workspace: effectiveWorkspace,
+      ...(options.task ? { task: options.task } : {}),
+      ...(options.attemptNumber !== undefined ? { attemptNumber: options.attemptNumber } : {}),
+      ...(options.observations ? { observations: options.observations } : {}),
+      onProgress: (status) => {
+        options.onProgress?.(status);
+        options.onNotice?.(`[progress] ${status}`);
+      },
+      invokeAgentSession: async (sessionKey, target, envelope, callOpts, stepControl) => {
+        if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
+        const resolved = resolveCallable(callerOwner, target, preparedCatalog);
+        if (resolved.kind !== "prompt") {
+          throw new Error(`ctx.agent("${target}") requires a prompt agent target`);
+        }
+        return executePromptStep(
+          resolved.name,
+          formatExecutionInput(envelope),
+          callOpts,
+          stepControl,
+          sessionKey,
+          effectiveWorkspace.root,
+        );
+      },
+      closeAgentSessions: async () => {
+        agentSessionHistories.clear();
+      },
       reconciliation,
       reviseTask: env?.reviseTask ?? options.reviseTask,
       closeTask: env?.closeTask ?? options.closeTask,
@@ -1755,7 +1945,7 @@ export async function runDirectWorkflow<TInput = unknown>(
           return {
             kind: "agent" as const,
             invoke: async (callOpts, stepControl) =>
-              executePromptStep(target, promptTaskFromInput(input, target), callOpts, {
+              executePromptStep(target, formatExecutionInput(input), callOpts, {
                 ...stepControl,
                 tools: options.tools ?? stepControl.tools,
               }),
@@ -1828,7 +2018,7 @@ export type RunOptions<TInput = unknown> = Omit<
   models?: Record<string, ModelWithApiKey>;
 };
 
-export type RunResult<T = unknown> = CallableResult<T>;
+export type RunResult<T = unknown> = ExecutionResult<T>;
 
 export type TargetSummary = CallableDescriptor;
 
@@ -1996,6 +2186,24 @@ type CanonicalStandaloneRoute = {
 };
 
 
+type StandalonePersistedTask = {
+  version: 1;
+  target: string;
+  appId: string;
+  id: string;
+  generation: number;
+  attemptNumber: number;
+  outcome: string;
+  acceptance: string[];
+  input: unknown;
+  status: "running" | "done" | "parked" | "blocked" | "error" | "interrupted";
+  summary?: string;
+  facts: string[];
+  previousResult?: Record<string, unknown>;
+  conditions: TaskCondition[];
+  observations: Record<string, ConditionObservation>;
+};
+
 /**
  * Run any prompt agent, code procedure, or native CLI executor standalone—either
  * with positional `(target, input, options?)` or an options object `run(options)`—
@@ -2014,8 +2222,51 @@ export async function run<TInput = unknown>(
 ): Promise<RunResult> {
   const isPositional = typeof targetOrOptions === "string";
   const options: RunOptions<TInput> = isPositional ? maybeOptions : targetOrOptions;
-  const input = (isPositional ? maybeInput : targetOrOptions.input) as TInput;
-  const rawTarget = isPositional ? targetOrOptions : (options.target ?? "");
+  let input: unknown = isPositional ? maybeInput : targetOrOptions.input;
+  let rawTarget: string = isPositional ? targetOrOptions : (options.target ?? "");
+
+  const stateDir = options.stateDir ? resolve(options.stateDir) : undefined;
+  const stateFilePath = stateDir ? join(stateDir, "task.json") : undefined;
+  let persistedState: StandalonePersistedTask | undefined;
+  if (stateFilePath && existsSync(stateFilePath)) {
+    if (!options.resume) {
+      return Object.freeze({
+        status: "error",
+        summary: `State directory ${stateDir} already contains task.json; pass --resume to continue or choose a fresh --state-dir`,
+      });
+    }
+    try {
+      const parsed = JSON.parse(readFileSync(stateFilePath, "utf8")) as StandalonePersistedTask;
+      if (parsed && typeof parsed === "object" && parsed.version === 1) {
+        if (rawTarget.trim() && parsed.target && rawTarget.trim() !== parsed.target) {
+          return Object.freeze({
+            status: "error",
+            summary: `Cannot --resume target "${rawTarget.trim()}" from state directory saved for "${parsed.target}"`,
+          });
+        }
+        persistedState = parsed;
+        if (!rawTarget.trim() && parsed.target) rawTarget = parsed.target;
+        const emptyInput =
+          input === undefined ||
+          input === "" ||
+          (typeof input === "object" && input !== null && Object.keys(input as Record<string, unknown>).length === 0);
+        if (options.resume && emptyInput && parsed.input !== undefined) {
+          input = parsed.input as TInput;
+        }
+      }
+    } catch {
+      return Object.freeze({
+        status: "error",
+        summary: `Cannot --resume: task.json in ${stateDir} is corrupt or unreadable`,
+      });
+    }
+  }
+  if (options.resume && stateFilePath && !persistedState) {
+    return Object.freeze({
+      status: "error",
+      summary: `Cannot --resume: no saved task.json found in ${stateDir}`,
+    });
+  }
 
   const startedAt = Date.now();
   const cwd = resolve(options.cwd ?? process.cwd());
@@ -2078,16 +2329,61 @@ export async function run<TInput = unknown>(
   const agentsRoot = resolve(options.agentsRoot ?? globalAgentsRoot);
 
   const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
-  const ownsTempOutputRoot = !options.outputRoot;
-  const outputRoot = options.outputRoot ? resolve(options.outputRoot) : mkdtempSync(join(tmpdir(), "may-run-"));
-  const models = options.models ?? createModelRegistry();
+  const ownsTempOutputRoot = !options.outputRoot && !stateDir;
+  const outputRoot = options.outputRoot
+    ? resolve(options.outputRoot)
+    : stateDir
+      ? join(stateDir, "output")
+      : mkdtempSync(join(tmpdir(), "may-run-"));
+  const models = options.models ? { ...createModelRegistry(), ...options.models } : createModelRegistry();
+
+  const callerOwner = rawTarget.slice(0, rawTarget.indexOf("/"));
+  const attemptNumber = persistedState ? persistedState.attemptNumber + 1 : (options.attemptNumber ?? 1);
+  const observations: Record<string, ConditionObservation> = {
+    ...(persistedState?.observations ?? {}),
+    ...(options.observations ?? {}),
+  };
+
+  const rawInputValue: unknown = input;
+  const inputRecord =
+    rawInputValue && typeof rawInputValue === "object" && !Array.isArray(rawInputValue)
+      ? (rawInputValue as Record<string, unknown>)
+      : undefined;
+  const derivedOutcome =
+    persistedState?.outcome ??
+    (typeof inputRecord?.prompt === "string" && inputRecord.prompt.trim()
+      ? inputRecord.prompt.trim()
+      : typeof rawInputValue === "string" && rawInputValue.trim()
+        ? rawInputValue.trim()
+        : rawTarget);
+  const hasReconciliation = Boolean(options.reconciliation ?? options.context?.reconciliation);
+  const standaloneTask: WorkflowTaskView | undefined =
+    options.task ??
+    (stateDir || !hasReconciliation
+      ? {
+          appId: callerOwner && callerOwner !== "global" ? callerOwner : "standalone",
+          id: persistedState?.id ?? "standalone",
+          generation: persistedState?.generation ?? 1,
+          attemptNumber,
+          outcome: derivedOutcome,
+          acceptance: persistedState?.acceptance ?? [],
+          taskInput: inputRecord && "data" in inputRecord ? inputRecord.data : rawInputValue,
+          newInputs: [],
+          facts: persistedState?.facts ?? [],
+          ...(persistedState?.previousResult ? { previousResult: persistedState.previousResult } : {}),
+        }
+      : undefined);
 
   let cleanupConfirmed = false;
   try {
     const res = await runDirectWorkflow({
       ...options,
       ...(normalizedTarget ? { target: normalizedTarget } : {}),
-      input,
+      ...(stateDir ? { stateDir } : {}),
+      ...(standaloneTask ? { task: standaloneTask } : {}),
+      attemptNumber,
+      observations,
+      input: rawInputValue as TInput,
       deadlineAt,
       projectRoot,
       workRoot,
@@ -2101,7 +2397,7 @@ export async function run<TInput = unknown>(
       root: true,
       depth: 1,
       catalog: captured.catalog,
-      callerOwner: rawTarget.slice(0, rawTarget.indexOf("/")),
+      callerOwner,
       ...(options.tools ? { tools: options.tools } : {}),
     });
     cleanupConfirmed = res.report.cleanup.confirmed === true;
@@ -2111,12 +2407,55 @@ export async function run<TInput = unknown>(
         ? contribution.summary
         : contribution.reason
       : res.report.error?.message ?? (res.error instanceof Error ? res.error.message : String(res.error ?? res.status));
+    const finalStatus = contribution?.type ?? res.status;
+    if (contribution?.type === "done" && contribution.requests?.length) {
+      for (const req of contribution.requests) {
+        options.onNotice?.(`[request] ${req.appId} (${req.id})`);
+      }
+    }
+    if (stateDir && stateFilePath) {
+      mkdirSync(stateDir, { recursive: true });
+      const factObj =
+        contribution?.facts && typeof contribution.facts === "object" && !Array.isArray(contribution.facts)
+          ? (contribution.facts as Record<string, unknown>)
+          : undefined;
+      const parkedConditions = Array.isArray(factObj?.conditions) ? (factObj.conditions as TaskCondition[]) : [];
+      const domainFacts = Array.isArray(contribution?.facts)
+        ? contribution.facts.filter((f): f is string => typeof f === "string")
+        : Array.isArray(factObj?.domainFacts)
+          ? (factObj.domainFacts as string[])
+          : persistedState?.facts ?? [];
+      const prevResult =
+        contribution?.output && typeof contribution.output === "object" && !Array.isArray(contribution.output)
+          ? (contribution.output as Record<string, unknown>)
+          : persistedState?.previousResult;
+      const saved: StandalonePersistedTask = {
+        version: 1,
+        target: normalizedTarget,
+        appId: standaloneTask?.appId ?? "standalone",
+        id: standaloneTask?.id ?? "standalone",
+        generation: standaloneTask?.generation ?? 1,
+        attemptNumber,
+        outcome: derivedOutcome,
+        acceptance: [...(standaloneTask?.acceptance ?? [])],
+        input,
+        status: finalStatus === "blocked" && parkedConditions.length > 0 ? "parked" : finalStatus,
+        summary,
+        facts: domainFacts,
+        ...(prevResult ? { previousResult: prevResult } : {}),
+        conditions: finalStatus === "blocked" ? parkedConditions : [],
+        observations,
+      };
+      writeFileSync(stateFilePath, `${JSON.stringify(saved, null, 2)}\n`, "utf8");
+    }
     return Object.freeze({
       ...(res.started ? { id: res.report.executionId } : {}),
-      status: contribution?.type ?? res.status,
+      status: finalStatus,
       summary,
       ...(contribution?.output !== undefined ? { output: contribution.output } : {}),
       ...(contribution?.facts !== undefined ? { facts: contribution.facts } : {}),
+      ...(contribution?.type === "done" && contribution.requests !== undefined ? { requests: [...contribution.requests] } : {}),
+      ...(contribution?.type === "done" && contribution.response !== undefined ? { response: contribution.response } : {}),
     });
   } catch (err) {
     cleanupConfirmed =

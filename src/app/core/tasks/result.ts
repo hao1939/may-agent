@@ -24,6 +24,8 @@ export type TaskCapabilityRun = {
   /** Host provenance: a Task-blind public run explicitly returned done. */
   hostCompletion?: "finite-done";
   workspacePreparationFailed?: boolean;
+  workspaceFinalizationFailed?: boolean;
+  settlementFailed?: boolean;
 };
 
 /** Execution is over; retry only the fenced effects, never the executor. */

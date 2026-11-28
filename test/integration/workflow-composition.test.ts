@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import type { WorkflowEvent, WorkflowToolResult } from "../../src/lib/workflow.js";
-import { fakeModel } from "../fixtures/model.js";
 
 let testDir: string;
 let workflowDir: string;
@@ -184,75 +183,5 @@ describe("workflow composition: runWorkflow", () => {
     // Should have multiple workflow.started events (parent + sub)
     const starts = events.filter((e) => e.type === "workflow.started");
     expect(starts.length).toBe(2);
-  });
-
-  it("sub-workflow shares steering queue with parent", async () => {
-    // Write a sub that yields then calls runAgent (which checks steering)
-    writeWorkflow(
-      "sub-steerable.ts",
-      `
-      export const name = "sub-steerable";
-      export const description = "Sub that can be steered";
-      export async function execute(ctx) {
-        await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
-        await new Promise(resolve => setTimeout(resolve, 0));
-        await new Promise(resolve => setTimeout(resolve, 0));
-        const result = await ctx.call("global/coder", { prompt: "something" });
-        return ctx.done("should not reach");
-      }
-    `,
-    );
-
-    writeWorkflow(
-      "parent-steerable.ts",
-      `
-      export const name = "parent-steerable";
-      export const description = "Parent that delegates to steerable sub";
-      export async function execute(ctx) {
-        const result = await ctx.call("global/sub-steerable", { prompt: "task" });
-        return ctx.done("done");
-      }
-    `,
-    );
-
-    const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    manager.register({ name: "coder", description: "Coder", domain: "test", model: fakeModel(), tools: [] });
-    const runner = createWorkflowRunner({
-      manager,
-      workflowDir,
-      onEvent: (e) => events.push(e),
-    });
-
-    function waitForEvent(predicate: (e: WorkflowEvent) => boolean): Promise<void> {
-      return new Promise((resolve) => {
-        if (events.some(predicate)) {
-          resolve();
-          return;
-        }
-        const interval = setInterval(() => {
-          if (events.some(predicate)) {
-            clearInterval(interval);
-            resolve();
-          }
-        }, 1);
-      });
-    }
-
-    const execPromise = runner.run("parent-steerable", "task");
-
-    await waitForEvent((e) => e.type === "test.ready" && "data" in e && (e.data as { step?: string }).step === "ready-for-steering");
-
-    // Steer the parent — should propagate to sub-workflow since they share the queue
-    expect(runner.isRunning).toBe(true);
-    runner.steer("interrupt!");
-
-    const parsed = await execPromise;
-
-    // The interruption should propagate from sub-workflow through parent
-    expect(parsed.type).toBe("interrupted");
-    if (parsed.type === "interrupted") {
-      expect(parsed.steeringMessage).toBe("interrupt!");
-    }
   });
 });

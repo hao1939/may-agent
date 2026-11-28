@@ -152,7 +152,7 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
       listTasks: (input = {}) => {
         listReads.push(input.appId ?? "");
         if (readFailures.has("todo")) throw new Error("fixture todo unavailable");
-        const items = [...tasks.values()].filter((task) => task.humanAction && task.appId === input.appId);
+        const items = [...tasks.values()].filter((task) => task.humanAction && (!input.appId || task.appId === input.appId));
         return { items, total: items.length };
       },
       listApps: (appId) => [
@@ -1245,7 +1245,7 @@ describe("Telegram refresh lifecycle", () => {
       expect(restarted.sent).toHaveLength(incompleteBaseline);
 
       await restarted.command("/todo");
-      await waitFor(() => restarted.sent.some((send) => send.text.includes("Needs you for may")));
+      await waitFor(() => restarted.sent.some((send) => send.text.includes("Needs you across all Apps")));
 
       Object.assign(restarted.tasks.get("first")!, action(2, "Run the changed operator step."));
       restarted.wake("first");

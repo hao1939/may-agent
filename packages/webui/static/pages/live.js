@@ -1,28 +1,41 @@
-// ── Liveness View ────────────────────────────────────────────────────
+// ── Liveness & Unified Activity Timeline View ───────────────────────
 
 let livenessRefreshTimer = null;
 
-// Activity-timeline category filter. All categories enabled by default.
-// 'error' is an overlay: when off, status=error sessions are hidden
-// regardless of base category. When on, they render in their base color
-// (or red, if the base color is the error red itself).
-const TIMELINE_CATEGORIES = ['heartbeat', 'project', 'chat', 'workflow', 'other', 'error'];
+// Unified activity-timeline kind filter. All kinds enabled by default.
+// 'error' is an overlay: when off, status=error items are hidden
+// regardless of base kind; when on, failed/error runs render in high-contrast red.
+const TIMELINE_CATEGORIES = ['agent', 'codex', 'workflow', 'chat', 'human', 'heartbeat', 'other', 'error'];
+const TIMELINE_CATEGORY_LABELS = {
+  agent: 'agent turn',
+  codex: 'codex / cli',
+  workflow: 'workflow',
+  chat: 'chat',
+  human: 'human ◆',
+  heartbeat: 'heartbeat',
+  other: 'other',
+  error: 'error (any)',
+};
 const TIMELINE_CATEGORY_COLORS = {
-  heartbeat: 'var(--green)', project: 'var(--purple)', chat: 'var(--accent)',
-  workflow: 'var(--yellow)', other: 'var(--fg2)', error: 'var(--red)',
+  agent: 'var(--purple)',
+  codex: '#39c5cf',
+  workflow: 'var(--yellow)',
+  chat: 'var(--accent)',
+  human: 'var(--green)',
+  heartbeat: '#2ea043',
+  other: 'var(--fg2)',
+  error: 'var(--red)',
 };
 const TIMELINE_CATEGORY_FILTER = new Set(TIMELINE_CATEGORIES);
 
-// Activity-timeline window in hours. Operator-selectable from the legend.
-// Backend clamps to 1..72. Defaults to 4h to match the original behavior.
+// Activity-timeline window in hours & swimlane grouping ('app' | 'agent').
 const TIMELINE_WINDOW_OPTIONS = [4, 8, 12, 24, 48];
 let livenessHours = 4;
+let timelineGroupBy = 'app';
 
 function toggleTimelineCategory(cat) {
   if (TIMELINE_CATEGORY_FILTER.has(cat)) {
     TIMELINE_CATEGORY_FILTER.delete(cat);
-    // Don't allow leaving the filter empty — auto-reset to all-on if the
-    // user accidentally removes the last enabled chip.
     if (TIMELINE_CATEGORY_FILTER.size === 0) {
       for (const c of TIMELINE_CATEGORIES) TIMELINE_CATEGORY_FILTER.add(c);
     }
@@ -35,6 +48,12 @@ function toggleTimelineCategory(cat) {
 function setTimelineHours(h) {
   if (livenessHours === h) return;
   livenessHours = h;
+  loadLiveness();
+}
+
+function setTimelineGroupBy(mode) {
+  if (timelineGroupBy === mode) return;
+  timelineGroupBy = mode;
   loadLiveness();
 }
 
@@ -125,7 +144,119 @@ function shortMetricLabel(metric, project) {
 function scheduleLivenessRefresh() {
   if (typeof currentTab !== 'undefined' && currentTab !== 'live') return;
   if (livenessRefreshTimer) clearTimeout(livenessRefreshTimer);
-  livenessRefreshTimer = setTimeout(() => { loadLiveness(); loadWorkflowOverview(); loadOverviewTasks(); }, 500);
+  livenessRefreshTimer = setTimeout(() => {
+    if (typeof loadTopDownOverview === 'function') loadTopDownOverview();
+    loadLiveness();
+    loadWorkflowOverview();
+    loadOverviewTasks();
+  }, 500);
+}
+
+function formatClockShort(ts) {
+  try {
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  } catch {
+    return '';
+  }
+}
+
+function renderTimelineRuler(since, now, windowHours) {
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(frac => {
+    const ts = Math.round(since + (now - since) * frac);
+    const hoursBack = windowHours * (1 - frac);
+    const rel = frac === 1 ? 'now' : `-${Number.isInteger(hoursBack) ? hoursBack : hoursBack.toFixed(1)}h`;
+    const clock = formatClockShort(ts);
+    return `<span class="timeline-tick" style="left:${frac * 100}%">${esc(rel)}${clock ? ` · ${esc(clock)}` : ''}</span>`;
+  }).join('');
+  return `<div class="heartbeat-row timeline-ruler-row" aria-hidden="true">
+    <div class="heartbeat-agent"></div>
+    <div class="timeline-ruler">${ticks}</div>
+    <div class="heartbeat-last"></div>
+  </div>`;
+}
+
+function renderTimelineAlertRail(alertEvents, since, now, span) {
+  if (!Array.isArray(alertEvents) || !alertEvents.length) return '';
+  const pins = [];
+  for (const ev of alertEvents) {
+    const href = `/metrics/${encodeURIComponent(ev.metricId)}`;
+    if (ev.createdAt && ev.createdAt >= since && ev.createdAt <= now) {
+      const left = Math.max(0.5, Math.min(99.2, ((ev.createdAt - since) / span) * 100));
+      const p1 = ev.priority === 'P0' || ev.priority === 'P1';
+      pins.push(`<a class="timeline-pin alert-breach ${p1 ? 'p1' : ''}" href="${attrEsc(href)}" style="left:${left.toFixed(2)}%" title="${attrEsc(`Alert opened · ${ev.name} (${ev.priority}) · ${formatAgo(ev.createdAt)}`)}">▲</a>`);
+    }
+    if (ev.resolvedAt && ev.resolvedAt >= since && ev.resolvedAt <= now) {
+      const left = Math.max(0.5, Math.min(99.2, ((ev.resolvedAt - since) / span) * 100));
+      pins.push(`<a class="timeline-pin alert-resolved" href="${attrEsc(href)}" style="left:${left.toFixed(2)}%" title="${attrEsc(`Alert resolved · ${ev.name} · ${formatAgo(ev.resolvedAt)}`)}">✓</a>`);
+    }
+  }
+  if (!pins.length) return '';
+  return `<div class="heartbeat-row timeline-alert-rail">
+    <div class="heartbeat-agent"><a href="/metrics" class="lane-link">Alerts</a><span class="lane-count-pill warn">${pins.length}</span></div>
+    <div class="heartbeat-track">${pins.join('')}</div>
+    <div class="heartbeat-last">events</div>
+  </div>`;
+}
+
+function renderSwimlaneRow(lane, since, now, span, filter, showError) {
+  const items = Array.isArray(lane.items) ? lane.items : [];
+  const visibleItems = items.filter(item => {
+    const k = item.kind || 'other';
+    if (item.status === 'error' || item.status === 'blocked') return showError && filter.has(k);
+    return filter.has(k);
+  });
+
+  const barsHtml = visibleItems.map(item => {
+    const startClamped = Math.max(since, item.startedAt || since);
+    const endRaw = item.status === 'running' ? now : (item.endedAt || item.startedAt || startClamped);
+    const endClamped = Math.max(startClamped, Math.min(now, endRaw));
+    const left = Math.max(0, Math.min(99.2, ((startClamped - since) / span) * 100));
+    const durMs = Math.max(0, endRaw - (item.startedAt || startClamped));
+    const durLabel = durMs >= 1000 ? formatAgeCompact(durMs) : '<1s';
+    const tip = [
+      lane.label,
+      item.agent && item.agent !== lane.label ? item.agent : '',
+      item.label || item.kind,
+      item.detail || '',
+      item.status || '',
+      item.isPin ? '' : durLabel,
+      formatAgo(item.startedAt),
+    ].filter(Boolean).join(' · ');
+
+    if (item.isPin) {
+      return `<a class="timeline-pin kind-${esc(item.kind || 'human')}" href="${attrEsc(item.href || '/projects')}" style="left:${left.toFixed(2)}%" title="${attrEsc(tip)}">◆</a>`;
+    }
+
+    const width = Math.max(0.45, Math.min(100 - left, ((endClamped - startClamped) / span) * 100));
+    const errCls = item.status === 'error' ? ' error' : item.status === 'blocked' ? ' blocked' : '';
+    const runCls = item.status === 'running' ? ' running' : '';
+    const convCls = item.status === 'converged' ? ' converged' : '';
+    const style = `left:${left.toFixed(2)}%;width:${width.toFixed(2)}%`;
+
+    if (item.sessionId) {
+      return `<span class="heartbeat-dot timeline-bar kind-${esc(item.kind || 'agent')} cat-${esc(item.legacyCategory || 'other')}${errCls}${runCls}${convCls}" style="${style}" title="${attrEsc(tip)}" onclick="navigateToSession(${jsStringAttr(item.sessionId)})"></span>`;
+    }
+    return `<a class="timeline-bar kind-${esc(item.kind || 'workflow')}${errCls}${runCls}${convCls}" href="${attrEsc(item.href || '/projects')}" style="${style}" title="${attrEsc(tip)}"></a>`;
+  }).join('');
+
+  const subHtml = lane.sublabel ? `<span class="lane-sublabel">${esc(lane.sublabel)}</span>` : '';
+  const countBadge = lane.totalCount > 0
+    ? `<span class="lane-count-pill ${lane.errorCount > 0 ? 'err' : ''}">${visibleItems.length}</span>`
+    : '';
+  const labelHtml = lane.href
+    ? `<a class="lane-link" href="${attrEsc(lane.href)}">${esc(lane.label)}</a>`
+    : `<span>${esc(lane.label)}</span>`;
+  const rightHtml = lane.runningCount > 0
+    ? `<span class="timeline-running-pill">● ${lane.runningCount} active</span>`
+    : esc(formatAgo(lane.lastActivityAt));
+
+  return `<div class="heartbeat-row ${lane.totalCount === 0 ? 'idle-lane' : ''}">
+    <div class="heartbeat-agent" title="${attrEsc(`${lane.label}${lane.sublabel ? ' (' + lane.sublabel + ')' : ''} · ${lane.totalCount} items`)}">
+      <span class="lane-title-wrap">${labelHtml}${subHtml}</span>${countBadge}
+    </div>
+    <div class="heartbeat-track">${barsHtml}</div>
+    <div class="heartbeat-last">${rightHtml}</div>
+  </div>`;
 }
 
 async function loadLiveness() {
@@ -138,11 +269,11 @@ async function loadLiveness() {
     if (!res.ok) throw new Error(data.error || 'Liveness read failed');
     const summary = data.summary || {};
     const agents = data.agents || [];
-    // Window the backend actually used (it clamps 1..72). Fall back to
-    // local livenessHours if absent (older builds).
+    const timeline = data.timeline || null;
     const windowHours = Number(summary.windowHours) || livenessHours;
-    const since = Number(summary.windowSince) || (Date.now() - windowHours * 60 * 60 * 1000);
-    const span = Date.now() - since;
+    const now = Number(summary.windowEnd) || Date.now();
+    const since = Number(summary.windowSince) || (now - windowHours * 60 * 60 * 1000);
+    const span = Math.max(1, now - since);
     const alerts = data.alerts || [];
     const visibleAlerts = alerts.slice(0, 4);
     const windowLabel = windowHours === 1 ? '1h'
@@ -150,124 +281,180 @@ async function loadLiveness() {
       : windowHours === 48 ? '2 days'
       : windowHours + 'h';
 
-    let html = `<h2>
-      <span>System liveness</span>
-      <span class="subtle">${summary.activeAgentsInWindow || 0} agents active in ${esc(windowLabel)} · ${summary.activeSessions || 0} active</span>
-      <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : ''}" onclick="routeTo('/metrics')" title="Alert state is not overall health">${summary.openAlertsTruncated ? 'More than ' + summary.openAlerts + ' open alerts' : (summary.openAlerts || 0) > 0 ? summary.openAlerts + ' open alerts' : 'No open alerts'}${summary.openAlertsTruncated || summary.openAlerts > visibleAlerts.length ? ' · showing newest ' + visibleAlerts.length : ''}</span>
-    </h2>`;
-    html += '<div id="liveness-measurement-problems" class="liveness-section">Loading measurement coverage…</div>';
+    const activeRunning = summary.activeRunning ?? summary.activeSessions ?? 0;
+    const activeSummaryLabel = summary.activeAppsInWindow != null
+      ? `${summary.activeAppsInWindow} Apps · ${summary.activeAgentsInWindow || 0} agents active in ${windowLabel} · ${activeRunning} running`
+      : `${summary.activeAgentsInWindow || 0} agents active in ${windowLabel} · ${activeRunning} active`;
 
-    // Agent contact strip — Telegram-style entry points. One tile per
-    // configured agent: name + status dot + last-session-age. Click to
-    // open #/agents/<name> chat. Stale agents (no session in 4h) are
-    // muted but still clickable — you can wake them by sending a message.
-    html += `<div class="liveness-section" style="margin:8px 0 12px"><h3 style="font-size:11px;color:var(--fg2);margin:0 0 6px;display:flex;align-items:center;gap:8px">Talk to an agent <a href="/agents" style="color:var(--accent);text-decoration:none;font-size:10px">see all →</a></h3><div class="agent-contact-strip" style="display:flex;flex-wrap:wrap;gap:4px">`;
+    const badgeText = summary.openAlertsTruncated
+      ? 'More than ' + summary.openAlerts + ' open alerts'
+      : (summary.openAlerts || 0) > 0
+        ? summary.openAlerts + ' open alerts'
+        : 'No open alerts';
+    const badgeSuffix = summary.openAlertsTruncated || summary.openAlerts > visibleAlerts.length
+      ? ' · showing newest ' + visibleAlerts.length
+      : '';
+
+    let html = `<div class="liveness-top-bar">
+      <div class="liveness-title-group">
+        <h2>Live Activity &amp; Pulse</h2>
+        <span class="subtle">${esc(activeSummaryLabel)}</span>
+      </div>
+      <a class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : 'healthy'}" href="/metrics" title="Alert state is not overall health">${esc(badgeText + badgeSuffix)}</a>
+    </div>`;
+
+    // Unified Open Alerts Strip (only expanded when open alerts exist; merges Scope/Owner/Status + resolve action).
+    if (visibleAlerts.length > 0) {
+      html += `<div class="liveness-section" style="margin:0 0 12px" data-active-alerts><div class="liveness-list">`;
+      for (const alert of visibleAlerts) {
+        const scopeLabel = alert.scope?.kind === 'app' ? `App: ${alert.scope.appId}` : 'Host';
+        const scopeClass = alert.scope?.kind === 'app' ? 'app' : 'host';
+        const ownerLabel = alert.declaredOwner || alert.owner || 'system:host';
+        const declText = alert.declaredHandler
+          ? `Owner: ${ownerLabel} · Handler: ${alert.declaredHandler}`
+          : `Owner: ${ownerLabel}`;
+        const statusText = alert.handlingStatus || 'No recorded handling';
+        const taskLink = alert.linkedTask
+          ? ` · <a href="/projects/${encodeURIComponent(alert.linkedTask.appId + '.app')}/tasks?appId=${encodeURIComponent(alert.linkedTask.appId)}&task=${encodeURIComponent(alert.linkedTask.taskId)}">Task <code>${esc(alert.linkedTask.taskId)}</code></a>`
+          : '';
+        const resolveBtn = alert.alertId
+          ? `<button title="Resolve alert" onclick="verbResolveAlert(${Number(alert.alertId)}, event)" class="alert-resolve-btn">resolve</button>`
+          : '';
+        html += `<div class="liveness-item liveness-alert ${(alert.priority === 'P0' || alert.priority === 'P1') ? 'p1' : ''}">
+          <div class="liveness-alert-head">
+            <div class="td-alert-main">
+              <span class="td-scope-tag ${scopeClass}">${esc(scopeLabel)} · ${esc(declText)}</span>
+              <a href="/metrics/${encodeURIComponent(alert.metricId)}"><strong>${esc(alert.name || alert.metricId)}</strong></a>
+              <span class="meta">· ${esc(alert.priority || 'P2')} · ${esc(formatAgo(alert.createdAt))}</span>
+            </div>
+            <div class="td-alert-status">
+              <span class="td-alert-handler">${esc(statusText)}</span>${taskLink}
+              ${resolveBtn}
+            </div>
+          </div>
+          <div class="health-note" style="margin-top:3px">${esc(alert.message || '')}</div>
+          ${renderAlertJudgment(alert)}
+        </div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    // Compact Agent quick-chat strip.
+    const agentLanesByName = new Map((timeline?.agentLanes || []).map(l => [l.id, l]));
+    html += `<div class="liveness-section agent-strip-row"><span class="agent-strip-label">Talk to agent:</span><div class="agent-contact-strip">`;
     for (const agent of agents) {
-      const ageMs = agent.lastSessionAt ? (Date.now() - agent.lastSessionAt) : null;
-      const stale = ageMs == null || ageMs > 4 * 3600 * 1000;
-      const dotColor = stale ? 'var(--fg2)' : (agent.lastStatus === 'error' ? 'var(--red)' : 'var(--green)');
-      const ageLabel = ageMs == null ? 'no recent session' : formatAgo(agent.lastSessionAt);
-      html += `<button class="agent-tile" onclick="routeTo('/agents/${esc(agent.name)}')" title="Open chat with ${esc(agent.name)} — ${esc(ageLabel)}" style="display:flex;align-items:center;gap:5px;padding:3px 9px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;color:var(--fg);cursor:pointer;font-size:12px;${stale ? 'opacity:0.55' : ''}">
-        <span style="color:${dotColor};font-size:9px">●</span>
-        <span>${esc(agent.name)}</span>
+      const agLane = agentLanesByName.get(agent.name);
+      const lastTs = agLane?.lastActivityAt ?? agent.lastSessionAt ?? null;
+      const runningNow = (agLane?.runningCount || 0) > 0;
+      const hasErr = (agLane?.errorCount || 0) > 0 || agent.lastStatus === 'error';
+      const stale = !runningNow && (lastTs == null || (now - lastTs) > windowHours * 3600 * 1000);
+      const dotColor = hasErr ? 'var(--red)' : runningNow ? '#39c5cf' : stale ? 'var(--fg2)' : 'var(--green)';
+      const ageLabel = runningNow ? 'running now' : lastTs == null ? 'idle' : formatAgo(lastTs);
+      html += `<button type="button" class="agent-tile ${stale ? 'stale' : ''}" onclick="routeTo('/agents/${esc(agent.name)}')" title="Open ${esc(agent.name)} — ${esc(ageLabel)}">
+        <span style="color:${dotColor};font-size:8px">●</span><span>${esc(agent.name)}</span>
       </button>`;
     }
-    html += `</div></div>`;
+    html += `<a href="/agents" class="agent-strip-more">all agents →</a></div></div>`;
 
-    // Timeline as the dominant element (full width, screen-1 layout).
-    html += `<div class="liveness-section liveness-timeline"><h3 style="display:flex;align-items:center;gap:10px;justify-content:space-between"><span>Activity timeline, last ${esc(windowLabel)}</span><span class="heartbeat-legend" style="margin:0">`;
-    // Window selector (chips, same look as category chips).
-    for (const h of TIMELINE_WINDOW_OPTIONS) {
-      const on = h === windowHours;
-      const lbl = h === 24 ? '1d' : h === 48 ? '2d' : h + 'h';
-      html += `<span class="chip${on ? '' : ' off'}" onclick="setTimelineHours(${h})" title="Show last ${esc(lbl)}" style="padding:1px 7px;font-size:10px">${esc(lbl)}</span>`;
-    }
-    html += `</span></h3>`;
-    // Interactive legend — click a chip to toggle that category.
+    // Unified Activity Timeline (Task Attempts + Codex CLI + Workflows + Sessions + Human Inputs + Alerts).
+    const hasAppLanes = Array.isArray(timeline?.appLanes) && timeline.appLanes.length > 0;
+    const effectiveGroup = timelineGroupBy === 'app' && hasAppLanes ? 'app' : 'agent';
+    html += `<div class="liveness-section liveness-timeline">
+      <div class="timeline-head-bar">
+        <h3>Activity timeline · last ${esc(windowLabel)}</h3>
+        <div class="timeline-controls">
+          ${hasAppLanes ? `<span class="timeline-mode-switch" role="group" aria-label="Group timeline lanes">
+            <button type="button" class="chip ${effectiveGroup === 'app' ? '' : 'off'}" onclick="setTimelineGroupBy('app')">By App</button>
+            <button type="button" class="chip ${effectiveGroup === 'agent' ? '' : 'off'}" onclick="setTimelineGroupBy('agent')">By Agent</button>
+          </span>` : ''}
+          <span class="heartbeat-legend" style="margin:0">
+            ${TIMELINE_WINDOW_OPTIONS.map(h => {
+              const on = h === windowHours;
+              const lbl = h === 24 ? '1d' : h === 48 ? '2d' : h + 'h';
+              return `<button type="button" class="chip${on ? '' : ' off'}" onclick="setTimelineHours(${h})" title="Show last ${esc(lbl)}" style="padding:1px 7px;font-size:10px">${esc(lbl)}</button>`;
+            }).join('')}
+          </span>
+        </div>
+      </div>`;
+
     html += `<div class="heartbeat-legend">`;
     for (const cat of TIMELINE_CATEGORIES) {
       const on = TIMELINE_CATEGORY_FILTER.has(cat);
-      const label = cat === 'error' ? 'error (any kind)' : cat;
-      html += `<span class="chip${on ? '' : ' off'}" onclick="toggleTimelineCategory('${cat}')" title="Click to ${on ? 'hide' : 'show'} ${esc(cat)} sessions"><span class="swatch" style="background:${TIMELINE_CATEGORY_COLORS[cat]}"></span>${esc(label)}</span>`;
+      const label = TIMELINE_CATEGORY_LABELS[cat] || cat;
+      html += `<span class="chip${on ? '' : ' off'}" onclick="toggleTimelineCategory('${cat}')" title="Click to ${on ? 'hide' : 'show'} ${esc(label)}"><span class="swatch" style="background:${TIMELINE_CATEGORY_COLORS[cat]}"></span>${esc(label)}</span>`;
     }
-    html += `<span class="note">— ring = currently running</span></div>`;
+    html += `<span class="note">bar width = duration · glow = running · green tip = converged</span></div>`;
+
     if (summary.activityRowsTruncated) {
-      html += `<div class="note" style="margin:4px 0 8px;color:var(--yellow)">Showing the newest ${summary.activityRows || summary.rowLimit || 2000} sessions in this window.</div>`;
+      const srcLabel = Array.isArray(summary.truncatedSources) && summary.truncatedSources.length
+        ? ` (truncated: ${summary.truncatedSources.join(', ')})`
+        : '';
+      html += `<div class="note" style="margin:4px 0 8px;color:var(--yellow)">Showing up to ${summary.activityRows || summary.rowLimit || 2000} recent timeline items in this window${esc(srcLabel)}.</div>`;
     }
 
-    // Snapshot the filter for this render pass so dots and per-row counts
-    // agree even if the user toggles mid-render (next click triggers a new
-    // loadLiveness anyway).
     const filter = TIMELINE_CATEGORY_FILTER;
     const showError = filter.has('error');
 
-    if (!agents.length) {
-      html += `<div class="liveness-item">No configured agents found.</div>`;
+    // Fallback if older response has no `timeline` object.
+    const rawLanes = timeline
+      ? (effectiveGroup === 'app' ? timeline.appLanes : timeline.agentLanes)
+      : agents.map(a => ({
+          id: a.name,
+          label: a.name,
+          sublabel: null,
+          href: '/agents/' + encodeURIComponent(a.name),
+          runningCount: (a.sessions || []).filter(s => s.status === 'running').length,
+          errorCount: (a.sessions || []).filter(s => s.status === 'error').length,
+          totalCount: (a.sessions || []).length,
+          lastActivityAt: a.lastSessionAt,
+          items: (a.sessions || []).map(s => ({
+            kind: s.category === 'project' ? 'agent' : (s.category || 'other'),
+            legacyCategory: s.category || 'other',
+            status: s.status === 'error' ? 'error' : s.status === 'running' ? 'running' : 'done',
+            sessionId: s.sessionId,
+            href: '/sessions/' + encodeURIComponent(s.sessionId),
+            label: s.source || s.category || 'session',
+            startedAt: s.startedAt,
+            endedAt: s.endedAt,
+          })),
+        }));
+
+    if (!rawLanes || !rawLanes.length) {
+      html += `<div class="liveness-item">No configured Apps or agents found.</div>`;
     } else {
-      for (const agent of agents) {
-        const sessions = agent.sessions || [];
-        // Apply category filter for this row's dots. Error is an overlay:
-        // when off, error-status dots are hidden entirely; when on, they
-        // render only if their base category is also enabled.
-        const visibleSessions = sessions.filter((s) => {
-          const cat = s.category || 'other';
-          if (s.status === 'error') return showError && filter.has(cat);
-          return filter.has(cat);
-        });
-        // Compact per-category counts in the agent label tooltip so hovering
-        // tells the operator the activity mix without expanding rows.
-        const cc = agent.categoryCounts || {};
-        const mixTip = ['heartbeat','project','chat','workflow','other']
-          .filter((k) => (cc[k] || 0) > 0)
-          .map((k) => `${k}:${cc[k]}`)
-          .join(' ');
-        const filterTip = filter.size < TIMELINE_CATEGORIES.length
-          ? ` · showing ${visibleSessions.length}/${sessions.length}`
-          : '';
-        html += `<div class="heartbeat-row">
-          <div class="heartbeat-agent" title="${esc(agent.name)} — ${esc(mixTip || 'no activity')}${esc(filterTip)}">${esc(agent.name)}</div>
-          <div class="heartbeat-track">`;
-        for (const s of visibleSessions) {
-          const left = Math.max(0, Math.min(99, ((s.startedAt - since) / span) * 100));
-          const cat = `cat-${s.category || 'other'}`;
-          const errCls = s.status === 'error' ? ' error' : '';
-          const runCls = s.status === 'running' ? ' running' : '';
-          const label = s.category === 'heartbeat' ? 'heartbeat'
-                      : s.category === 'project' ? `project ${s.projectId || ''}`.trim()
-                      : s.category === 'chat' ? 'chat'
-                      : s.category === 'workflow' ? (s.source || 'workflow')
-                      : (s.source || 'session');
-          html += `<span class="heartbeat-dot ${cat}${errCls}${runCls}" style="left:${left}%" title="${esc(agent.name)} · ${esc(label)} · ${esc(s.status || '')} · ${formatAgo(s.startedAt)}" onclick="navigateToSession(${jsStringAttr(s.sessionId)})"></span>`;
-        }
-        html += `</div><div class="heartbeat-last" title="Last session in window">${formatAgo(agent.lastSessionAt)}</div></div>`;
+      html += renderTimelineRuler(since, now, windowHours);
+      html += renderTimelineAlertRail(timeline?.alertEvents || [], since, now, span);
+
+      const activeLanes = rawLanes.filter(l => l.totalCount > 0 || l.runningCount > 0);
+      const idleLanes = rawLanes.filter(l => l.totalCount === 0 && l.runningCount === 0);
+      const foldIdle = activeLanes.length > 0 && (effectiveGroup === 'agent' ? idleLanes.length > 0 : idleLanes.length > 2);
+
+      const primaryLanes = foldIdle ? activeLanes : rawLanes;
+      for (const lane of primaryLanes) {
+        html += renderSwimlaneRow(lane, since, now, span, filter, showError);
+      }
+      if (foldIdle && idleLanes.length > 0) {
+        html += `<details class="idle-lanes-drawer">
+          <summary>Show ${idleLanes.length} idle ${effectiveGroup === 'app' ? 'Apps' : 'agents'} (0 activity in ${esc(windowLabel)})</summary>
+          <div style="margin-top:6px">${idleLanes.map(lane => renderSwimlaneRow(lane, since, now, span, filter, showError)).join('')}</div>
+        </details>`;
       }
     }
     html += `</div>`;
 
-    html += `<div class="liveness-section" style="margin-top:16px"><h3>Open alerts</h3><div class="liveness-list">`;
-    if (alerts.length === 0) {
-      html += `<div class="liveness-item">No open metric alerts.</div>`;
-    } else {
-      for (const alert of visibleAlerts) {
-        const resolveBtn = alert.alertId
-          ? `<button title="Resolve" onclick="verbResolveAlert(${Number(alert.alertId)}, event)" style="background:none;border:1px solid var(--border);color:var(--fg2);border-radius:3px;padding:1px 6px;font-size:11px;cursor:pointer;float:right">resolve</button>`
-          : '';
-        html += `<div class="liveness-item liveness-alert">
-          <div class="meta">${formatAgo(alert.createdAt)} · <strong>${esc(alert.metricId)}</strong> · ${esc(alert.priority || 'P2')} ${resolveBtn}</div>
-          <div>${esc(alert.message || '')}</div>
-          ${renderAlertJudgment(alert)}
-        </div>`;
-      }
-    }
-    html += `</div></div>`;
-
-    // — Projects panel — sorted by metric risk, then activity —
-    html += `<div class="liveness-section" style="margin-top:16px"><h3>Project metric health</h3><div class="liveness-list" id="liveness-projects">Loading…</div></div>`;
+    // Collapsible Diagnostics Drawer (houses measurement coverage & project metric matrix without duplicating App cards).
+    html += `<details class="liveness-diagnostics" id="liveness-diagnostics">
+      <summary id="liveness-diagnostics-summary">Diagnostics · Measurement coverage &amp; project metric matrix</summary>
+      <div class="liveness-diagnostics-body">
+        <div id="liveness-measurement-problems" class="liveness-section">Loading measurement coverage…</div>
+        <div class="liveness-section" style="margin-top:12px"><h3>Project metric health</h3><div class="liveness-list" id="liveness-projects">Loading…</div></div>
+      </div>
+    </details>`;
 
     panel.innerHTML = html;
     void renderLivenessProjects();
   } catch (e) {
-    panel.innerHTML = `<h2>System liveness</h2><div class="liveness-item">Failed to load liveness: ${esc(e.message || String(e))}</div>`;
+    panel.innerHTML = `<h2>Live Activity &amp; Pulse</h2><div class="liveness-item">Failed to load liveness: ${esc(e.message || String(e))}</div>`;
   }
 }
 
@@ -290,6 +477,7 @@ async function renderLivenessProjects() {
     const allMetrics = Array.isArray(metricData.metrics) ? metricData.metrics : [];
     const metricsIncomplete = metricData.truncated === true;
     const problems = allMetrics.filter(m => m.freshness !== 'fresh' || m.collectionFailure?.afterLastSample);
+    const diagSummary = document.getElementById('liveness-diagnostics-summary');
     if (coverage) coverage.innerHTML = `<h3>Measurement coverage</h3><p class="health-note">${problems.length} missing, stale or uncertain observations among ${allMetrics.length} definitions${metricData.truncated ? ' (list limited)' : ''}. No alerts is not proof of health.</p>
       ${problems.slice(0, 5).map(m => `<div class="health-note"><a href="/metrics/${encodeURIComponent(m.id)}">${esc(m.name || m.id)}</a> · ${esc(metricObservationLabel(m))}${m.collectionFailure?.afterLastSample ? ' · ' + esc(m.collectionFailure.reason) : ''}</div>`).join('')}
       ${problems.length > 5 ? '<a href="/metrics">Inspect all measurements</a>' : ''}`;
@@ -312,6 +500,10 @@ async function renderLivenessProjects() {
       a.topPriority - b.topPriority ||
       (b.project.updatedAt || 0) - (a.project.updatedAt || 0)
     );
+    if (diagSummary) {
+      const projBreaches = enriched.reduce((sum, item) => sum + item.alertCount, 0);
+      diagSummary.textContent = `Diagnostics · ${allMetrics.length} metrics (${problems.length} stale/missing) · ${enriched.length} projects${projBreaches ? ' (' + projBreaches + ' breached)' : ''}`;
+    }
     if (enriched.length === 0) { el.innerHTML = `<div class="liveness-item">No active projects.</div>`; return; }
     const now = Date.now();
     let html = '';

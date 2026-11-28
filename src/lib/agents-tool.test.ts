@@ -63,7 +63,7 @@ describe("canonical agents list/call", () => {
     expect(result).toEqual({ id: "s_child", status: "done", summary: "reviewed", output: { verdict: "accept" }, facts: ["finish committed"] });
     expect(dispatched).toEqual({
       name: "reviewer",
-      task: 'Review\n\nAssignment data (JSON):\n{\n  "ref": "HEAD"\n}',
+      task: 'Review\n\nInput data:\n{\n  "ref": "HEAD"\n}',
       requireFinish: true,
     });
     expect((await callTool(tool, { action: "call", agent: "alpha-reviewer", input: { prompt: "legacy alias" } })).id).toBeUndefined();

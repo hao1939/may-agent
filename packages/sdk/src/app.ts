@@ -51,6 +51,9 @@ export type {
   AppWorkflowContext as WorkflowContext,
   CallOptions,
   CliCallFacts,
+  CommandReceipt,
+  ConditionObservation,
+  DoneOptions,
   ExecutionResult,
   ExecutionView,
   Logger,
@@ -84,8 +87,13 @@ export type {
   TaskView,
   TaskWorkload,
   TaskWorkloadOptions,
+  WorkflowAgentSession,
+  WorkflowExecOptions,
   WorkflowInput,
   WorkflowMetricCapability,
+  WorkflowParkInput,
+  WorkflowTaskView,
+  WorkflowWorkspace,
 } from "./workflow.js";
 
 /** Canonical envelope for durable input addressed to an App. */

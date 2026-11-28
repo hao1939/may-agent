@@ -12,10 +12,10 @@ import {
   workflowFinishRecoveryPrompt,
 } from "@may-agent/sdk/runtime";
 
-function abortedFinish(arguments_: unknown, id = "finish-captured") {
+function abortedFinish(arguments_: unknown, id = "finish-captured", name = "finish") {
   return {
     role: "assistant",
-    content: [{ type: "toolCall", id, name: "finish", arguments: arguments_ }],
+    content: [{ type: "toolCall", id, name, arguments: arguments_ }],
     stopReason: "aborted",
     errorMessage: RESPONSES_STREAM_TERMINAL_ERROR,
   } as any;
@@ -78,6 +78,37 @@ describe("workflow finish recovery", () => {
       role: "toolResult",
       toolCallId: "finish-captured",
       isError: false,
+    });
+  });
+
+  it.each([true, false])("validates a captured flat reconciliation with finish first (valid: %s)", async (valid) => {
+    const output = { state: "converged", summary: "Verified original outcome", facts: [] };
+    const messages = [abortedFinish(valid ? output : { ...output, state: "unsupported" }, "flat-captured", "reconcile")];
+    let finishExecutions = 0;
+    let reconcileExecutions = 0;
+    const finish = finishTool(async () => {
+      finishExecutions++;
+      return { content: [{ type: "text", text: "Wrong completion tool" }] };
+    });
+    const reconcile: AgentTool = {
+      ...finish,
+      name: "reconcile",
+      parameters: structuredClone(taskAgentResultSchema),
+      execute: async (_id, params) => {
+        reconcileExecutions++;
+        expect(params).toEqual(output);
+        return { content: [{ type: "text", text: "Accepted exact reconciliation" }] };
+      },
+    };
+    const recovery = await recoverCapturedWorkflowFinish({
+      sessionId: `flat-reconciliation-${valid}`, messages, tools: [finish, reconcile],
+      reason: RESPONSES_STREAM_TERMINAL_ERROR,
+    });
+    expect(recovery.disposition).toBe(valid ? "recovered" : "rejected");
+    expect(reconcileExecutions).toBe(valid ? 1 : 0);
+    expect(finishExecutions).toBe(0);
+    expect(messages.at(-1)).toMatchObject({
+      role: "toolResult", toolCallId: "flat-captured", toolName: "reconcile", isError: !valid,
     });
   });
 

@@ -13,6 +13,12 @@ let humanInterface = {};
 const humanInterfaceReady = fetch('/api/interface').then(async response => {
   if (!response.ok) throw new Error('Interface configuration unavailable');
   humanInterface = await response.json();
+  const entry = document.getElementById('may-nav');
+  if (entry && humanInterface.appId && humanInterface.agent) {
+    entry.hidden = false;
+    entry.dataset.route = '/agents/' + encodeURIComponent(humanInterface.agent);
+    entry.title = 'Talk with May (configured interface)';
+  }
 });
 
 // ── State ─────────────────────────────────────────────────────────────
@@ -182,6 +188,7 @@ function render() {
   // Surface initialization
   if (tab === 'live' && (!liveInitialized || previousTab !== 'live')) {
     liveInitialized = true;
+    if (typeof loadTopDownOverview === 'function') loadTopDownOverview();
     loadLiveness();
     loadWorkflowOverview();
     loadOverviewTasks();

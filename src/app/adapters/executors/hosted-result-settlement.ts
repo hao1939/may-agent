@@ -1,4 +1,4 @@
-import type { AppTaskBlockedSettlement } from "@may-agent/sdk/app";
+import type { AppTaskBlockedSettlement, TaskAppRequest } from "@may-agent/sdk/app";
 import type { DirectWorkflowRunResult, RunResult as CallableResult } from "@may-agent/sdk/standalone";
 import type { TaskAgentInput, TaskWorkflowInput } from "../../core/tasks/execution.js";
 import { normalizeTaskHandlerResult, type NormalizedTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
@@ -10,6 +10,8 @@ type TranslationOptions = {
   now?: () => number;
   diagnosticFacts?: readonly string[];
   storageFacts?: unknown;
+  requests?: readonly TaskAppRequest[];
+  response?: string;
 };
 
 function serializedFact(facts: unknown): string {
@@ -91,16 +93,18 @@ function outputResult(output: unknown): Pick<NormalizedTaskHandlerResult, "resul
   };
 }
 
-const DEFAULT_WAIT_HINT_KEYS = new Set(["retryAfterMs", "conditions", "requests"]);
+const DEFAULT_WAIT_HINT_KEYS = new Set(["retryAfterMs", "conditions", "requests", "continue", "domainFacts"]);
 const TRANSLATED_WAIT_HINT_KEYS = new Set([...DEFAULT_WAIT_HINT_KEYS, "actions", "report", "continue"]);
 
-function isPlainWaitDescriptor(value: unknown): value is AppTaskBlockedSettlement {
+type DefaultWaitDescriptor = AppTaskBlockedSettlement & { domainFacts?: string[] };
+
+function isPlainWaitDescriptor(value: unknown): value is DefaultWaitDescriptor {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
 
-function fallbackWaitHint(facts: unknown): AppTaskBlockedSettlement | null | undefined {
+function fallbackWaitHint(facts: unknown): DefaultWaitDescriptor | null | undefined {
   if (!isPlainWaitDescriptor(facts)) return undefined;
   const keys = Object.keys(facts);
   if (!keys.some((key) => DEFAULT_WAIT_HINT_KEYS.has(key))) return undefined;
@@ -155,13 +159,18 @@ export function translateHostedBlockedContribution(
       return rejectedBlockedResult("Blocked result translator wait descriptor contains unsupported fields", runId);
     }
   }
-  const hint = translatedHint as AppTaskBlockedSettlement | null | undefined;
+  const hint = translatedHint as DefaultWaitDescriptor | null | undefined;
+  const effectiveDomainFacts = translator
+    ? facts
+    : translatedHint !== undefined
+      ? hint?.domainFacts
+      : facts;
   if (hint && hint.actions !== undefined && !Array.isArray(hint.actions)) {
     return rejectedBlockedResult("Blocked result actions must be an array when supplied", runId);
   }
   if (
     (hint?.report === true || hint?.continue === true || (hint?.actions?.length ?? 0) > 0)
-    && !hasDomainProgressFacts(facts)
+    && !hasDomainProgressFacts(effectiveDomainFacts)
   ) {
     return rejectedBlockedResult(
       "Blocked result report, continuation, or actions require non-empty contribution facts; Host diagnostics are not agent evidence",
@@ -174,13 +183,13 @@ export function translateHostedBlockedContribution(
   if (hint && hint.continue !== undefined && hint.continue !== true) {
     return rejectedBlockedResult("Blocked result continue must be true when supplied", runId);
   }
-  if (hint?.report === true && !hasDomainProgressFacts(facts)) {
+  if (hint?.report === true && !hasDomainProgressFacts(effectiveDomainFacts)) {
     return rejectedBlockedResult(
       "Handler result was rejected: report requires waiting or incomplete, true, and non-empty facts",
       runId,
     );
   }
-  if (hint?.continue === true && !hasDomainProgressFacts(facts)) {
+  if (hint?.continue === true && !hasDomainProgressFacts(effectiveDomainFacts)) {
     return rejectedBlockedResult(
       "Handler result was rejected: continue requires waiting and progress facts",
       runId,
@@ -199,11 +208,18 @@ export function translateHostedBlockedContribution(
     }
   }
 
+  const storedFactsSource =
+    hint?.domainFacts && Array.isArray(hint.domainFacts)
+      ? hint.domainFacts
+      : options.storageFacts === undefined
+        ? facts
+        : options.storageFacts;
+
   const handlerResult = normalizeTaskHandlerResult(
     {
       state: "waiting",
       summary,
-      facts: factStrings(options.storageFacts === undefined ? facts : options.storageFacts, options.diagnosticFacts),
+      facts: factStrings(storedFactsSource, options.diagnosticFacts),
       actions: hint?.actions === undefined ? [] : hint.actions,
       ...(hint?.report === true ? { report: true as const } : {}),
       ...(hint?.continue === true ? { continue: true as const } : {}),
@@ -236,6 +252,9 @@ export function translateHostedExecutionResult(
   let output: unknown;
   let facts: unknown;
 
+  let doneRequests = options.requests;
+  let doneResponse = options.response;
+
   if (isDirectWorkflowResult(result)) {
     if (
       !result.ok ||
@@ -249,6 +268,8 @@ export function translateHostedExecutionResult(
     if (result.result.type === "done") {
       status = "done";
       summary = result.result.summary;
+      doneRequests ??= result.result.requests;
+      doneResponse ??= result.result.response;
     } else if (result.result.type === "blocked") {
       status = "blocked";
       summary = result.result.reason;
@@ -263,6 +284,10 @@ export function translateHostedExecutionResult(
     summary = result.summary;
     output = result.output;
     facts = result.facts;
+    if (result.status === "done") {
+      doneRequests ??= result.requests;
+      doneResponse ??= result.response;
+    }
   }
 
   if (status === "blocked") {
@@ -278,8 +303,10 @@ export function translateHostedExecutionResult(
     {
       state: "converged",
       summary,
-      facts: factStrings(facts),
+      facts: factStrings(facts, options.diagnosticFacts),
       actions: [],
+      ...(doneRequests !== undefined ? { requests: doneRequests } : {}),
+      ...(doneResponse !== undefined ? { response: doneResponse } : {}),
       ...outputResult(output),
     },
     { type: "done", summary, runId },
