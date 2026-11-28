@@ -497,15 +497,33 @@ export async function execute(ctx) {
       expect(stalledWt.status).toBe("error");
       rmSync(hookPath, { force: true });
 
-      // 7. Standalone ctx.events (emit + read idempotence across --resume) and ctx.read.contract(appId)
+      // 7. Standalone ctx.events (nested sharing, onEvent subscription, stateless runs, corrupt-journal guard, & idempotence across --resume) + ctx.read.contract(appId)
+      writeFileSync(
+        join(wfDir, "child-emit.ts"),
+        `export const name = "child-emit"; export const description = "Emits child event";
+export async function execute(ctx) {
+  await ctx.events.emit({ type: "demo.child", localKey: "ck1", data: { from: "child" } });
+  return ctx.done("child-emitted");
+}`,
+      );
       writeFileSync(
         join(wfDir, "events-contract-flow.ts"),
         `export const name = "events-contract-flow"; export const description = "Events + contract";
 export async function execute(ctx) {
+  const seenLive = [];
+  const unsub = ctx.events.onEvent((ev) => seenLive.push(ev.type));
   const contract = await ctx.read.contract("demo");
   const prior = await ctx.events.read("demo.published", "k1");
   if (!prior) {
-    await ctx.events.emit({ type: "demo.published", localKey: "k1", data: { rev: 1 } });
+    await ctx.call("demo/child-emit", { prompt: "emit" });
+    const childRead = await ctx.events.read("demo.child", "ck1");
+    await ctx.events.emit({ type: "demo.published", localKey: "k1", data: { rev: 1, childFrom: childRead?.data.from, liveCount: seenLive.length } });
+    unsub();
+    await ctx.events.emit({ type: "demo.after-unsub", localKey: "u1", data: {} });
+    if (ctx.input.data?.stateless) {
+      const check = await ctx.events.read("demo.published", "k1");
+      return ctx.done("stateless-ok", { observersCount: contract.observations.length, check: check?.data, liveAfterUnsub: seenLive.length });
+    }
     return ctx.park({
       summary: "Wait after first emit",
       conditions: [{ id: "c1", type: "human.review", subject: "s1", expected: { reviewed: true }, owner: "human" }],
@@ -513,13 +531,30 @@ export async function execute(ctx) {
   }
   await ctx.events.emit({ type: "demo.published", localKey: "k1", data: { rev: 999 } });
   const reread = await ctx.events.read("demo.published", "k1");
+  const rereadChild = await ctx.events.read("demo.child", "ck1");
   return ctx.done("ok", {
     observersCount: contract.observations.length,
     eventId: reread?.eventId,
     rev: reread?.data.rev,
+    childFrom: rereadChild?.data.from,
   });
 }`,
       );
+
+      // Stateless run() without --state-dir binds in-memory events + onEvent + read.contract
+      const statelessEv = await run(
+        "demo/events-contract-flow",
+        { prompt: "go", data: { stateless: true } },
+        { projectRoot: wsRoot },
+      );
+      expect(statelessEv.status).toBe("done");
+      expect(statelessEv.output).toEqual({
+        observersCount: 3,
+        check: { rev: 1, childFrom: "child", liveCount: 1 },
+        liveAfterUnsub: 2,
+      });
+
+      // Stateful run() shares journal across nested calls and survives --resume
       const stateEv = join(wsRoot, ".state-events");
       const ev1 = await run("demo/events-contract-flow", { prompt: "go" }, { projectRoot: wsRoot, stateDir: stateEv });
       expect(ev1.status).toBe("blocked");
@@ -530,7 +565,17 @@ export async function execute(ctx) {
         answer: "done",
       });
       expect(ev2.status).toBe("done");
-      expect(ev2.output).toEqual({ observersCount: 3, eventId: 1, rev: 1 });
+      expect(ev2.output).toEqual({ observersCount: 3, eventId: 2, rev: 1, childFrom: "child" });
+
+      // Corrupt events.json is rejected rather than silently resetting durable idempotence
+      writeFileSync(join(stateEv, "events.json"), "{not-valid-json", "utf8");
+      const corruptEv = await run("demo/events-contract-flow", { prompt: "go" }, {
+        projectRoot: wsRoot,
+        stateDir: stateEv,
+        resume: true,
+      });
+      expect(corruptEv.status).toBe("error");
+      expect(corruptEv.summary).toContain("Cannot read standalone event journal");
     } finally {
       rmSync(wsRoot, { recursive: true, force: true });
     }

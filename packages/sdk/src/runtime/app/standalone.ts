@@ -8,7 +8,7 @@
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { Type, type TSchema } from "typebox";
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
@@ -1414,7 +1414,7 @@ export async function runDirectWorkflow<TInput = unknown>(
         metric: readOverrides?.metric ?? (async () => null),
       }
     : {
-        contract: readOverrides?.contract ?? unavailableRead("read.contract"),
+        contract: readOverrides?.contract ?? standaloneReadContract,
         appResult: readOverrides?.appResult ?? unavailableRead("read.appResult"),
         tasks: {
           list: readOverrides?.tasks?.list ?? unavailableRead("read.tasks.list"),
@@ -1656,6 +1656,7 @@ export async function runDirectWorkflow<TInput = unknown>(
         ...options,
         workRoot: effectiveWorkspace.root,
         workspace: effectiveWorkspace,
+        ...(effectiveEvents ? { events: effectiveEvents } : {}),
         reconciliation,
         executionId: undefined,
         module: targetMod,
@@ -1809,55 +1810,110 @@ export async function runDirectWorkflow<TInput = unknown>(
     data: Record<string, unknown>;
     emittedAt: string;
   };
+  let standaloneEventsLoadError: Error | undefined;
   const standaloneEventsMemory: StandaloneEventEntry[] = (() => {
+    if (options.events) return [];
     if (!standaloneEventsPath || !existsSync(standaloneEventsPath)) return [];
     try {
       const parsed = JSON.parse(readFileSync(standaloneEventsPath, "utf8"));
-      return Array.isArray(parsed) ? (parsed as StandaloneEventEntry[]) : [];
-    } catch {
+      if (!Array.isArray(parsed)) {
+        throw new Error(`Standalone event journal ${standaloneEventsPath} must contain a JSON array`);
+      }
+      return parsed as StandaloneEventEntry[];
+    } catch (err) {
+      standaloneEventsLoadError = new Error(
+        `Cannot read standalone event journal ${standaloneEventsPath}: ${err instanceof Error ? err.message : String(err)}`,
+      );
       return [];
     }
   })();
-  const standaloneEvents = standaloneTaskDetail
-    ? {
-        emit: async (ev: import("@may-agent/sdk/app").AppEvent) => {
-          const evRec = ev as unknown as Record<string, unknown>;
-          const evType = String(evRec.type ?? "");
-          const localKey = typeof evRec.localKey === "string" && evRec.localKey.trim() ? evRec.localKey.trim() : undefined;
-          if (
-            localKey &&
-            standaloneEventsMemory.some((entry) => entry.type === evType && entry.localKey === localKey)
-          ) {
-            return;
-          }
-          const dataObj =
-            evRec.data && typeof evRec.data === "object" && !Array.isArray(evRec.data)
-              ? (evRec.data as Record<string, unknown>)
-              : {};
-          standaloneEventsMemory.push({
-            eventId: standaloneEventsMemory.length + 1,
-            type: evType,
-            ...(localKey ? { localKey } : {}),
-            data: structuredClone(dataObj),
-            emittedAt: new Date().toISOString(),
-          });
-          if (standaloneEventsPath) {
-            mkdirSync(dirname(standaloneEventsPath), { recursive: true });
-            writeFileSync(standaloneEventsPath, JSON.stringify(standaloneEventsMemory, null, 2), "utf8");
-          }
-        },
-        read: async (type: string, localKey: string) => {
-          for (let i = standaloneEventsMemory.length - 1; i >= 0; i--) {
-            const entry = standaloneEventsMemory[i]!;
-            if (entry.type === type && entry.localKey === localKey) {
-              return { eventId: entry.eventId, data: structuredClone(entry.data) };
+  const standaloneEventListeners = new Set<(event: import("@may-agent/sdk/app").AppEvent<Record<string, unknown>>) => void>();
+  const standaloneEvents =
+    !options.events && standaloneTaskDetail
+      ? {
+          emit: async (ev: import("@may-agent/sdk/app").AppEvent) => {
+            if (standaloneEventsLoadError) throw standaloneEventsLoadError;
+            const evRec = ev as unknown as Record<string, unknown>;
+            const evType = String(evRec.type ?? "");
+            const localKey =
+              typeof evRec.localKey === "string" && evRec.localKey.trim() ? evRec.localKey.trim() : undefined;
+            if (
+              localKey &&
+              standaloneEventsMemory.some((entry) => entry.type === evType && entry.localKey === localKey)
+            ) {
+              return;
             }
-          }
-          return null;
-        },
-        onEvent: () => () => undefined,
+            const dataObj =
+              evRec.data && typeof evRec.data === "object" && !Array.isArray(evRec.data)
+                ? (evRec.data as Record<string, unknown>)
+                : {};
+            const clonedData = structuredClone(dataObj);
+            const nextId = standaloneEventsMemory.length + 1;
+            const emittedAt = new Date().toISOString();
+            standaloneEventsMemory.push({
+              eventId: nextId,
+              type: evType,
+              ...(localKey ? { localKey } : {}),
+              data: clonedData,
+              emittedAt,
+            });
+            if (standaloneEventsPath) {
+              mkdirSync(dirname(standaloneEventsPath), { recursive: true });
+              const tmpPath = `${standaloneEventsPath}.tmp.${process.pid}.${nextId}`;
+              writeFileSync(tmpPath, JSON.stringify(standaloneEventsMemory, null, 2), "utf8");
+              renameSync(tmpPath, standaloneEventsPath);
+            }
+            const delivered = {
+              ...(evRec as object),
+              type: evType,
+              eventId: nextId,
+              data: structuredClone(clonedData),
+            } as unknown as import("@may-agent/sdk/app").AppEvent<Record<string, unknown>>;
+            for (const listener of [...standaloneEventListeners]) {
+              listener(delivered);
+            }
+          },
+          read: async (type: string, localKey: string) => {
+            if (standaloneEventsLoadError) throw standaloneEventsLoadError;
+            for (let i = standaloneEventsMemory.length - 1; i >= 0; i--) {
+              const entry = standaloneEventsMemory[i]!;
+              if (entry.type === type && entry.localKey === localKey) {
+                return { eventId: entry.eventId, data: structuredClone(entry.data) };
+              }
+            }
+            return null;
+          },
+          onEvent: (listener: (event: import("@may-agent/sdk/app").AppEvent<Record<string, unknown>>) => void) => {
+            if (standaloneEventsLoadError) throw standaloneEventsLoadError;
+            standaloneEventListeners.add(listener);
+            return () => {
+              standaloneEventListeners.delete(listener);
+            };
+          },
+        }
+      : undefined;
+  const effectiveEvents = (env?.events ?? options.events)
+    ? {
+        emit:
+          (env?.events ?? options.events)!.emit ??
+          standaloneEvents?.emit ??
+          (async () => {
+            throw new Error("events.emit is not configured in runDirectWorkflow");
+          }),
+        read:
+          (env?.events ?? options.events)!.read ??
+          standaloneEvents?.read ??
+          (async () => {
+            throw new Error("events.read is not configured in runDirectWorkflow");
+          }),
+        onEvent:
+          (env?.events ?? options.events)!.onEvent ??
+          standaloneEvents?.onEvent ??
+          (() => {
+            throw new Error("events.onEvent is not configured in runDirectWorkflow");
+          }),
       }
-    : undefined;
+    : standaloneEvents;
   const effectiveWorkspace = env?.workspace ?? options.workspace ?? {
     appRoot: inferredAppRoot,
     projectRoot: resolve(options.workRoot),
@@ -1896,6 +1952,7 @@ export async function runDirectWorkflow<TInput = unknown>(
           }
         }
         ctx.signal.throwIfAborted();
+        if (standaloneEventsLoadError) throw standaloneEventsLoadError;
         return authoredModule.execute(ctx);
       },
     },
@@ -1912,28 +1969,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       maxConcurrentCalls,
       allowance: rootAllowance,
       read,
-      events: (env?.events ?? options.events)
-        ? {
-            emit:
-              (env?.events ?? options.events)!.emit ??
-              standaloneEvents?.emit ??
-              (async () => {
-                throw new Error("events.emit is not configured in runDirectWorkflow");
-              }),
-            read:
-              (env?.events ?? options.events)!.read ??
-              standaloneEvents?.read ??
-              (async () => {
-                throw new Error("events.read is not configured in runDirectWorkflow");
-              }),
-            onEvent:
-              (env?.events ?? options.events)!.onEvent ??
-              standaloneEvents?.onEvent ??
-              (() => {
-                throw new Error("events.onEvent is not configured in runDirectWorkflow");
-              }),
-          }
-        : standaloneEvents,
+      events: effectiveEvents,
       metrics: standaloneTaskDetail
         ? {
             define: (env?.metrics ?? options.metrics)?.define ?? (() => undefined),
@@ -2643,20 +2679,18 @@ export async function run<TInput = unknown>(
       : typeof rawInputValue === "string" && rawInputValue.trim()
         ? rawInputValue.trim()
         : rawTarget);
-  const standaloneTask: WorkflowTaskView | undefined = stateDir
-    ? {
-        appId: callerOwner && callerOwner !== "global" ? callerOwner : "standalone",
-        id: persistedState?.id ?? "standalone",
-        generation: persistedState?.generation ?? 1,
-        attemptNumber,
-        outcome: derivedOutcome,
-        acceptance: persistedState?.acceptance ?? [],
-        taskInput: inputRecord && "data" in inputRecord ? inputRecord.data : rawInputValue,
-        newInputs: [],
-        facts: persistedState?.facts ?? [],
-        ...(persistedState?.previousResult ? { previousResult: persistedState.previousResult } : {}),
-      }
-    : options.task;
+  const standaloneTask: WorkflowTaskView = options.task ?? {
+    appId: callerOwner && callerOwner !== "global" ? callerOwner : "standalone",
+    id: persistedState?.id ?? "standalone",
+    generation: persistedState?.generation ?? 1,
+    attemptNumber,
+    outcome: derivedOutcome,
+    acceptance: persistedState?.acceptance ?? [],
+    taskInput: inputRecord && "data" in inputRecord ? inputRecord.data : rawInputValue,
+    newInputs: [],
+    facts: persistedState?.facts ?? [],
+    ...(persistedState?.previousResult ? { previousResult: persistedState.previousResult } : {}),
+  };
 
   const interactiveAsk =
     options.askHuman ??
