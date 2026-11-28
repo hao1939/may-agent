@@ -32,8 +32,11 @@ export type TestAppWorkflowContextOptions<TInput, TReconciliationInput = unknown
     emit?: WorkflowContext["events"]["emit"];
     readEvent?: WorkflowContext["events"]["read"];
     onEvent?: WorkflowContext["events"]["onEvent"];
-    recordMetric?: WorkflowContext["metrics"]["record"];
-    workspace?: WorkflowContext["workspace"];
+    recordMetric?: import("./workflow.js").AppWorkflowContext["metrics"]["record"];
+    workspace?: import("./workflow.js").AppWorkflowContext["workspace"];
+    exec?: import("./workflow.js").AppWorkflowContext["exec"];
+    observations?: Record<string, import("./workflow.js").ConditionObservation>;
+    ask?: import("./workflow.js").AppWorkflowContext["ask"];
     executionId?: string;
 };
 /** Small fake with no database, queue, or global runtime paths. */

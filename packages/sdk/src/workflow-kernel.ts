@@ -221,6 +221,8 @@ export type WorkflowRunReport = {
   observerErrors: string[];
   /** Verified `human.review` Conditions answered via post-creation human Task input during this run. */
   answeredHumanConditions?: Array<{ conditionId: string; expectedConditionGeneration: number }>;
+  /** Trusted convergence options (`requests`, `response`) supplied via `ctx.done(..., options)`. */
+  doneSettlement?: { requests?: import("./task.js").TaskAppRequest[]; response?: string };
 };
 
 export class WorkflowValidationError extends Error {
@@ -1133,6 +1135,10 @@ export async function runWorkflowInvocation<TInput = unknown>(
   const effectiveTaskView = buildWorkflowTaskView(bindings);
   let agentSessionCounter = 0;
   const answeredHumanConditions: Array<{ conditionId: string; expectedConditionGeneration: number }> = [];
+  const doneSettlementByResult = new WeakMap<
+    object,
+    { requests?: import("./task.js").TaskAppRequest[]; response?: string }
+  >();
 
   const parkResult = (wait: WorkflowParkInput): ExecutionResult<never> => {
     assertActive();
@@ -1500,12 +1506,21 @@ export async function runWorkflowInvocation<TInput = unknown>(
         return tracked;
       },
     },
-    done: <T = undefined>(summary: string, output?: T, options?: DoneOptions): ExecutionResult<T> => ({
-      status: "done",
-      summary,
-      ...(output !== undefined ? { output } : {}),
-      ...(options?.facts !== undefined ? { facts: options.facts } : {}),
-    }),
+    done: <T = undefined>(summary: string, output?: T, options?: DoneOptions): ExecutionResult<T> => {
+      const built: ExecutionResult<T> = {
+        status: "done",
+        summary,
+        ...(output !== undefined ? { output } : {}),
+        ...(options?.facts !== undefined ? { facts: options.facts } : {}),
+      };
+      if (options?.requests !== undefined || options?.response !== undefined) {
+        doneSettlementByResult.set(built, {
+          ...(options.requests !== undefined ? { requests: options.requests } : {}),
+          ...(options.response !== undefined ? { response: options.response } : {}),
+        });
+      }
+      return built;
+    },
     blocked: (reason: string, facts?: unknown): ExecutionResult<never> => ({
       status: "blocked",
       summary: reason,
@@ -1549,6 +1564,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
   let caughtError: unknown;
   let authoredExecutionSettled = false;
   let settleAuthoredExecution: Promise<void> | undefined;
+  let capturedDoneSettlement: { requests?: import("./task.js").TaskAppRequest[]; response?: string } | undefined;
 
   try {
     const execution = (async () => {
@@ -1562,6 +1578,9 @@ export async function runWorkflowInvocation<TInput = unknown>(
         } else {
           throw err;
         }
+      }
+      if (authored && typeof authored === "object") {
+        capturedDoneSettlement = doneSettlementByResult.get(authored);
       }
       assertActive();
       const normalized = normalizeWorkflowContribution(authored, Boolean(bindings.taskOwned));
@@ -1768,6 +1787,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       cleanup,
       observerErrors,
       ...(answeredHumanConditions.length > 0 ? { answeredHumanConditions } : {}),
+      ...(finalResult.type === "done" && capturedDoneSettlement ? { doneSettlement: capturedDoneSettlement } : {}),
     },
   };
 }

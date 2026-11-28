@@ -495,6 +495,42 @@ export async function execute(ctx) {
       });
       expect(Date.now() - startedHook).toBeLessThan(3000);
       expect(stalledWt.status).toBe("error");
+      rmSync(hookPath, { force: true });
+
+      // 7. Standalone ctx.events (emit + read idempotence across --resume) and ctx.read.contract(appId)
+      writeFileSync(
+        join(wfDir, "events-contract-flow.ts"),
+        `export const name = "events-contract-flow"; export const description = "Events + contract";
+export async function execute(ctx) {
+  const contract = await ctx.read.contract("demo");
+  const prior = await ctx.events.read("demo.published", "k1");
+  if (!prior) {
+    await ctx.events.emit({ type: "demo.published", localKey: "k1", data: { rev: 1 } });
+    return ctx.park({
+      summary: "Wait after first emit",
+      conditions: [{ id: "c1", type: "human.review", subject: "s1", expected: { reviewed: true }, owner: "human" }],
+    });
+  }
+  await ctx.events.emit({ type: "demo.published", localKey: "k1", data: { rev: 999 } });
+  const reread = await ctx.events.read("demo.published", "k1");
+  return ctx.done("ok", {
+    observersCount: contract.observations.length,
+    eventId: reread?.eventId,
+    rev: reread?.data.rev,
+  });
+}`,
+      );
+      const stateEv = join(wsRoot, ".state-events");
+      const ev1 = await run("demo/events-contract-flow", { prompt: "go" }, { projectRoot: wsRoot, stateDir: stateEv });
+      expect(ev1.status).toBe("blocked");
+      const ev2 = await run("demo/events-contract-flow", { prompt: "go" }, {
+        projectRoot: wsRoot,
+        stateDir: stateEv,
+        resume: true,
+        answer: "done",
+      });
+      expect(ev2.status).toBe("done");
+      expect(ev2.output).toEqual({ observersCount: 3, eventId: 1, rev: 1 });
     } finally {
       rmSync(wsRoot, { recursive: true, force: true });
     }

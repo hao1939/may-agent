@@ -305,11 +305,13 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
   runId: string;
   verifier?: { name: string; sourcePath: string; verify: NonNullable<WorkflowModule["verify"]> };
   answeredHumanConditions?: Array<{ conditionId: string; expectedConditionGeneration: number }>;
+  doneSettlement?: { requests?: import("@may-agent/sdk/app").TaskAppRequest[]; response?: string };
 }> {
   // Execution and its verifier must come from the same dispatch snapshot.
   const { catalog, allowance } = await prepareRootWorkflow({ ...opts, workflowDir: opts.workflowDir ?? "" }, opts.workflowName);
   const { workflow } = findWorkflow(catalog, opts.workflowName);
   let answeredHumanConditions: Array<{ conditionId: string; expectedConditionGeneration: number }> | undefined;
+  let doneSettlement: { requests?: import("@may-agent/sdk/app").TaskAppRequest[]; response?: string } | undefined;
   const runner = createPreparedWorkflowRunner({
     manager: opts.manager,
     agentDefinitions: opts.agentDefinitions,
@@ -336,6 +338,9 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     onAnsweredHumanConditions: (items) => {
       answeredHumanConditions = items;
     },
+    onDoneSettlement: (settlement) => {
+      doneSettlement = settlement;
+    },
     executionTimeoutMs: opts.executionTimeoutMs,
     executionTimeoutLimitMs: opts.executionTimeoutLimitMs,
     signal: opts.signal,
@@ -352,6 +357,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
       runId: parsed.workflowRunId,
       ...(verifier ? { verifier } : {}),
       ...(answeredHumanConditions ? { answeredHumanConditions } : {}),
+      ...(doneSettlement ? { doneSettlement } : {}),
     };
   }
   if (parsed.type === "error") {
@@ -438,6 +444,8 @@ export interface WorkflowToolOptions {
   attemptNumber?: number;
   /** Internal callback receiving verified `human.review` Conditions answered during the root run. */
   onAnsweredHumanConditions?: (items: Array<{ conditionId: string; expectedConditionGeneration: number }>) => void;
+  /** Internal callback receiving `DoneOptions` (`requests`, `response`) supplied via `ctx.done(...)`. */
+  onDoneSettlement?: (settlement: { requests?: import("@may-agent/sdk/app").TaskAppRequest[]; response?: string }) => void;
 }
 
 /** Typed workflow execution for SDK, handlers, and other system callers. */
@@ -1131,6 +1139,9 @@ function createPreparedWorkflowRunner(
       const result = outcome.result;
       if (depth === 1 && outcome.report.answeredHumanConditions?.length) {
         opts.onAnsweredHumanConditions?.(outcome.report.answeredHumanConditions);
+      }
+      if (depth === 1 && outcome.report.doneSettlement) {
+        opts.onDoneSettlement?.(outcome.report.doneSettlement);
       }
 
       // Finalize the workflow run

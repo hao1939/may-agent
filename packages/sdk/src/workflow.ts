@@ -880,6 +880,10 @@ export type WorkflowAskAnswer<T = unknown> = {
 
 export type DoneOptions = {
   facts?: unknown;
+  /** Optional cross-App or follow-up Task requests commissioned upon convergence. */
+  requests?: TaskAppRequest[];
+  /** Optional human-facing Conversation response attached upon convergence. */
+  response?: string;
 };
 
 export type AgentContext<TInput = unknown> = {

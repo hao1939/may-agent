@@ -10,6 +10,7 @@ type TranslationOptions = {
   now?: () => number;
   diagnosticFacts?: readonly string[];
   storageFacts?: unknown;
+  doneSettlement?: { requests?: import("@may-agent/sdk/app").TaskAppRequest[]; response?: string };
 };
 
 function serializedFact(facts: unknown): string {
@@ -311,6 +312,8 @@ export function translateHostedExecutionResult(
     return blocked;
   }
 
+  const effectiveDoneSettlement =
+    options.doneSettlement ?? (isDirectWorkflowResult(result) ? result.report.doneSettlement : undefined);
   const runId = resultRunId(result);
   const handlerResult = normalizeTaskHandlerResult(
     {
@@ -318,6 +321,8 @@ export function translateHostedExecutionResult(
       summary,
       facts: factStrings(facts, [...(options.diagnosticFacts ?? []), ...answeredFacts]),
       actions: answeredActions,
+      ...(effectiveDoneSettlement?.requests !== undefined ? { requests: effectiveDoneSettlement.requests } : {}),
+      ...(effectiveDoneSettlement?.response !== undefined ? { response: effectiveDoneSettlement.response } : {}),
       ...outputResult(output),
     },
     { type: "done", summary, runId },

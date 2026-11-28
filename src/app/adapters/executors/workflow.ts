@@ -216,7 +216,7 @@ async function executeTaskWorkflow(
       )
       .get(descriptor.id, taskDetail.id, taskDetail.generation) as { n?: number } | null;
     const attemptNumber = Math.max(1, Number(attemptCountRow?.n ?? 1));
-    const { result, runId, verifier, answeredHumanConditions } = await runWorkflowDirect({
+    const { result, runId, verifier, answeredHumanConditions, doneSettlement } = await runWorkflowDirect({
       workflowName: capability.workflow,
       task,
       manager,
@@ -292,7 +292,10 @@ async function executeTaskWorkflow(
                   : [summary],
             },
             input,
-            answeredFactItems.length > 0 ? { diagnosticFacts: answeredFactItems } : {},
+            {
+              ...(answeredFactItems.length > 0 ? { diagnosticFacts: answeredFactItems } : {}),
+              ...(doneSettlement ? { doneSettlement } : {}),
+            },
           )
         : null;
     let handlerResult = done

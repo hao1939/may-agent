@@ -138,8 +138,11 @@ export type TestAppWorkflowContextOptions<TInput, TReconciliationInput = unknown
   emit?: WorkflowContext["events"]["emit"];
   readEvent?: WorkflowContext["events"]["read"];
   onEvent?: WorkflowContext["events"]["onEvent"];
-  recordMetric?: WorkflowContext["metrics"]["record"];
-  workspace?: WorkflowContext["workspace"];
+  recordMetric?: import("./workflow.js").AppWorkflowContext["metrics"]["record"];
+  workspace?: import("./workflow.js").AppWorkflowContext["workspace"];
+  exec?: import("./workflow.js").AppWorkflowContext["exec"];
+  observations?: Record<string, import("./workflow.js").ConditionObservation>;
+  ask?: import("./workflow.js").AppWorkflowContext["ask"];
   executionId?: string;
 };
 
@@ -185,16 +188,18 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
     signal: options.signal ?? new AbortController().signal,
     task: taskView,
     workspace,
-    exec: fn(async (argv: readonly [string, ...string[]]) => ({
-      argv: [...argv],
-      cwd: workspace.root,
-      startedAt: new Date(0).toISOString(),
-      endedAt: new Date(0).toISOString(),
-      exitCode: 0,
-      signal: null,
-      stdout: "",
-      stderr: "",
-    })),
+    exec:
+      options.exec ??
+      fn(async (argv: readonly [string, ...string[]]) => ({
+        argv: [...argv],
+        cwd: workspace.root,
+        startedAt: new Date(0).toISOString(),
+        endedAt: new Date(0).toISOString(),
+        exitCode: 0,
+        signal: null,
+        stdout: "",
+        stderr: "",
+      })),
     ...(options.reconciliation ? { reconciliation: options.reconciliation } : {}),
     ...(options.reviseTask ? { reviseTask: options.reviseTask } : {}),
     ...(options.closeTask ? { closeTask: options.closeTask } : {}),
@@ -206,7 +211,23 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
         call(target, typeof input === "string" ? { prompt: input } : input, opts)) as any,
       close: async () => undefined,
     }),
-    observe: () => null,
+    observe: <T = unknown>(subjectOrConditionId: string) => {
+      const key = subjectOrConditionId.trim();
+      if (!key) return null;
+      if (options.observations && Object.hasOwn(options.observations, key)) {
+        return options.observations[key] as import("./workflow.js").ConditionObservation<T>;
+      }
+      const cond = options.reconciliation?.task?.conditions?.find(
+        (item) => item.id === key || item.subject === key,
+      );
+      if (!cond?.observation) return null;
+      return {
+        state: cond.observation.state,
+        ...(cond.observation.observed !== undefined ? { observed: cond.observation.observed as T } : {}),
+        ...(cond.observation.facts ? { facts: cond.observation.facts } : {}),
+        ...(cond.observation.observedAt ? { observedAt: cond.observation.observedAt } : {}),
+      };
+    },
     park: (wait) => ({
       status: "blocked",
       summary: wait.summary,
@@ -219,10 +240,12 @@ export function createTestAppWorkflowContext<TInput, TReconciliationInput = unkn
         ...(wait.facts ? { domainFacts: wait.facts } : {}),
       },
     }),
-    ask: async (req) => ({
-      status: "answered" as const,
-      value: req.prompt as never,
-    }),
+    ask:
+      options.ask ??
+      (async (req) => ({
+        status: "answered" as const,
+        value: req.prompt as never,
+      })),
     progress: fn(() => undefined),
     events: {
       emit: options.emit ?? fn(async () => undefined),

@@ -862,6 +862,33 @@ it("refuses forged App human flags, discrete approval bypasses, pre-question con
     summary: "Measured",
     facts: ['execution-facts:{"testsPassed":12}'],
   });
+
+  // 6. DoneOptions `requests` and `response` settle cleanly without manual TaskReconcileResult envelopes
+  const doneSettlementCase = makeRoot(
+    `export const name = "sec"; export const description = "s";
+     export async function execute(ctx) {
+       return ctx.done(
+         "Audit complete",
+         { signals: 1 },
+         {
+           facts: ["signals:1"],
+           response: "1 signal found.",
+           requests: [{ id: "follow-up-1", appId: "alex", input: { kind: "message", data: { message: "Check signal" } } }],
+         },
+       );
+     }`,
+    "human.review",
+  );
+  const rDoneSettle = await runCase(doneSettlementCase, { items: [], truncated: false });
+  expect(rDoneSettle.hostCompletion).toBe("finite-done");
+  expect(rDoneSettle.handlerResult).toMatchObject({
+    state: "converged",
+    summary: "Audit complete",
+    response: "1 signal found.",
+    result: { signals: 1 },
+    facts: ["signals:1"],
+    requests: [{ id: "follow-up-1", appId: "alex", input: { kind: "message", data: { message: "Check signal" } } }],
+  });
 });
 
 

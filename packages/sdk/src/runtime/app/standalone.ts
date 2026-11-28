@@ -1356,9 +1356,51 @@ export async function runDirectWorkflow<TInput = unknown>(
   const unavailableRead = (name: string) => async () => {
     throw new Error(`${name} read is not configured in standalone mode`);
   };
+  const standaloneReadContract = async (appId: string): Promise<import("@may-agent/sdk/app").AppContract> => {
+    const pRoot = options.projectsRoot ?? join(options.projectRoot, "projects");
+    const appFile = ["app.ts", "app.js"]
+      .map((f) => join(pRoot, `${appId}.app`, f))
+      .find((candidate) => existsSync(candidate));
+    if (!appFile) throw new Error(`App "${appId}" was not found under ${pRoot}`);
+    const mod = await importRuntimeModule<{ default?: Record<string, unknown> }>(appFile);
+    const def = (mod.default ?? {}) as {
+      id?: string;
+      agent?: string;
+      inputSchema?: TSchema;
+      observers?: Array<{ id?: string; type?: string; description?: string; intervalMs?: number; timeoutMs?: number }>;
+      tasks?: { closeOnResult?: unknown; coordination?: { taskId: string; workflow: string; maxAttemptMs: number } };
+    };
+    return {
+      appId: String(def.id ?? appId),
+      agent: String(def.agent ?? "owner"),
+      inputSchema: def.inputSchema ?? Type.Object({}),
+      observations: (def.observers ?? []).flatMap((obs) =>
+        obs && typeof obs === "object" && obs.id && obs.type
+          ? [
+              {
+                appId: String(def.id ?? appId),
+                id: String(obs.id),
+                type: String(obs.type),
+                description: String(obs.description ?? ""),
+                intervalMs: typeof obs.intervalMs === "number" ? obs.intervalMs : 60_000,
+                timeoutMs: typeof obs.timeoutMs === "number" ? obs.timeoutMs : 15_000,
+              },
+            ]
+          : [],
+      ),
+      ...(def.tasks?.closeOnResult || def.tasks?.coordination
+        ? {
+            taskPolicy: {
+              ...(def.tasks?.closeOnResult ? { closeOnResult: true as const } : {}),
+              ...(def.tasks?.coordination ? { coordination: def.tasks.coordination } : {}),
+            },
+          }
+        : {}),
+    };
+  };
   const read: AppRead = standaloneTaskDetail
     ? {
-        contract: readOverrides?.contract ?? unavailableRead("read.contract"),
+        contract: readOverrides?.contract ?? standaloneReadContract,
         appResult: readOverrides?.appResult ?? (async () => null),
         tasks: {
           list: readOverrides?.tasks?.list ?? (async () => ({ items: [standaloneTaskDetail] })),
@@ -1758,6 +1800,64 @@ export async function runDirectWorkflow<TInput = unknown>(
     callerOwner && callerOwner !== "global" && options.projectsRoot && existsSync(join(options.projectsRoot, `${callerOwner}.app`))
       ? join(options.projectsRoot, `${callerOwner}.app`)
       : resolve(options.projectRoot);
+  const standaloneEventsPath =
+    standaloneTaskDetail && options.stateDir ? join(resolve(options.stateDir), "events.json") : undefined;
+  type StandaloneEventEntry = {
+    eventId: number;
+    type: string;
+    localKey?: string;
+    data: Record<string, unknown>;
+    emittedAt: string;
+  };
+  const standaloneEventsMemory: StandaloneEventEntry[] = (() => {
+    if (!standaloneEventsPath || !existsSync(standaloneEventsPath)) return [];
+    try {
+      const parsed = JSON.parse(readFileSync(standaloneEventsPath, "utf8"));
+      return Array.isArray(parsed) ? (parsed as StandaloneEventEntry[]) : [];
+    } catch {
+      return [];
+    }
+  })();
+  const standaloneEvents = standaloneTaskDetail
+    ? {
+        emit: async (ev: import("@may-agent/sdk/app").AppEvent) => {
+          const evRec = ev as unknown as Record<string, unknown>;
+          const evType = String(evRec.type ?? "");
+          const localKey = typeof evRec.localKey === "string" && evRec.localKey.trim() ? evRec.localKey.trim() : undefined;
+          if (
+            localKey &&
+            standaloneEventsMemory.some((entry) => entry.type === evType && entry.localKey === localKey)
+          ) {
+            return;
+          }
+          const dataObj =
+            evRec.data && typeof evRec.data === "object" && !Array.isArray(evRec.data)
+              ? (evRec.data as Record<string, unknown>)
+              : {};
+          standaloneEventsMemory.push({
+            eventId: standaloneEventsMemory.length + 1,
+            type: evType,
+            ...(localKey ? { localKey } : {}),
+            data: structuredClone(dataObj),
+            emittedAt: new Date().toISOString(),
+          });
+          if (standaloneEventsPath) {
+            mkdirSync(dirname(standaloneEventsPath), { recursive: true });
+            writeFileSync(standaloneEventsPath, JSON.stringify(standaloneEventsMemory, null, 2), "utf8");
+          }
+        },
+        read: async (type: string, localKey: string) => {
+          for (let i = standaloneEventsMemory.length - 1; i >= 0; i--) {
+            const entry = standaloneEventsMemory[i]!;
+            if (entry.type === type && entry.localKey === localKey) {
+              return { eventId: entry.eventId, data: structuredClone(entry.data) };
+            }
+          }
+          return null;
+        },
+        onEvent: () => () => undefined,
+      }
+    : undefined;
   const effectiveWorkspace = env?.workspace ?? options.workspace ?? {
     appRoot: inferredAppRoot,
     projectRoot: resolve(options.workRoot),
@@ -1816,21 +1916,24 @@ export async function runDirectWorkflow<TInput = unknown>(
         ? {
             emit:
               (env?.events ?? options.events)!.emit ??
+              standaloneEvents?.emit ??
               (async () => {
                 throw new Error("events.emit is not configured in runDirectWorkflow");
               }),
             read:
               (env?.events ?? options.events)!.read ??
+              standaloneEvents?.read ??
               (async () => {
                 throw new Error("events.read is not configured in runDirectWorkflow");
               }),
             onEvent:
               (env?.events ?? options.events)!.onEvent ??
+              standaloneEvents?.onEvent ??
               (() => {
                 throw new Error("events.onEvent is not configured in runDirectWorkflow");
               }),
           }
-        : undefined,
+        : standaloneEvents,
       metrics: standaloneTaskDetail
         ? {
             define: (env?.metrics ?? options.metrics)?.define ?? (() => undefined),
