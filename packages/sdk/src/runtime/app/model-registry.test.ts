@@ -25,6 +25,38 @@ describe("model registry", () => {
       apiKey: "endpoint-key",
       contextWindow: 200_000,
     });
+    expect(registry["gemini-4-carbon"]).toMatchObject({
+      id: "gemini-4-carbon",
+      name: "Gemini 4 Carbon",
+      api: "openai-responses",
+      baseUrl: "http://model-endpoint:4000",
+      apiKey: "endpoint-key",
+      contextWindow: 200_000,
+    });
+    expect(registry["gemini-4-carbon"]?.fallbackModel).toBe(registry["claude-opus-5"]);
+    expect(registry["gemini-4-neon"]).toMatchObject({
+      id: "gemini-4-neon",
+      name: "Gemini 4 Neon",
+      api: "openai-responses",
+      baseUrl: "http://model-endpoint:4000",
+      apiKey: "endpoint-key",
+      contextWindow: 200_000,
+    });
+    expect(registry["gemini-4-neon"]?.fallbackModel).toBe(registry["claude-opus-5"]);
+    expect(registry["gemini-4-hydrogen"]).toMatchObject({
+      id: "gemini-4-hydrogen",
+      name: "Gemini 4 Hydrogen",
+      api: "openai-responses",
+      contextWindow: 200_000,
+    });
+    expect(registry["gpt-6.1-terra"]).toMatchObject({
+      id: "gpt-6.1-terra",
+      api: "openai-responses",
+      baseUrl: "http://model-endpoint:4000",
+      apiKey: "endpoint-key",
+      contextWindow: 400_000,
+    });
+    expect(registry["gpt-6.1-terra"]?.fallbackModel).toBe(registry["claude-opus-5"]);
     expect(registry["gpt-6.1-sol"]).toMatchObject({
       id: "gpt-6.1-sol",
       baseUrl: "http://model-endpoint:4000",
@@ -135,7 +167,7 @@ describe("model registry", () => {
         Type.Object({ decision: Type.Literal("blocked"), reason: Type.String() }),
       ]),
     });
-    for (const name of ["gpt-5.4", "gpt-5.5", "gpt-5.6-sol", "gpt-6.1-sol", "gpt-6.2-sol", "gemini-4-argon", "deepseek-v4-flash"]) {
+    for (const name of ["gpt-5.4", "gpt-5.5", "gpt-5.6-sol", "gpt-6.1-sol", "gpt-6.1-terra", "gpt-6.2-sol", "gemini-4-argon", "gemini-4-carbon", "gemini-4-neon", "gemini-4-hydrogen", "deepseek-v4-flash"]) {
       let payload: unknown;
       const model = registry[name]!;
       const response = streamSimple(
