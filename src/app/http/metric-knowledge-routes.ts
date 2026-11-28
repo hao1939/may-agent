@@ -323,13 +323,15 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
           existingAttemptItem.status = "blocked";
         } else if (wf.status === "interrupted" && existingAttemptItem.status === "done") {
           existingAttemptItem.status = "interrupted";
-        } else if (wf.status === "running") {
+        } else if (wf.status === "running" && existingAttemptItem.status === "running") {
           existingAttemptItem.status = "running";
         }
         const params = new URLSearchParams({ workflow: wf.workflow, runs: "true" });
         if (existingAttemptItem.appId) params.set("appId", existingAttemptItem.appId);
         existingAttemptItem.href = `/metrics?${params.toString()}`;
-        existingAttemptItem.detail = `${existingAttemptItem.detail || "workflow"} · ${wf.status} (${wf.runId})`;
+        const wfStatusLabel =
+          wf.status === "running" && existingAttemptItem.status !== "running" ? "stale-running" : wf.status;
+        existingAttemptItem.detail = `${existingAttemptItem.detail || "workflow"} · ${wfStatusLabel} (${wf.runId})`;
         if (wf.endedAt !== null && (existingAttemptItem.endedAt === null || wf.endedAt > existingAttemptItem.endedAt)) {
           existingAttemptItem.endedAt = wf.endedAt;
         }

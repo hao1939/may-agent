@@ -889,7 +889,7 @@ export class SubagentManager {
   cleanupStaleSessions(): { interrupted: SessionInfo[] } {
     const stale = new Map<string, PersistedSession>();
     const cleanup = { manager: this, persistDir: this._persistDir };
-    let hasPendingCleanup = false;
+    const protectedSessionIds = new Set<string>();
     const recoverUsage = (sessionId: string, outcome: UsageOutcome) => {
       try {
         recoverExecutionUsage(getDb(this._persistDir), sessionId, outcome);
@@ -903,7 +903,7 @@ export class SubagentManager {
     // Startup may overlap the Task recovery worker and externally owned work.
     for (const sessionId of listActiveSessionIds(this._persistDir)) {
       if (hasLiveSessionExecution(cleanup, sessionId)) {
-        hasPendingCleanup = true;
+        protectedSessionIds.add(sessionId);
         continue;
       }
       const evidence = readSessionMetaRecoveryEvidence(this._persistDir, sessionId);
@@ -935,7 +935,7 @@ export class SubagentManager {
           stale.set(sessionId, persisted);
         }
       } catch (error) {
-        hasPendingCleanup = true;
+        protectedSessionIds.add(sessionId);
         log("error", `[manager] Refusing startup recovery for ${sessionId}: ${String(error)}`);
         continue;
       }
@@ -952,7 +952,7 @@ export class SubagentManager {
       interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", endedAt, error }));
     }
 
-    if (!hasPendingCleanup) this.cleanupStaleWorkflowRuns();
+    this.cleanupStaleWorkflowRuns(protectedSessionIds);
     return { interrupted };
   }
 
@@ -1005,10 +1005,23 @@ export class SubagentManager {
       }));
   }
 
-  private cleanupStaleWorkflowRuns(): void {
+  private cleanupStaleWorkflowRuns(protectedSessionIds: ReadonlySet<string> = new Set()): void {
+    // Workflows run in-process; any run started before this manager instance has
+    // already exited unless an ancestor session is still protected in the same DB.
+    const isProtected = (start: ReturnType<typeof getWorkflowRun>): boolean => {
+      if (protectedSessionIds.size === 0) return false;
+      const seen = new Set<string>();
+      let cur = start;
+      while (cur && !seen.has(cur.runId)) {
+        seen.add(cur.runId);
+        if (cur.parentSessionId && protectedSessionIds.has(cur.parentSessionId)) return true;
+        cur = cur.parentWorkflowRunId ? getWorkflowRun(this._persistDir, cur.parentWorkflowRunId) : null;
+      }
+      return false;
+    };
     for (const runId of listRunningWorkflowRunIdsBefore(this._persistDir, this._createdAt)) {
       const run = getWorkflowRun(this._persistDir, runId);
-      if (run?.status === "running" && run.startedAt < this._createdAt) {
+      if (run?.status === "running" && run.startedAt < this._createdAt && !isProtected(run)) {
         updateWorkflowRun(this._persistDir, runId, {
           status: "interrupted",
           endedAt: Date.now(),
