@@ -456,7 +456,13 @@ export function normalizeWorkflowContribution(
     ...(value.facts !== undefined ? { facts: value.facts } : {}),
   };
   if (value.status === "done") {
-    return { type: "done", summary: value.summary as string, ...payload };
+    return {
+      type: "done",
+      summary: value.summary as string,
+      ...payload,
+      ...(Array.isArray(value.requests) ? { requests: [...(value.requests as import("./task.js").TaskAppRequest[])] } : {}),
+      ...(typeof value.response === "string" ? { response: value.response } : {}),
+    };
   }
   if (value.status === "blocked" || value.status === "error" || value.status === "interrupted") {
     return {
@@ -1120,10 +1126,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
   const effectiveWorkspace = buildWorkflowWorkspace(bindings);
   const effectiveTaskView = buildWorkflowTaskView(bindings);
   let agentSessionCounter = 0;
-  const doneOptionsByResult = new WeakMap<
-    object,
-    { requests?: import("./task.js").TaskAppRequest[]; response?: string }
-  >();
 
   const parkResult = (wait: WorkflowParkInput): ExecutionResult<never> => {
     assertActive();
@@ -1329,21 +1331,14 @@ export async function runWorkflowInvocation<TInput = unknown>(
         return tracked;
       },
     },
-    done: <T = undefined>(summary: string, output?: T, options?: DoneOptions): ExecutionResult<T> => {
-      const built: ExecutionResult<T> = {
-        status: "done",
-        summary,
-        ...(output !== undefined ? { output } : {}),
-        ...(options?.facts !== undefined ? { facts: options.facts } : {}),
-      };
-      if (options?.requests !== undefined || options?.response !== undefined) {
-        doneOptionsByResult.set(built, {
-          ...(options.requests !== undefined ? { requests: options.requests } : {}),
-          ...(options.response !== undefined ? { response: options.response } : {}),
-        });
-      }
-      return built;
-    },
+    done: <T = undefined>(summary: string, output?: T, options?: DoneOptions): ExecutionResult<T> => ({
+      status: "done",
+      summary,
+      ...(output !== undefined ? { output } : {}),
+      ...(options?.facts !== undefined ? { facts: options.facts } : {}),
+      ...(options?.requests !== undefined ? { requests: [...options.requests] } : {}),
+      ...(options?.response !== undefined ? { response: options.response } : {}),
+    }),
     blocked: (reason: string, facts?: unknown): ExecutionResult<never> => ({
       status: "blocked",
       summary: reason,
@@ -1393,13 +1388,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       assertActive();
       const authored = await module.execute(ctx);
       assertActive();
-      let normalized = normalizeWorkflowContribution(authored, Boolean(bindings.taskOwned));
-      if (normalized.type === "done" && authored && typeof authored === "object") {
-        const doneExtras = doneOptionsByResult.get(authored);
-        if (doneExtras) {
-          normalized = { ...normalized, ...doneExtras };
-        }
-      }
+      const normalized = normalizeWorkflowContribution(authored, Boolean(bindings.taskOwned));
       const shouldValidateOutput = normalized.type === "done" || normalized.output !== undefined;
       if (shouldValidateOutput && module.outputSchema && !Check(module.outputSchema, normalized.output)) {
         throw new WorkflowValidationError(

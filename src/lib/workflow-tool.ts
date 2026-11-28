@@ -983,6 +983,8 @@ function createPreparedWorkflowRunner(
           summary: sub.result.type === "done" ? sub.result.summary : sub.result.reason,
           ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
           ...(sub.result.facts !== undefined ? { facts: sub.result.facts } : {}),
+          ...(sub.result.type === "done" && sub.result.requests !== undefined ? { requests: [...sub.result.requests] } : {}),
+          ...(sub.result.type === "done" && sub.result.response !== undefined ? { response: sub.result.response } : {}),
         };
       };
 

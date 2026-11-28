@@ -175,9 +175,14 @@ describe("may run / may list standalone CLI", () => {
       const helperDir = join(wsRoot, "projects", "demo.app", "agents", "specialist");
       mkdirSync(wfDir, { recursive: true });
       mkdirSync(helperDir, { recursive: true });
+      mkdirSync(join(wsRoot, "projects", "evaluation.app"), { recursive: true });
       writeFileSync(
         join(wsRoot, "projects", "demo.app", "app.ts"),
-        "export default { id: 'demo', version: 1, agent: 'lead', observers: [{ id: 'ci', type: 'ci.status', description: 'CI' }] };\n",
+        "export default { id: 'demo', version: 1, agent: 'lead', inputSchema: { type: 'object', properties: { prompt: { type: 'string' } } }, observers: [{ id: 'ci', type: 'ci.status', description: 'CI' }] };\n",
+      );
+      writeFileSync(
+        join(wsRoot, "projects", "evaluation.app", "app.ts"),
+        "export default { id: 'evaluation-canary', version: 1, agent: 'lead', inputSchema: { type: 'object', properties: { canary: { type: 'boolean' } } }, observers: [{ id: 'canary', type: 'canary.health', description: 'Canary' }] };\n",
       );
       writeFileSync(
         join(wsRoot, "projects", "demo.app", "agents", "lead", "agent.json"),
@@ -228,7 +233,25 @@ export async function execute(ctx) {
       writeFileSync(
         join(wfDir, "other-flow.ts"),
         `export const name = "other-flow"; export const description = "Other";
-export async function execute(ctx) { return ctx.done("other"); }`,
+export async function execute(ctx) {
+  const c1 = await ctx.read.contract("evaluation-canary");
+  (c1.inputSchema as any).mutated = true;
+  const c2 = await ctx.read.contract("evaluation-canary");
+  const child = await ctx.call("demo/child-done", { prompt: "delegate" });
+  return { ...child, output: { canaryId: c2.appId, schemaMutated: Boolean((c2.inputSchema as any).mutated), taskGen: ctx.task.generation, taskFacts: ctx.task.facts } };
+}`,
+      );
+      writeFileSync(
+        join(wfDir, "child-done.ts"),
+        `export const name = "child-done"; export const description = "Child done options";
+export async function execute(ctx) {
+  return {
+    ...ctx.done("child-finished", { ok: true }, {
+      requests: [{ id: "r1", appId: "demo", input: { kind: "message", data: { message: "hi" } } }],
+      response: "Child reply",
+    }),
+  };
+}`,
       );
 
       const models = {
@@ -282,6 +305,41 @@ export async function execute(ctx) { return ctx.done("other"); }`,
         echo: "ready",
         turnsSeenByHelper: 2,
         observers: 1,
+      });
+
+      // Verify: (a) read.contract resolves declared App ID when directory differs & clones inputSchema,
+      // (b) reconciliation without stateDir derives ctx.task generation/facts instead of synthetic defaults,
+      // (c) spreading ctx.done(...) and forwarding via ctx.call() preserves requests and response.
+      const recRes = await run(
+        "demo/other-flow",
+        { prompt: "Check reconciliation + contract" },
+        {
+          projectRoot: wsRoot,
+          models,
+          reconciliation: {
+            appId: "demo",
+            taskId: "t-42",
+            generation: 3,
+            agent: "lead",
+            owner: "lead",
+            resourceVersion: 7,
+            outcome: "Reconciled outcome",
+            acceptance: ["Keep facts"],
+            input: {},
+            task: { id: "t-42", facts: ["retained:fact-1"] } as any,
+            waits: { open: [], note: "" },
+            children: { live: [], completed: [] },
+            taskSnapshot: { live: [], truncated: false },
+            events: { items: [], truncated: false },
+          },
+        },
+      );
+      expect(recRes).toMatchObject({
+        status: "done",
+        summary: "child-finished",
+        output: { canaryId: "evaluation-canary", schemaMutated: false, taskGen: 3, taskFacts: ["retained:fact-1"] },
+        requests: [{ id: "r1", appId: "demo" }],
+        response: "Child reply",
       });
     } finally {
       rmSync(wsRoot, { recursive: true, force: true });

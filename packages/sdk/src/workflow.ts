@@ -520,7 +520,10 @@ export type CliCallFacts = {
  * attach the actual child execution id; producers return status/summary and
  * optional output/facts only. Executor kind and trusted receipts remain in
  * execution diagnostics rather than the contribution payload. */
-export type ExecutionResult<T = unknown> = CallableResult<T>;
+export type ExecutionResult<T = unknown> = CallableResult<T> & {
+  requests?: import("./task.js").TaskAppRequest[];
+  response?: string;
+};
 
 /** A requested managed execution was not started. The caller retains its work. */
 export type ExecutionDeferral = {
