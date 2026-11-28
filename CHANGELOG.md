@@ -1,5 +1,24 @@
 # Changelog
 
+## [6.2.0](https://github.com/hao1939/may-agent/compare/v6.1.0...v6.2.0) (2026-11-28)
+
+
+### Features
+
+* **observability,webui:** surface Agent Gym pass^3 consistency alongside live rubric scorecards ([#630](https://github.com/hao1939/may-agent/issues/630)) ([ef11f3d](https://github.com/hao1939/may-agent/commit/ef11f3d970e6d64ad7e866e73ff138732cc0de0b))
+* **sdk,app:** unified WorkflowContext across Host & standalone + eve execution polish ([#640](https://github.com/hao1939/may-agent/issues/640)) ([9aeaf32](https://github.com/hao1939/may-agent/commit/9aeaf322150e32680d1a963fd18799fa4e535448))
+
+
+### Bug Fixes
+
+* **db:** probe terminal task attempts by primary key in listTerminalTaskSessionBindings ([#646](https://github.com/hao1939/may-agent/issues/646)) ([c1762c2](https://github.com/hao1939/may-agent/commit/c1762c2cf921bbc11a5bc0bff32ba39dae8930f1))
+* **http,sdk:** drop brittle INDEXED BY hints and unpriced Carbon route ([#638](https://github.com/hao1939/may-agent/issues/638)) ([b5e1541](https://github.com/hao1939/may-agent/commit/b5e1541e51961307d6549d380bd92c7b21fe8d80))
+* **http:** bound liveness attempt candidate index scans ([#635](https://github.com/hao1939/may-agent/issues/635)) ([17cb064](https://github.com/hao1939/may-agent/commit/17cb0649b0143e1843e75361a6238c6ed47a6f29))
+* **interfaces:** separate May conversation from explicit Task actions ([#628](https://github.com/hao1939/may-agent/issues/628)) ([a700c32](https://github.com/hao1939/may-agent/commit/a700c324c60b8f48d53d8befc9c2bc612c66f2a4))
+* **tasks:** honor App closure policy before Host fallback ([#642](https://github.com/hao1939/may-agent/issues/642)) ([4ebdd3b](https://github.com/hao1939/may-agent/commit/4ebdd3bcecbfc9725cc0a4f49ebbe43bcd7d5eed))
+* **workflow,reporting:** reconcile interrupted workflow runs and preserve terminal attempt status ([#644](https://github.com/hao1939/may-agent/issues/644)) ([3385240](https://github.com/hao1939/may-agent/commit/3385240079ef7fa3279f220c67599e507d4f059d))
+* **workflow:** leave endedAt null when startup marks pre-restart runs interrupted ([#645](https://github.com/hao1939/may-agent/issues/645)) ([c20cdc1](https://github.com/hao1939/may-agent/commit/c20cdc153c81550b78b2b9ed31f31de16de18f8e))
+
 ## [6.1.0](https://github.com/hao1939/may-agent/compare/v6.0.0...v6.1.0) (2026-11-26)
 
 
