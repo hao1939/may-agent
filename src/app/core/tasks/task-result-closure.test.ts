@@ -1,11 +1,14 @@
 import { afterEach, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppTaskPolicy, ResourceCreator } from "@may-agent/sdk/app";
 import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { createRuntimeTaskRead } from "../reads/app-read.js";
+import { admitTaskInput } from "../state/inbox.js";
+import { readLoadedAppTaskView, reconcileLoadedAppTaskOnce } from "./app-task-runtime.js";
+import { appTaskRuntimeTestSuite } from "../../../../test/fixtures/app-task-runtime.js";
 import {
   appTaskContext,
   claimObservedAppTask,
@@ -72,6 +75,84 @@ function fixture(
   const read = createRuntimeTaskRead({ taskStateConfig: config });
   return { root, config, store, claim, read };
 }
+
+const runtime = appTaskRuntimeTestSuite();
+
+test.each(["keep-open", "close", "no-policy"] as const)(
+  "plain workflow done honors App closure policy before Host fallback: %s",
+  async (mode) => {
+    const f = runtime.fixture();
+    const bus = runtime.eventBus();
+    const workflowDir = join(f.root, "agents", "sample-owner", "workflows");
+    mkdirSync(workflowDir, { recursive: true });
+    writeFileSync(join(workflowDir, "cycle.ts"), `
+export const name = "cycle";
+export const description = "Complete one review cycle";
+export async function execute(ctx) {
+  return ctx.done("Cycle reviewed", { answer: 42 }, { facts: { source: "fixture" } });
+}
+`);
+    const app = runtime.definition();
+    const reason = "The finite assignment is fulfilled";
+    let policyCalls = 0;
+    app.tasks = mode === "no-policy" ? {} : {
+      closeOnResult(context) {
+        policyCalls++;
+        expect(context.creator).toEqual({ appId: "sample" });
+        expect(context.acceptedResult).toMatchObject({ state: "converged", result: { answer: 42 } });
+        return mode === "close" ? { reason } : null;
+      },
+    };
+    await runtime.installAppTaskRuntimes({
+      ...runtime.options(f, bus), installControllers: false,
+      agentsRoot: join(f.root, "agents"), sharedRoot: join(f.root, "shared"),
+      appRegistrySnapshot: { id: "workflow-closure", generation: 1,
+        entries: [{ appDir: f.appDir, definition: app }] },
+    });
+    const config = runtime.loadedTaskConfig(f);
+    const taskId = "work/review";
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner", creator: { appId: "sample" },
+      intent: { id: taskId, parentId: "operations", outcome: "Review each new report",
+        acceptance: ["Report assessed"], workflow: "cycle" },
+    });
+    const generation = config.resourceStore.readTask(taskId)!.metadata.generation;
+    await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    const accepted = runtime.readAcceptedRuntimeAttempt(config, taskId)!;
+    expect(accepted.acceptedResult).toMatchObject({
+      state: "converged", summary: "Cycle reviewed", result: { answer: 42 },
+      facts: ['execution-facts:{"source":"fixture"}'],
+    });
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+      id: taskId, generation, status: mode === "keep-open" ? "idle" : "closed",
+      result: { answer: 42 }, facts: ['execution-facts:{"source":"fixture"}'],
+      acceptedAttempt: { id: accepted.metadata.id },
+    });
+    expect(policyCalls).toBe(mode === "no-policy" ? 0 : 1);
+    if (mode === "keep-open") {
+      expect(config.resourceStore.readCancellation(taskId)).toBeNull();
+      expect(admitTaskInput(config, {
+        appId: "sample", attachment: { kind: "existing", taskId }, idempotencyKey: "next-report",
+        inputContext: { id: "next-report", source: { kind: "human", id: "requester" },
+          input: { kind: "message", data: { text: "Review the next report" } } },
+      })).toMatchObject({ taskId });
+      expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+        id: taskId, generation, status: "pending",
+        pendingEvents: { items: [{ event: { data: {
+          idempotencyKey: "next-report", taskId,
+          request: { input: { data: { text: "Review the next report" } } },
+        } } }] },
+      });
+    } else {
+      expect(config.resourceStore.readCancellation(taskId)).toMatchObject({
+        kind: "closed", acceptedResultAttemptId: accepted.metadata.id,
+        reason: mode === "close" ? reason : "Public execution returned done for the finite assignment",
+        decidedBy: { kind: mode === "close" ? "app-policy" : "host-execution" },
+      });
+    }
+  },
+);
 
 const ending = {
   summary: "Supported no change",
